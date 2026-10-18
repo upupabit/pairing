@@ -1,0 +1,177 @@
+/* Light themes; tokens explained in themes.css. */
+
+[data-theme="plain"] {
+  /* No theme look: white background, neutral grays (Tailwind gray), standard blue accent, system font. */
+  --font-sans: var(--font-sans-system);
+  --color-slate-50: 3 7 18;
+  --color-slate-100: 17 24 39;
+  --color-slate-200: 31 41 55;
+  --color-slate-300: 55 65 81;
+  --color-slate-400: 75 85 99;
+  --color-slate-500: 107 114 128;
+  --color-slate-600: 185 191 199;
+  --color-slate-700: 209 213 219;
+  --color-slate-800: 222 225 229;
+  --color-slate-900: 230 232 235;
+  --color-slate-950: 255 255 255;
+  --color-brand-50: 239 246 255;
+  --color-brand-100: 219 234 254;
+  --color-brand-200: 191 219 254;
+  --color-brand-300: 147 197 253;
+  --color-brand-400: 96 165 250;
+  --color-brand-500: 37 99 235;
+  --color-brand-600: 29 78 216;
+  --color-brand-700: 30 64 175;
+  --color-brand-800: 30 58 138;
+  --color-brand-900: 23 37 84;
+  --color-brand-950: 15 23 42;
+  --chart-1: 37 99 235;
+  --chart-2: 22 163 74;
+  --chart-3: 234 88 12;
+  --chart-4: 147 51 234;
+  --chart-5: 220 38 38;
+  --chart-6: 13 148 136;
+  --chart-7: 202 138 4;
+  --chart-8: 219 39 119;
+  --chart-9: 71 85 105;
+}
+
+[data-theme="bubblegum"] {
+  --font-sans: var(--font-sans-nunito);
+  --color-slate-50: 24 12 20;
+  --color-slate-100: 45 22 37;
+  --color-slate-200: 65 31 54;
+  --color-slate-300: 93 45 77;
+  --color-slate-400: 124 60 103;
+  --color-slate-500: 162 78 134;
+  --color-slate-600: 197 135 176;
+  --color-slate-700: 222 186 210;
+  --color-slate-800: 237 217 230;
+  --color-slate-900: 247 238 244;
+  --color-slate-950: 252 248 250;
+  --color-brand-50: 253 237 245;
+  --color-brand-100: 250 214 232;
+  --color-brand-200: 246 172 209;
+  --color-brand-300: 241 126 184;
+  --color-brand-400: 235 71 153;
+  --color-brand-500: 230 25 128;
+  --color-brand-600: 188 21 105;
+  --color-brand-700: 151 17 84;
+  --color-brand-800: 115 13 64;
+  --color-brand-900: 83 9 46;
+  --color-brand-950: 46 5 26;
+  --chart-1: 209 26 117;
+  --chart-2: 209 133 26;
+  --chart-3: 209 26 32;
+  --chart-4: 56 209 26;
+  --chart-5: 209 26 209;
+  --chart-6: 209 72 26;
+  --chart-7: 209 26 93;
+  --chart-8: 209 26 172;
+  --chart-9: 117 26 209;
+}
+
+[data-theme="sky"] {
+  --font-sans: var(--font-sans-system);
+  --color-slate-50: 11 19 25;
+  --color-slate-100: 20 35 46;
+  --color-slate-200: 29 52 68;
+  --color-slate-300: 41 73 96;
+  --color-slate-400: 55 98 129;
+  --color-slate-500: 72 128 168;
+  --color-slate-600: 130 172 201;
+  --color-slate-700: 184 207 224;
+  --color-slate-800: 216 229 238;
+  --color-slate-900: 237 243 247;
+  --color-slate-950: 248 250 252;
+  --color-brand-50: 236 246 253;
+  --color-brand-100: 213 235 252;
+  --color-brand-200: 170 216 248;
+  --color-brand-300: 123 194 244;
+  --color-brand-400: 66 167 240;
+  --color-brand-500: 19 146 236;
+  --color-brand-600: 16 119 193;
+  --color-brand-700: 13 96 156;
+  --color-brand-800: 10 73 118;
+  --color-brand-900: 7 52 85;
+  --color-brand-950: 4 29 47;
+  --chart-1: 26 133 209;
+  --chart-2: 117 26 209;
+  --chart-3: 26 47 209;
+  --chart-4: 209 26 72;
+  --chart-5: 26 209 194;
+  --chart-6: 56 26 209;
+  --chart-7: 26 108 209;
+  --chart-8: 26 187 209;
+  --chart-9: 26 209 102;
+}
+
+[data-theme="meadow"] {
+  --font-sans: var(--font-sans-system);
+  --color-slate-50: 12 23 16;
+  --color-slate-100: 23 43 30;
+  --color-slate-200: 34 63 44;
+  --color-slate-300: 48 90 62;
+  --color-slate-400: 64 119 83;
+  --color-slate-500: 84 156 108;
+  --color-slate-600: 139 193 157;
+  --color-slate-700: 189 219 199;
+  --color-slate-800: 219 235 224;
+  --color-slate-900: 238 246 241;
+  --color-slate-950: 248 251 249;
+  --color-brand-50: 239 250 243;
+  --color-brand-100: 219 245 229;
+  --color-brand-200: 184 234 202;
+  --color-brand-300: 144 223 173;
+  --color-brand-400: 97 209 138;
+  --color-brand-500: 57 198 109;
+  --color-brand-600: 47 162 89;
+  --color-brand-700: 38 130 72;
+  --color-brand-800: 29 99 54;
+  --color-brand-900: 21 71 39;
+  --color-brand-950: 11 40 22;
+  --chart-1: 26 209 93;
+  --chart-2: 26 126 209;
+  --chart-3: 26 209 178;
+  --chart-4: 154 26 209;
+  --chart-5: 50 209 26;
+  --chart-6: 26 187 209;
+  --chart-7: 26 209 117;
+  --chart-8: 26 209 38;
+  --chart-9: 142 209 26;
+}
+
+[data-theme="sand"] {
+  --font-sans: var(--font-sans-system);
+  --color-slate-50: 23 18 12;
+  --color-slate-100: 43 33 23;
+  --color-slate-200: 63 48 34;
+  --color-slate-300: 90 69 48;
+  --color-slate-400: 119 92 64;
+  --color-slate-500: 156 120 84;
+  --color-slate-600: 193 166 139;
+  --color-slate-700: 219 204 189;
+  --color-slate-800: 235 227 219;
+  --color-slate-900: 246 242 238;
+  --color-slate-950: 251 250 248;
+  --color-brand-50: 250 243 239;
+  --color-brand-100: 245 229 219;
+  --color-brand-200: 234 202 184;
+  --color-brand-300: 223 173 144;
+  --color-brand-400: 209 138 97;
+  --color-brand-500: 198 109 57;
+  --color-brand-600: 162 89 47;
+  --color-brand-700: 130 72 38;
+  --color-brand-800: 99 54 29;
+  --color-brand-900: 71 39 21;
+  --color-brand-950: 40 22 11;
+  --chart-1: 209 93 26;
+  --chart-2: 126 209 26;
+  --chart-3: 209 178 26;
+  --chart-4: 26 209 154;
+  --chart-5: 209 26 50;
+  --chart-6: 187 209 26;
+  --chart-7: 209 117 26;
+  --chart-8: 209 38 26;
+  --chart-9: 209 26 142;
+}

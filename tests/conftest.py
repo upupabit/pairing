@@ -52,6 +52,16 @@ def _tests_never_write_to_the_real_cluster(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _tests_never_write_to_the_real_avatars(monkeypatch, tmp_path):
+    """Pictures (uploads and the starter admin's default) go to a temporary folder."""
+    from app.services import avatar_service
+
+    folder = tmp_path / "avatars"
+    folder.mkdir()
+    monkeypatch.setattr(avatar_service, "AVATARS_DIR", folder)
+
+
+@pytest.fixture(autouse=True)
 def _model_install_checks_do_not_hit_a_real_engine(monkeypatch):
     """conversation_service.create_conversation/update_conversation and channel_service.create_channel (via
     model_catalog_service.resolve_installed_model) validate a model tag against the installed engine; unmocked

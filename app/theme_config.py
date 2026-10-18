@@ -23,10 +23,14 @@ UI_THEMES = [
     {"id": "monokai", "label": "Monokai", "mode": "dark", "swatch_bg": "#33342d", "swatch_accent": "#f9065f"},
     {"id": "forest-dusk", "label": "Forest Dusk", "mode": "dark", "swatch_bg": "#273a34", "swatch_accent": "#8fcc33"},
     {"id": "ember", "label": "Ember", "mode": "dark", "swatch_bg": "#3d2c24", "swatch_accent": "#f24a0d"},
-    {"id": "sunshine", "label": "Sunshine", "mode": "light", "swatch_bg": "#f0e7d6", "swatch_accent": "#f98806"},
+    {"id": "plain", "label": "Plain", "mode": "light", "swatch_bg": "#dee1e5", "swatch_accent": "#2563eb"},
     {"id": "bubblegum", "label": "Bubblegum", "mode": "light", "swatch_bg": "#edd9e6", "swatch_accent": "#e61980"},
     {"id": "sky", "label": "Sky", "mode": "light", "swatch_bg": "#d8e5ee", "swatch_accent": "#1392ec"},
     {"id": "meadow", "label": "Meadow", "mode": "light", "swatch_bg": "#dbebe0", "swatch_accent": "#39c66d"},
     {"id": "sand", "label": "Sand", "mode": "light", "swatch_bg": "#ebe3db", "swatch_accent": "#c66d39"},
 ]
-DEFAULT_UI_THEME = "nord"
+DEFAULT_UI_THEME = "nord"  # accounts that never had a theme saved
+# Saved for every account created from now on (new users, and the starter admin of a fresh install).
+NEW_ACCOUNT_UI_THEME = "plain"
+# Removed themes and what replaced them, so a saved choice keeps a similar look.
+RENAMED_UI_THEMES = {"sunshine": "plain"}

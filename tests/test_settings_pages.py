@@ -67,3 +67,12 @@ async def test_matricxon_form_has_the_cache_folder_field_and_the_script_keeps_cl
     script = (Path(__file__).parent.parent / "app" / "static" / "js" / "settings.js").read_text()
     assert "prompt_cache_path:" in script and "cluster_role: section.dataset.clusterRole" in script
     assert 'getElementById("matricxon-cache-panel")' in script
+
+
+@pytest.mark.asyncio
+async def test_both_pages_list_their_tabs_in_a_left_sidebar_like_stats(db, admin_user):
+    for page in (pages.settings_page, pages.admin_settings_page):
+        html = (await page(_request(admin_user.id), db=db)).body.decode()
+        sidebar = html.split("<aside", 1)[1].split("</aside>", 1)[0]
+        assert re.findall(r'data-tab="([^"]+)"', sidebar) == re.findall(r'data-tab="([^"]+)"', html)
+        assert "bg-slate-800 text-slate-100" in sidebar  # the first tab starts active

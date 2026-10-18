@@ -1,0 +1,103 @@
+{# Settings > Knowledge tab (/settings only). #}
+    <!-- Knowledge tab: RAG chunk count + shared knowledge base status. Available to every user (everyone can tune how many chunks their chats retrieve). Operates on the conversation/defaults target picked on Behavior. -->
+    <div id="tab-knowledge" class="hidden mx-auto max-w-3xl px-4 py-8 space-y-8">
+      <div data-group="rag" class="space-y-8">
+      <!-- Why Knowledge is unavailable (RAG off, no embedding model…), first on the tab so it is seen at once. -->
+      <div id="rag-unavailable" hidden class="hidden text-xs text-warning-400 bg-slate-900 border border-warning-500/50 rounded-lg px-3 py-2">
+        <span id="rag-unavailable-reason">No embedding model found yet — ask admin.</span>
+      </div>
+      <section class="space-y-3">
+        <h2 class="text-sm font-semibold text-slate-200">Document knowledge (RAG)</h2>
+        <p class="text-xs text-slate-500 -mt-2">
+          Every chat automatically searches your knowledge base below — there's nothing to turn on.
+          These settings and your documents apply only to your own chats; they don't affect other users.
+        </p>
+
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-xs font-medium text-slate-300">Chunks retrieved per question</label>
+            <span class="text-xs font-mono text-slate-400" id="rag-top-k-value">4</span>
+          </div>
+          <input type="range" id="rag-top-k" min="1" max="10" step="1" value="4" class="slim-slider slim-slider-ring block w-full">
+          <p class="mt-1 text-xs text-slate-500">More chunks give the model more potentially-relevant context, but also more noise and a larger prompt.</p>
+        </div>
+      </section>
+
+      <!-- Knowledge base: not tied to a conversation, so it saves itself (upload/delete), not via the Save button. Every chat searches what's in scope for its owner; an upload is ingested at once. Only "My documents" (private) is exposed for now; the shared/global scope exists server-side (app/rag.py) but has no UI yet. -->
+      <section id="knowledge-base-section" class="space-y-4">
+        <h2 class="text-sm font-semibold text-slate-200">Knowledge base</h2>
+        <p class="text-xs text-slate-500 -mt-3">
+          Supported types: <code class="font-mono">.txt</code>, <code class="font-mono">.md</code>,
+          <code class="font-mono">.pdf</code>, <code class="font-mono">.docx</code>,
+          <code class="font-mono">.odt</code>, <code class="font-mono">.rtf</code>,
+          <code class="font-mono">.html</code>, <code class="font-mono">.csv</code>, and
+          <code class="font-mono">.json</code> — up to 5 files per upload.
+        </p>
+
+        <!-- Your quota: what the admin allows this account (Admin settings > System > RAG limits) and how much is used. Filled by settings.js renderKnowledgeSummary. -->
+        <div id="rag-quota" class="rounded-lg bg-slate-900 border border-slate-800 px-4 py-3 space-y-2">
+          <div class="flex items-center justify-between text-xs">
+            <span class="font-semibold uppercase tracking-wide text-slate-400">Your quota</span>
+            <span id="rag-quota-usage" class="font-mono text-slate-300"></span>
+          </div>
+          <div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+            <div id="rag-quota-bar" class="h-full w-0 rounded-full bg-brand-600 transition-[width] duration-300"></div>
+          </div>
+          <ul id="rag-quota-details" class="text-xs text-slate-500 space-y-0.5 list-disc pl-4"></ul>
+        </div>
+
+        <!-- My documents: private, visible only to your chats. Five file pickers rather than one multi-select, so each file has its own row and progress bar; embedding can be slow on weak hardware, and one shared bar left it unclear which file was still moving. -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-semibold uppercase tracking-wide text-slate-400">My documents</h3>
+            <span id="my-docs-summary" class="text-xs text-slate-500"></span>
+          </div>
+          <p class="text-xs text-slate-500">Private — only your own chats can search these.</p>
+
+          <div id="my-docs-upload-slots" class="space-y-1.5">
+            {% for i in range(5) %}
+            <div class="space-y-1" data-slot="{{ i }}">
+              <div class="flex items-center gap-2">
+                <input type="file"
+                  class="upload-slot-input flex-1 min-w-0 text-xs text-slate-400 file:mr-2 file:w-28 file:rounded-lg file:border file:border-slate-700 file:bg-slate-900 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-slate-200 hover:file:bg-slate-800">
+                <span class="upload-slot-status w-28 shrink-0 truncate text-right text-xs text-slate-500">—</span>
+              </div>
+              <div class="upload-slot-bar-wrap hidden h-1 w-full overflow-hidden rounded-full bg-slate-800">
+                <div class="upload-slot-bar h-full w-0 rounded-full bg-brand-600 transition-[width] duration-300"></div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+
+          <button id="my-docs-upload-btn" type="button"
+            class="!mt-6 w-28 rounded-lg bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-500 transition-colors">
+            Upload
+          </button>
+
+          <div id="my-docs-overall-wrap" class="hidden space-y-1 pt-1">
+            <div class="flex items-center justify-between text-xs text-slate-500">
+              <span>Overall progress</span>
+              <span id="my-docs-overall-pct">0%</span>
+            </div>
+            <div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+              <div id="my-docs-overall-bar" class="h-full w-0 rounded-full bg-brand-600 transition-[width] duration-300"></div>
+            </div>
+          </div>
+          <p id="my-docs-status" class="text-xs text-slate-500"></p>
+          <div id="my-docs-list" class="!mt-6 rounded-lg bg-slate-900 border border-slate-800 divide-y divide-slate-800 text-sm"></div>
+          <div id="my-docs-pagination" class="hidden flex items-center justify-between text-xs text-slate-500">
+            <button id="my-docs-prev-btn" type="button"
+              class="rounded-md border border-slate-700 px-2.5 py-1 text-xs text-slate-200 hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent">
+              Prev
+            </button>
+            <span id="my-docs-page-info"></span>
+            <button id="my-docs-next-btn" type="button"
+              class="rounded-md border border-slate-700 px-2.5 py-1 text-xs text-slate-200 hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent">
+              Next
+            </button>
+          </div>
+        </div>
+      </section>
+      </div>
+
+    </div>

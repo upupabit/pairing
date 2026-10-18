@@ -1,0 +1,63 @@
+{# Admin settings > Inference engines tab. #}
+    <!-- Inference engines tab: admin-only. Ollama, Matricxon and stable-diffusion.cpp get identically shaped subsections: local (this app owns the process: start/stop + key tunables) or remote (up to 12 load-balanced hosts). See app/routers/ollama_admin.py, matricxon_admin.py and sdcpp_admin.py. -->
+    <div id="tab-external-servers" class="hidden mx-auto max-w-3xl px-4 py-8 space-y-8">
+      <!-- Which kind of server to configure; only that group's sections below show (app/static/js/settings_group_select.js). More groups can be added as options. -->
+      <section class="space-y-3">
+        <div class="rounded-lg bg-slate-900 border border-slate-800 px-4 py-3 flex items-center gap-3">
+          <label for="external-group-select" class="text-sm text-slate-300 shrink-0">Configure</label>
+          <select id="external-group-select" data-group-select
+            class="min-w-0 flex-1 rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+            <option value="models" selected>Choose models engine</option>
+            <option value="image">Image-generation engine</option>
+          </select>
+        </div>
+      </section>
+
+      <div data-group="models" class="space-y-8">
+      <!-- Which engine (below) serves chat/embedding requests now (app.services.engine_service). Each engine stays independently configurable/startable; only this picker decides which is live. -->
+      <section class="space-y-3">
+        <h2 class="text-sm font-semibold text-slate-200">Active engine</h2>
+        <p class="text-xs text-slate-500 -mt-2">
+          Which engine below actually answers chat and embedding requests. Ollama and Matricxon can each be
+          configured and started independently of this choice — switching here doesn't stop or start either one,
+          it only changes where new requests go.
+        </p>
+        <div class="rounded-lg bg-slate-900 border border-slate-800 px-4 py-3 flex items-center gap-3">
+          <select id="active-engine-select" title="Which engine below actually answers chat and embedding requests right now. Switching here doesn't start or stop either engine — configure and start them independently below."
+            class="rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+          </select>
+          <!-- self-stretch: as tall as the engine picker beside it (its own padding made it a little taller). -->
+          <button id="active-engine-save-btn" type="button"
+            class="self-stretch rounded-lg bg-brand-600 px-4 text-sm font-medium text-white hover:bg-brand-500 transition-colors">
+            Save
+          </button>
+          <span id="active-engine-status" class="text-xs text-slate-500"></span>
+        </div>
+        <p id="active-engine-switch-note" class="hidden text-xs text-warning-400 bg-slate-900 border border-warning-500/50 rounded-lg px-3 py-2">
+          Ollama and Matricxon each keep their own separate model storage — nothing pulled under one is
+          automatically available under the other. A conversation whose model isn't installed on the engine
+          you're switching to will fall back to another installed model automatically, but you may still need to
+          pull models again below for anything you specifically want available here.
+        </p>
+        <!-- Shown instead of the note above when switching to a connector (settings.js applyActiveEngineSwitchNote). -->
+        <p id="active-engine-connector-note" class="hidden text-xs text-warning-400 bg-slate-900 border border-warning-500/50 rounded-lg px-3 py-2">
+          <span data-switch-engine-name></span> is a cloud connector: the model lists will show only its models, and
+          models installed on Ollama or Matricxon aren't used while it is active. A conversation whose model isn't
+          offered there falls back to one of its models. Images and tools aren't sent, and the knowledge base works
+          only if it has embedding models.
+        </p>
+      </section>
+
+      {% include "settings/engines_ollama.html" %}
+
+      {% include "settings/engines_matricxon.html" %}
+
+      {% include "_matricxon_cache_persistence.html" %}
+      {% if admin_page %}{% include "_connector_summary.html" %}{% endif %}
+      </div>
+
+      <div data-group="image" class="hidden space-y-8">
+      <!-- stable-diffusion.cpp is the only image engine (app.services.image_engine_service.ENABLED_IMAGE_ENGINES), so there is no engine picker. -->
+      {% include "_sdcpp_server.html" %}
+      </div>
+    </div>

@@ -1,0 +1,167 @@
+{# Admin settings > System: environment, server mode, instances, database. #}
+      <section class="space-y-3">
+        <h2 class="text-sm font-semibold text-slate-200">Environment</h2>
+        <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm rounded-lg bg-slate-900 border border-slate-800 px-4 py-3">
+          <dt class="text-slate-500">App version</dt>
+          <dd id="system-app-version" class="font-mono text-slate-200">—</dd>
+          <dt class="text-slate-500">Hardware</dt>
+          <dd id="system-hardware" class="text-slate-200">—</dd>
+        </dl>
+      </section>
+
+      <section class="space-y-3">
+        <h2 class="text-sm font-semibold text-slate-200">Local {{ app_name }} server mode</h2>
+        <p class="text-xs text-slate-500 -mt-2">
+          How multiple local instances (below) get combined behind one URL — only matters once
+          instance count is more than 1. <span class="font-mono">Local</span> (default) makes this
+          app balance the load itself: this instance forwards each request to whichever local
+          instance is least busy and streams the reply straight back — no external proxy needed.
+          <span class="font-mono">External balancing</span> leaves it to your own external reverse proxy instead.
+        </p>
+        <div class="rounded-lg bg-slate-900 border border-slate-800 px-4 py-3">
+          <label class="block text-xs font-medium text-slate-400 mb-1">Mode</label>
+          <select id="proxy-mode"
+            class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+            <option value="local">Local — balance across local instances (default)</option>
+            <option value="proxy">External balancing — full load balance</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-3">
+          <button id="proxy-mode-save-btn" type="button"
+            class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition-colors">
+            Save
+          </button>
+          <span id="proxy-mode-status" class="text-xs text-slate-500"></span>
+        </div>
+      </section>
+
+      <section class="space-y-3">
+        <h2 class="text-sm font-semibold text-slate-200">Local instances</h2>
+        <p class="text-xs text-slate-500 -mt-2">
+          How many local {{ app_name }} processes should be running on this machine, sharing the same
+          database/models/knowledge base — takes effect immediately, no restart needed. A single
+          instance (the default) is a plain-text answer to "no scaling"; anything above that only
+          does something once combined behind one URL — either your own external reverse proxy
+          (Nginx/HAProxy), or the built-in "Local {{ app_name }} server mode" option above. See ROADMAP.md's "Concurrency"
+          section.
+        </p>
+        <div class="rounded-lg bg-slate-900 border border-slate-800 px-4 py-3 space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Instance count</label>
+            <select id="instance-count"
+              class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+            </select>
+          </div>
+          <ul id="instance-list" class="space-y-0.5 text-xs text-slate-400 font-mono"></ul>
+        </div>
+        <div class="flex items-center gap-3">
+          <button id="instance-count-save-btn" type="button"
+            class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition-colors">
+            Save
+          </button>
+          <span id="instance-count-status" class="text-xs text-slate-500"></span>
+        </div>
+      </section>
+
+      <section class="space-y-3">
+        <h2 class="text-sm font-semibold text-slate-200">Database</h2>
+        <p class="text-xs text-slate-500 -mt-2">
+          Which database {{ app_name }} stores everything in. Saving builds the schema if needed and switches
+          {{ app_name }} over immediately — no restart needed.
+        </p>
+        <div class="rounded-lg border border-warning-500/50 bg-slate-900 px-3 py-2 text-xs text-warning-400">
+          <strong>Switching does not move anything from the current database.</strong> The new database only
+          ever gets the same starter data a fresh install gets (one admin account, 3 default notes) — every
+          existing conversation, message, channel, non-admin user, and document, plus every admin setting on
+          this page and elsewhere (RAG limits, model visibility, channel delivery mode, and so on), stays
+          behind in the old database and won't be visible here anymore. Nothing is deleted, but nothing is
+          copied over either.
+        </div>
+        <div id="db-restart-banner" class="hidden rounded-lg border border-warning-500/50 bg-slate-900 px-3 py-2 text-xs text-warning-400">
+          The <span class="font-mono">.env</span> file was edited by hand and doesn't match what's
+          currently running — save here (or restart) to bring them back in sync.
+        </div>
+        <div class="rounded-lg bg-slate-900 border border-slate-800 px-4 py-3 space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Database type</label>
+            <select id="db-type"
+              class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+              <option value="sqlite">SQLite — a single local file</option>
+              <option value="mysql">MySQL — a separate database server</option>
+            </select>
+          </div>
+
+          <div id="db-fields-sqlite" class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Directory</label>
+              <input id="db-sqlite-directory" type="text" placeholder="/path/to/data"
+                class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm font-mono focus:outline-none focus:border-brand-500">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Filename</label>
+              <input id="db-sqlite-filename" type="text" placeholder="pAIchat.db"
+                class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm font-mono focus:outline-none focus:border-brand-500">
+            </div>
+          </div>
+
+          <div id="db-fields-mysql" class="hidden space-y-3">
+            <div class="grid grid-cols-[2fr_1fr] gap-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Host</label>
+                <input id="db-mysql-host" type="text" placeholder="localhost"
+                  class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm font-mono focus:outline-none focus:border-brand-500">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Port</label>
+                <input id="db-mysql-port" type="number" min="1" max="65535" placeholder="3306"
+                  class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm font-mono focus:outline-none focus:border-brand-500">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">User</label>
+                <input id="db-mysql-user" type="text" autocomplete="off"
+                  class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm font-mono focus:outline-none focus:border-brand-500">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-400 mb-1">Password</label>
+                <input id="db-mysql-password" type="password" autocomplete="new-password" placeholder="(unchanged if left blank)"
+                  class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm font-mono focus:outline-none focus:border-brand-500">
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Database name</label>
+              <input id="db-mysql-database" type="text"
+                class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm font-mono focus:outline-none focus:border-brand-500">
+            </div>
+            <p class="text-xs text-slate-500">
+              Create the database and user yourself first, with <span class="font-mono">utf8mb4_bin</span>
+              collation — see "Switching to MySQL" in README.md. This only connects to an existing database,
+              it won't create one for you.
+            </p>
+          </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <button id="db-test-btn" type="button"
+            class="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 transition-colors">
+            Test connection
+          </button>
+          <button id="db-build-schema-btn" type="button"
+            class="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 transition-colors">
+            Build schema
+          </button>
+          <button id="db-save-btn" type="button"
+            class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition-colors">
+            Save
+          </button>
+        </div>
+        <p id="db-status" class="text-xs text-slate-500"></p>
+      </section>

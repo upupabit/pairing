@@ -1,0 +1,235 @@
+{# Admin settings > Inference engines: Matricxon. #}
+      <section class="space-y-3" data-server="matricxon">
+        <h2 class="text-sm font-semibold text-slate-200">Matricxon</h2>
+        <p class="text-xs text-slate-500 -mt-2">
+          A from-scratch inference server, Ollama-API-compatible local runtime. <span class="font-mono">Local</span>
+          mode lets this app manage important tuning and start/stop Matricxon from here — Matricxon has no
+          standalone binary, just a project checkout; <span class="font-mono">Remote</span> mode points at
+          server/s running elsewhere using internal load balancer.
+        </p>
+        <div data-field="fetch-panel" class="relative rounded-lg bg-slate-900 border border-slate-800 px-4 py-3 space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Mode</label>
+            <select data-field="mode" title="Local: this app starts and stops Matricxon itself on this machine via its own scripts/start.sh and scripts/stop.sh. Remote: point at a Matricxon server already running elsewhere." class="server-mode-select w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+              <option value="local">Local — this app manages the process</option>
+              <option value="remote">Remote — external server(s)</option>
+            </select>
+            <p class="mt-1 text-xs text-slate-500">
+              Local: this app starts, stops and configures Matricxon. Remote: it only talks to the nodes and never
+              starts, stops or configures them. In a cluster, switch to Remote once the first node should be like
+              the others; no node is lost by switching.
+            </p>
+          </div>
+
+          <div data-mode-section="local" class="space-y-3">
+            <p data-field="status-line" class="text-xs text-slate-400 font-mono"></p>
+
+            <!-- Its own inner section, set a little apart from the status above: installing is a separate, occasional task. -->
+            <div data-field="install-controls" class="mt-1 space-y-3 rounded-md border border-slate-800 bg-slate-950/40 px-3 py-3">
+              <div data-field="install-idle" class="space-y-2">
+                <div class="flex items-center gap-3">
+                  <button type="button" data-action="install"
+                    class="rounded-lg border border-slate-700 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-800 transition-colors">
+                    Install from GitHub
+                  </button>
+                  <span data-field="install-version-label" class="text-xs text-slate-500"></span>
+                </div>
+                <p data-field="install-os-note" class="hidden text-xs text-warning-400"></p>
+                <button type="button" data-action="toggle-install-source"
+                  class="text-xs text-slate-500 hover:text-slate-300 underline underline-offset-2 transition-colors">
+                  Use a different version or repo
+                </button>
+                <div data-field="install-source-panel" class="hidden space-y-2 rounded-md bg-slate-950 border border-slate-800 px-3 py-3">
+                  <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">GitHub repo</label>
+                    <input data-field="install_repo" type="text" placeholder="upupabit/matricxon" title="Which GitHub repo to install Matricxon from. Leave blank to use the default pinned repo."
+                      class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Version / tag</label>
+                    <input data-field="install_version" type="text" placeholder="main (latest)" list="matricxon-version-options" title="Which version to install. Leave blank for the latest code on the main branch — or start typing to pick a specific release tag (fetched live from GitHub), or enter any tag/branch by hand."
+                      class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+                    <datalist id="matricxon-version-options" data-field="install-version-datalist"></datalist>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <button type="button" data-action="save-install-source"
+                      class="rounded-md border border-slate-700 px-2.5 py-1 text-xs text-slate-200 hover:bg-slate-800 transition-colors">
+                      Save
+                    </button>
+                    <button type="button" data-action="reset-install-source"
+                      class="text-xs text-slate-500 hover:text-slate-300 underline underline-offset-2 transition-colors">
+                      Reset to default
+                    </button>
+                    <span data-field="install-source-status" class="text-xs text-slate-500"></span>
+                  </div>
+                </div>
+              </div>
+              <div data-field="install-progress-panel" class="hidden space-y-2 rounded-md bg-slate-950 border border-slate-800 px-3 py-3">
+                <div class="flex items-center justify-between">
+                  <span data-field="install-step-label" class="text-xs font-medium text-slate-300"></span>
+                  <span data-field="install-percent" class="text-xs text-slate-500"></span>
+                </div>
+                <progress data-field="install-bar" class="w-full h-1.5 accent-brand-500" max="100"></progress>
+                <div data-field="install-log" class="max-h-32 overflow-hidden text-[11px] font-mono text-slate-500 space-y-0.5"></div>
+              </div>
+            </div>
+
+            <div data-field="local-not-installed" class="space-y-3">
+              <button type="button" data-action="manual-path-entry"
+                class="text-xs text-slate-500 hover:text-slate-300 underline underline-offset-2 transition-colors">
+                Already have Matricxon installed elsewhere? Enter its path manually instead.
+              </button>
+            </div>
+
+            <div data-field="local-installed" class="hidden space-y-3">
+              <div class="space-y-3 rounded-md border border-slate-800 bg-slate-950/40 px-3 py-3">
+                <h3 class="text-xs font-semibold text-slate-300">Paths</h3>
+                <div>
+                  <label class="block text-xs font-medium text-slate-400 mb-1">Project directory (optional)</label>
+                  <input data-field="project_dir" type="text" placeholder="auto-detected sibling checkout" title="Path to your Matricxon project checkout — the folder containing scripts/start.sh. Leave blank to auto-detect the sibling ../matricxon checkout next to this app."
+                    class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+                </div>
+                <p id="matricxon-paths-managed" class="hidden rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-400">
+                  Cluster mode is on: the models and saved-chat-cache folders are managed on the Cluster page.
+                </p>
+                <div data-cluster-managed>
+                  <label class="block text-xs font-medium text-slate-400 mb-1">Models directory (optional)</label>
+                  <input data-field="models_path" type="text" placeholder="<project directory>/data/models" title="Where Matricxon stores installed models (MATRICXON_MODELS_DIR) — also where pAIring writes a model it downloads directly in local mode. Leave blank to use Matricxon's own default inside the project directory above. Changing this does not move already-downloaded models."
+                    class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+                </div>
+                <div data-cluster-managed>
+                  <label class="block text-xs font-medium text-slate-400 mb-1">Saved chat caches directory (optional)</label>
+                  <input data-field="prompt_cache_path" type="text" placeholder="<project directory>/data/prompt_cache" title="Where Matricxon keeps its saved chat caches (MATRICXON_PROMPT_CACHE_DIR); the cache key and policy files live next to it. In a cluster this must be a folder every node can reach (see the Cluster page). Leave blank to use Matricxon's own default. Changing this does not move existing cache files; it takes effect at the next Matricxon start."
+                    class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+                </div>
+              </div>
+              <!-- Paths (above), memory and compute settings each in its own frame, as the GitHub install section; log level stays apart. -->
+              <div class="space-y-3 rounded-md border border-slate-800 bg-slate-950/40 px-3 py-3">
+                <h3 class="text-xs font-semibold text-slate-300">Memory</h3>
+                <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-slate-400 mb-1">Max loaded models</label>
+                  <input data-field="max_loaded_models" type="number" min="0" placeholder="2" title="Maximum number of models Matricxon keeps loaded in memory at the same time (default 2: the chat model plus the small embedding model used for document search, so searching documents doesn't unload the chat model). Leave blank for Matricxon's own default."
+                    class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-400 mb-1">Memory safety margin (optional)</label>
+                  <input data-field="memory_safety_margin" type="number" min="1.1" max="1.8" step="0.1" placeholder="1.2" title="How much headroom Matricxon requires beyond a model's exact memory footprint before allowing it to load (e.g. 1.2 = needs 1.2x the model's size free). Lower values allow loading larger models but risk swapping/OOM; must be between 1.1 and 1.8. Default 1.2 — leave blank for Matricxon's own default (also 1.2)."
+                    class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-400 mb-1">Keep model loaded for (minutes)</label>
+                  <input data-field="keep_alive_minutes" type="number" min="1" max="1440" placeholder="5" title="How long an idle model stays in memory before Matricxon unloads it. After that the next message reloads the model and re-processes the whole conversation (no cache). Longer keeps chats fast but holds the model's RAM while idle. 1 to 1440 (24 hours); leave blank for Matricxon's own default (5)."
+                    class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-400 mb-1">Cached conversations per model</label>
+                  <input data-field="prompt_cache_slots" type="number" min="1" max="64" placeholder="4" title="How many conversations' caches each loaded model keeps, so users sharing a model don't make each other re-read their whole chat history. Whichever of this or the memory budget is hit first drops the least recently used conversation. Leave blank for Matricxon's own default (4)."
+                    class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-400 mb-1">Cache memory budget (MB)</label>
+                  <input data-field="prompt_cache_budget_mb" type="number" min="64" max="1048576" placeholder="2048" title="Memory the cached conversations of one model may use together. Each cached conversation grows with its context length. Leave blank for Matricxon's own default (2048)."
+                    class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+                </div>
+                </div>
+              </div>
+              <div class="space-y-3 rounded-md border border-slate-800 bg-slate-950/40 px-3 py-3">
+                <h3 class="text-xs font-semibold text-slate-300">Compute</h3>
+                <div class="grid grid-cols-2 gap-3">
+                <!-- One combined control: the kernels choice matters only with quantized native compute on, so it sits beside that checkbox and is disabled while it's off (settings.js syncMatricxonKernelSelect). -->
+                <div class="col-span-2">
+                  <label class="block text-xs font-medium text-slate-400 mb-1">Quantized native compute</label>
+                  <div class="flex items-center gap-3 rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5">
+                    <label for="matricxon-quantized-native-compute" class="flex shrink-0 items-center gap-2 text-sm text-slate-300 cursor-pointer" title="Keeps quantized weights packed during generation instead of dequantizing them to bf16/float32 once at load time — much lower memory use. With the Numba kernels decode is much slower; with the native C kernels below (the default) it runs about as fast as the dequantized path. On by default, same as Matricxon's own MATRICXON_ENABLE_QUANTIZED_NATIVE_COMPUTE.">
+                      <input data-field="enable_quantized_native_compute" type="checkbox" id="matricxon-quantized-native-compute"
+                        class="rounded border-slate-700 bg-slate-950 text-brand-600 focus:ring-brand-500">
+                      Enabled
+                    </label>
+                    <span class="h-5 w-px shrink-0 bg-slate-700"></span>
+                    <span class="shrink-0 text-xs text-slate-500">Kernels</span>
+                    <select data-field="gemv_backend" title="Which kernels run the packed weights (only with quantized native compute on). Native: Matricxon's own C integer kernels, compiled with this machine's gcc on first start — about 5-10x faster than Numba per layer. Falls back to Numba automatically if there's no C compiler."
+                      class="min-w-0 flex-1 bg-transparent text-sm text-slate-100 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed">
+                      <option value="native">Native C (default, needs gcc)</option>
+                      <option value="numba">Numba (slower, no compiler needed)</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-span-2">
+                  <label class="block text-xs font-medium text-slate-400 mb-1">Compute device (experimental GPU)</label>
+                  <div class="flex items-center gap-3 rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5">
+                    <select data-field="device" title="Where Matricxon runs models. GPU mode is EXPERIMENTAL — it was written without GPU hardware and has not run on a real GPU yet. If the chosen GPU is not found Matricxon stops at startup (it never silently falls back to the CPU)."
+                      class="min-w-0 flex-1 bg-transparent text-sm text-slate-100 focus:outline-none">
+                      <option value="cpu">CPU (default)</option>
+                      <option value="cuda">CUDA GPU (experimental)</option>
+                      <option value="mps">Apple GPU / MPS (experimental)</option>
+                    </select>
+                    <span class="h-5 w-px shrink-0 bg-slate-700"></span>
+                    <span class="shrink-0 text-xs text-slate-500">GPU weights</span>
+                    <select data-field="gpu_weight_mode" title="Dequantized: weights are expanded to bf16/fp16 in VRAM — fastest, about 2 bytes of VRAM per parameter. Packed: quantized weights stay quantized in VRAM and are dequantized on every use — roughly 3-4x less VRAM for a 4-bit model, slower per token. Only applies with a GPU device."
+                      class="min-w-0 flex-1 bg-transparent text-sm text-slate-100 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed">
+                      <option value="dequantized">Dequantized (fast, more VRAM)</option>
+                      <option value="packed">Packed (less VRAM, slower)</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-400 mb-1">CPU threads (optional)</label>
+                  <input data-field="torch_threads" type="number" min="1" max="256" placeholder="all cores" title="How many CPU threads Matricxon uses for generation — both PyTorch and the native C kernels (MATRICXON_TORCH_THREADS). Fewer threads run cooler and leave the machine more responsive, at some cost in speed. Leave blank to use every core (Matricxon's own default)."
+                    class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-slate-400 mb-1">Concurrent replies per model</label>
+                  <input data-field="max_decode_batch" type="number" min="1" max="64" placeholder="8" title="How many replies run at the same time on one loaded model. Their generation steps are batched into one pass, so several users cost little more than one; more users than this wait in line. Leave blank for Matricxon's own default (8)."
+                    class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+                </div>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-medium text-slate-400 mb-1">Log level</label>
+                  <select data-field="log_level" title="0: warnings/errors only (Matricxon's own default). 1: coarse per-request pipeline milestones (model load, prompt build, each generated token, generation summary) and, when tools are on, the tool-use milestones (tools offered, stop token, tool calls parsed). 2: also adds a per-decoder-layer trace line for every forward pass, plus tool names and call arguments — very verbose."
+                    class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+                    <option value="0">0 — warnings/errors only</option>
+                    <option value="1">1 — pipeline milestones</option>
+                    <option value="2">2 — per-layer trace (verbose)</option>
+                  </select>
+                </div>
+              </div>
+              <button type="button" data-action="manual-path-entry-back"
+                class="hidden text-xs text-slate-500 hover:text-slate-300 underline underline-offset-2 transition-colors">
+                ← Back to installing from GitHub instead
+              </button>
+            </div>
+          </div>
+
+          <div data-mode-section="remote" class="hidden space-y-2">
+            <p class="text-xs text-slate-500" id="matricxon-hosts-hint">Up to 120 hosts — load-balanced across whichever is least busy.</p>
+            <!-- While cluster mode is on, settings_cluster_managed.js hides the editor and shows the nodes here. -->
+            <div id="matricxon-hosts-managed" class="hidden space-y-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-slate-400">
+              <p>Cluster mode is on: the nodes are managed on the Cluster page (add, remove, reset, voters).</p>
+              <ul id="matricxon-hosts-managed-list" class="font-mono text-slate-300"></ul>
+            </div>
+            <div data-field="remote-hosts-list" class="space-y-1.5"></div>
+            <button type="button" data-action="add-host" id="matricxon-add-host"
+              class="rounded-md border border-slate-700 px-2.5 py-1 text-xs text-slate-200 hover:bg-slate-800 transition-colors">
+              + Add host
+            </button>
+          </div>
+        </div>
+        <div data-field="actions-bar" class="hidden flex items-center gap-3">
+          <button type="button" data-action="start"
+            class="rounded-lg bg-[rgb(var(--solid-emerald))] px-4 py-2 text-sm font-medium text-white hover:bg-[rgb(var(--solid-emerald-hover))] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+            Start
+          </button>
+          <button type="button" data-action="stop"
+            class="rounded-lg bg-[rgb(var(--solid-rose))] px-4 py-2 text-sm font-medium text-white hover:bg-[rgb(var(--solid-rose-hover))] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+            Stop
+          </button>
+          <button type="button" data-action="save"
+            class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition-colors">
+            Save
+          </button>
+          <span data-field="status" class="text-xs text-slate-500"></span>
+        </div>
+      </section>

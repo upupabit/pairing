@@ -1,0 +1,181 @@
+{# Settings > Account tab (/settings only). #}
+    <!-- Account tab: for everyone, starting with your password, and room for more personal preferences. Saves inline (own status text), so no use for the shared save-bar. -->
+    <div id="tab-account" class="hidden mx-auto max-w-3xl px-4 py-8 space-y-8">
+      <section class="space-y-3">
+        <h2 class="text-sm font-semibold text-slate-200">Profile</h2>
+        <p class="text-xs text-slate-500 -mt-2">
+          Shown as a small round picture beside your messages in a channel. With no picture, your initials (or your
+          username's first letter) are shown instead.
+        </p>
+
+        <div class="flex items-center gap-4">
+          <div id="account-avatar-preview"
+            class="h-16 w-16 shrink-0 rounded-full bg-slate-800 flex items-center justify-center text-lg font-medium text-slate-300 overflow-hidden">
+          </div>
+          <div class="space-y-1.5">
+            <div class="flex items-center gap-2">
+              <label
+                class="cursor-pointer rounded-md border border-slate-700 px-2.5 py-1 text-xs text-slate-200 hover:bg-slate-800 transition-colors">
+                Upload picture
+                <input id="account-avatar-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp"
+                  class="hidden">
+              </label>
+              <button id="account-avatar-remove-btn" type="button"
+                class="hidden text-xs text-slate-500 hover:text-red-400 transition-colors">
+                Remove
+              </button>
+            </div>
+            <span id="account-avatar-status" class="text-xs text-slate-500"></span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 rounded-lg bg-slate-900 border border-slate-800 px-4 py-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">First name</label>
+            <input id="account-first-name" type="text" autocomplete="given-name"
+              class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-1">Last name</label>
+            <input id="account-last-name" type="text" autocomplete="family-name"
+              class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <button id="account-profile-save-btn" type="button"
+            class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition-colors">
+            Save profile
+          </button>
+          <span id="account-profile-status" class="text-xs text-slate-500"></span>
+        </div>
+      </section>
+
+      <section class="space-y-3">
+        <h2 class="text-sm font-semibold text-slate-200">Timezone</h2>
+        <p class="text-xs text-slate-500 -mt-2">
+          Message times in chats are shown in this timezone. New accounts start on UTC.
+        </p>
+        <div class="flex items-center gap-3 rounded-lg bg-slate-900 border border-slate-800 px-4 py-3">
+          <select id="account-timezone"
+            class="min-w-0 flex-1 rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500"></select>
+          <button id="account-timezone-detect-btn" type="button"
+            class="shrink-0 rounded-md border border-slate-700 px-2.5 py-1.5 text-xs text-slate-200 hover:bg-slate-800 transition-colors">
+            Use browser's
+          </button>
+        </div>
+        <div class="flex items-center gap-3">
+          <button id="account-timezone-save-btn" type="button"
+            class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition-colors">
+            Save timezone
+          </button>
+          <span id="account-timezone-status" class="text-xs text-slate-500"></span>
+        </div>
+      </section>
+
+      <section class="space-y-3">
+        <h2 class="text-sm font-semibold text-slate-200">Password</h2>
+        <p class="text-xs text-slate-500 -mt-2">Change the password for your own account, {{ username }}.</p>
+
+        <button id="account-password-toggle" type="button"
+          class="text-xs text-brand-500 hover:text-brand-400 transition-colors">
+          Update password
+        </button>
+
+        <div id="account-password-form" class="hidden space-y-3">
+          <div class="space-y-2 rounded-lg bg-slate-900 border border-slate-800 px-4 py-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Current password</label>
+              <input id="account-current-password" type="password" autocomplete="current-password"
+                class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">New password</label>
+              <input id="account-new-password" type="password" autocomplete="new-password"
+                class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-slate-400 mb-1">Confirm new password</label>
+              <input id="account-confirm-password" type="password" autocomplete="new-password"
+                class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <button id="account-password-save-btn" type="button"
+              class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition-colors">
+              Change password
+            </button>
+            <span id="account-password-status" class="text-xs text-slate-500"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="space-y-3">
+        <h2 class="text-sm font-semibold text-slate-200">Appearance</h2>
+        <p class="text-xs text-slate-500 -mt-2">
+          Only affects your own view — no one else's changes with yours.
+        </p>
+
+        <div class="rounded-lg bg-slate-900 border border-slate-800 px-4 py-3 space-y-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-400 mb-2">UI theme</label>
+            <div class="text-[11px] uppercase tracking-wide text-slate-500 mb-1.5">Dark</div>
+            <div id="ui-theme-dark-swatches" class="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-3">
+              {% for t in ui_themes if t.mode == "dark" %}
+              <button type="button" data-theme-id="{{ t.id }}" data-theme-swatch
+                class="ui-theme-swatch flex flex-col items-center gap-1 rounded-md border border-slate-700 px-2 py-2 hover:border-brand-500 transition-colors {{ "ring-2 ring-brand-500" if t.id == theme else "" }}">
+                <span class="flex h-6 w-6 rounded-full border border-white/10" style="background: {{ t.swatch_bg }}">
+                  <span class="m-auto h-2.5 w-2.5 rounded-full" style="background: {{ t.swatch_accent }}"></span>
+                </span>
+                <span class="text-[11px] text-slate-300">{{ t.label }}</span>
+              </button>
+              {% endfor %}
+            </div>
+            <div class="text-[11px] uppercase tracking-wide text-slate-500 mb-1.5">Light</div>
+            <div id="ui-theme-light-swatches" class="grid grid-cols-3 sm:grid-cols-5 gap-2">
+              {% for t in ui_themes if t.mode == "light" %}
+              <button type="button" data-theme-id="{{ t.id }}" data-theme-swatch
+                class="ui-theme-swatch flex flex-col items-center gap-1 rounded-md border border-slate-700 px-2 py-2 hover:border-brand-500 transition-colors {{ "ring-2 ring-brand-500" if t.id == theme else "" }}">
+                <span class="flex h-6 w-6 rounded-full border border-black/10" style="background: {{ t.swatch_bg }}">
+                  <span class="m-auto h-2.5 w-2.5 rounded-full" style="background: {{ t.swatch_accent }}"></span>
+                </span>
+                <span class="text-[11px] text-slate-300">{{ t.label }}</span>
+              </button>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="flex items-center gap-3 border-t border-slate-800 pt-3">
+            <button id="ui-theme-save-btn" type="button"
+              class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition-colors">
+              Save theme
+            </button>
+            <span id="ui-theme-status" class="text-xs text-slate-500"></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="space-y-3">
+        <h2 class="text-sm font-semibold text-slate-200">Rule notes</h2>
+        <p class="text-xs text-slate-500 -mt-2">
+          Only affects chats/channels you start from now on — never changes any conversation that
+          already exists. When off, a new chat's persona/rules/skill icons still show (faded) so
+          you can turn any one of them on for that specific chat.
+        </p>
+        <div class="rounded-lg bg-slate-900 border border-slate-800 px-4 py-3 flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <p class="text-sm text-slate-200">Add default notes to new chats/channels</p>
+            <p class="text-xs text-slate-500">Off by default — your saved persona/rules/skill notes won't be added automatically.</p>
+          </div>
+          <div class="flex items-center gap-3 shrink-0">
+            <span id="default-notes-enabled-status" class="text-xs text-slate-500"></span>
+            <label class="relative inline-flex items-center cursor-pointer" title="Add persona/rules/skill notes to new chats/channels by default">
+              <input type="checkbox" id="default-notes-enabled-toggle" class="peer sr-only">
+              <div class="h-6 w-11 rounded-full bg-slate-700 transition-colors peer-checked:bg-brand-600 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand-500"></div>
+              <div class="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5"></div>
+            </label>
+          </div>
+        </div>
+      </section>
+    </div>

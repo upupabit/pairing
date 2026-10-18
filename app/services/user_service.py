@@ -14,6 +14,7 @@ from app.services.auth_service import hash_password
 from app.services.model_catalog_service import get_default_model_for_new_users, installed_chat_models
 from app.services.note_service import seed_default_notes
 from app.services.settings_service import default_model_key
+from app.services.theme_service import start_ui_theme
 
 
 async def active_admin_count(db: AsyncSession, exclude_username: str | None = None) -> int:
@@ -58,6 +59,7 @@ async def create_user(db: AsyncSession, body: UserCreate) -> User:
     key = default_model_key(engine_service.current_engine())
     db.add(AppSetting(owner_id=user.id, key=key, value={"model": default_model}))
     await seed_default_notes(db, user)
+    start_ui_theme(db, user)
 
     await db.commit()
     await db.refresh(user)

@@ -53,10 +53,12 @@
   <link rel="stylesheet" href="/static/vendor/katex/katex.min.css">
   <script src="/static/vendor/katex/katex.min.js"></script>
 
-  <!-- Preloaded on every page (not only with a Nunito theme) so the first live preview of "Sunshine"/"Bubblegum" in Settings shows no fallback-font flash. -->
+  <!-- Preloaded on every page (not only with a Nunito theme) so the first live preview of "Bubblegum" in Settings shows no fallback-font flash. -->
   <link rel="preload" as="font" type="font/woff2" href="/static/vendor/fonts/nunito/Nunito-Variable-latin.woff2" crossorigin>
   <link rel="preload" as="font" type="font/woff2" href="/static/vendor/fonts/nunito/Nunito-Variable-latin-ext.woff2" crossorigin>
   <link rel="stylesheet" href="/static/css/themes.css?v={{ static_version }}">
+  <link rel="stylesheet" href="/static/css/themes_dark.css?v={{ static_version }}">
+  <link rel="stylesheet" href="/static/css/themes_light.css?v={{ static_version }}">
   <link rel="stylesheet" href="/static/css/style.css?v={{ static_version }}">
   {% block head %}{% endblock %}
 </head>

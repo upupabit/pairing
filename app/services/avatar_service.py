@@ -5,6 +5,7 @@ The initials fallback lives on User.initials/avatar_url; this module owns only t
 """
 
 import secrets
+import shutil
 from pathlib import Path
 
 from fastapi import HTTPException, UploadFile
@@ -14,6 +15,8 @@ from app.config import AVATARS_DIR, MAX_AVATAR_MB
 from app.models import User
 
 SUPPORTED_AVATAR_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
+# The starter admin's picture on a fresh install (avatars/ itself is not in git).
+DEFAULT_ADMIN_AVATAR = Path(__file__).resolve().parent.parent / "static" / "img" / "default_admin_avatar.png"
 
 
 async def save_avatar(db: AsyncSession, user: User, upload: UploadFile) -> User:
@@ -37,6 +40,15 @@ async def save_avatar(db: AsyncSession, user: User, upload: UploadFile) -> User:
     user.avatar_path = stored_name
     await db.commit()
     return user
+
+
+def give_default_avatar(user: User, source: Path = DEFAULT_ADMIN_AVATAR) -> None:
+    """Copies `source` as `user`'s picture, unless they have one. Needs `user.id`; the caller commits."""
+    if user.avatar_path or not source.is_file():
+        return
+    stored_name = f"{user.id}-{secrets.token_hex(4)}{source.suffix}"
+    shutil.copyfile(source, AVATARS_DIR / stored_name)
+    user.avatar_path = stored_name
 
 
 async def delete_avatar(user: User) -> None:

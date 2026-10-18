@@ -1,0 +1,164 @@
+{# Admin settings > System: chat titles, channel replies, context, timeouts, retention. #}
+      <section class="space-y-3">
+        <h2 class="text-sm font-semibold text-slate-200">Chat titles</h2>
+        <p class="text-xs text-slate-500 -mt-2">
+          How a brand-new chat's sidebar title is picked, for every user. "Simple" builds it
+          instantly from the first message itself, with no model call. "Smart" asks the model
+          to invent one instead — can read more naturally, at the cost of a second, slower
+          generation call after the reply.
+        </p>
+        <div class="rounded-lg bg-slate-900 border border-slate-800 px-4 py-3">
+          <select id="title-mode"
+            class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+            <option value="simple">Simple — instant, from the message text</option>
+            <option value="smart">Smart — ask the model to invent one</option>
+          </select>
+        </div>
+        <div class="flex items-center gap-3">
+          <button id="title-mode-save-btn" type="button"
+            class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition-colors">
+            Save
+          </button>
+          <span id="title-mode-status" class="text-xs text-slate-500"></span>
+        </div>
+      </section>
+
+      <section class="space-y-3">
+        <h2 class="text-sm font-semibold text-slate-200">Channel replies</h2>
+        <p class="text-xs text-slate-500 -mt-2">
+          How other members of a channel find out about a reply while they're sitting in
+          that chat. Either way, a reply now finishes and saves even if whoever sent it
+          navigates away mid-stream — this only affects who else finds out about it, and how.
+          "Cheap" has other members' tabs check back every few seconds — no extra server load
+          beyond that. "Real" pushes it to them live, token-by-token, but only reliably reaches
+          everyone when running as a single app instance (Admin settings &gt; System &gt; instance count).
+          The second setting is whether the model also reads the messages members post to the channel
+          without asking it, when it answers a later question: "Skip" keeps its prompt shorter and faster.
+        </p>
+        <div class="rounded-lg bg-slate-900 border border-slate-800 px-4 py-3 grid grid-cols-2 gap-3">
+          <label class="block">
+            <span class="text-xs text-slate-400">How members find out about a reply</span>
+            <select id="channel-delivery-mode"
+              class="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+              <option value="cheap">Cheap — other members poll every few seconds</option>
+              <option value="real">Real — pushed to other members live</option>
+            </select>
+          </label>
+          <label class="block">
+            <span class="text-xs text-slate-400">Messages posted without asking the AI</span>
+            <select id="channel-plain-messages"
+              class="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500"
+              title="Whether the model reads messages members post to the channel without asking it, when it answers a later question.">
+              <option value="include">Include — the model reads them</option>
+              <option value="skip">Skip — the model ignores them</option>
+            </select>
+          </label>
+        </div>
+        <div class="flex items-center gap-3">
+          <button id="channel-delivery-mode-save-btn" type="button"
+            class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition-colors">
+            Save
+          </button>
+          <span id="channel-delivery-mode-status" class="text-xs text-slate-500"></span>
+        </div>
+      </section>
+
+      <!-- Wired by app/static/js/settings_context_window.js. -->
+      <section id="context-window-section" class="space-y-3">
+        <h2 class="text-sm font-semibold text-slate-200">Context window</h2>
+        <p class="text-xs text-slate-500 -mt-2">
+          How many tokens one request may hold (the conversation so far plus the reply) — one value for every chat
+          and channel. Bigger lets long chats keep more history but uses more memory and makes every reply slower to
+          start. Applies from the next message; nothing needs a restart. Keep it within what your models support.
+        </p>
+        <div class="rounded-lg bg-slate-900 border border-slate-800 px-4 py-3">
+          <div class="flex items-center justify-between mb-1">
+            <label for="context-window-input" class="text-xs font-medium text-slate-300">Context window (tokens)</label>
+            <span id="context-window-value" class="text-xs font-mono text-slate-400">4096</span>
+          </div>
+          <input type="range" id="context-window-input" min="256" max="32768" step="256" value="4096" class="slim-slider slim-slider-ring block w-full">
+        </div>
+        <div class="flex items-center gap-3">
+          <button id="context-window-save-btn" type="button"
+            class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition-colors">
+            Save
+          </button>
+          <span id="context-window-status" class="text-xs text-slate-500"></span>
+        </div>
+      </section>
+
+      <section class="space-y-3">
+        <h2 class="text-sm font-semibold text-slate-200">Reply timeout</h2>
+        <p class="text-xs text-slate-500 -mt-2">
+          How long the app waits for a model to finish generating a text-only reply — personal
+          chat or channel alike — before giving up and marking it failed. A backstop
+          against a hung or pathologically slow request tying up resources indefinitely.
+          Set to 0 for no timeout, if this server's hardware genuinely needs longer than
+          any reasonable limit for one reply. A reply with an image attached uses the
+          separate, more generous timeout below instead.
+        </p>
+        <div class="rounded-lg bg-slate-900 border border-slate-800 px-4 py-3">
+          <input type="number" id="reply-timeout" min="0" max="3600" step="1"
+            class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500" />
+        </div>
+        <div class="flex items-center gap-3">
+          <button id="reply-timeout-save-btn" type="button"
+            class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition-colors">
+            Save
+          </button>
+          <span id="reply-timeout-status" class="text-xs text-slate-500"></span>
+        </div>
+      </section>
+
+      <section class="space-y-3">
+        <h2 class="text-sm font-semibold text-slate-200">Vision reply timeout</h2>
+        <p class="text-xs text-slate-500 -mt-2">
+          Same as Reply timeout above, but for a message with an image attached. Encoding
+          an image (before any reply text even starts streaming) is dramatically slower than
+          plain text on CPU-only hardware — confirmed to take several minutes on its own for
+          a single modest photo — so this needs real headroom of its own rather than sharing
+          the text timeout above. Set to 0 for no timeout.
+        </p>
+        <div class="rounded-lg bg-slate-900 border border-slate-800 px-4 py-3">
+          <input type="number" id="vision-reply-timeout" min="0" max="3600" step="1"
+            class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500" />
+        </div>
+        <div class="flex items-center gap-3">
+          <button id="vision-reply-timeout-save-btn" type="button"
+            class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition-colors">
+            Save
+          </button>
+          <span id="vision-reply-timeout-status" class="text-xs text-slate-500"></span>
+        </div>
+      </section>
+
+      <section class="space-y-3">
+        <h2 class="text-sm font-semibold text-slate-200">Data retention</h2>
+        <p class="text-xs text-slate-500 -mt-2">
+          How long the Stats page's Telemetry and System views keep their history before it's
+          swept away — see those pages for what each actually tracks. Kept small by default so
+          neither table grows unbounded over a long uptime; raise either if you want a longer
+          look-back window.
+        </p>
+        <div class="rounded-lg bg-slate-900 border border-slate-800 px-4 py-3 grid grid-cols-2 gap-3">
+          <label class="block">
+            <span class="text-xs text-slate-400">Telemetry, in days</span>
+            <input type="number" id="retention-telemetry-days" min="1" max="365" step="1"
+              class="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500" />
+          </label>
+          <label class="block">
+            <span class="text-xs text-slate-400">System (CPU/RAM/disk history), in days</span>
+            <input type="number" id="retention-system-metrics-days" min="1" max="365" step="1"
+              class="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500" />
+          </label>
+        </div>
+        <div class="flex items-center gap-3">
+          <button id="retention-save-btn" type="button"
+            class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition-colors">
+            Save
+          </button>
+          <span id="retention-status" class="text-xs text-slate-500"></span>
+        </div>
+      </section>
+
+      {% include "_mcp_global_switch.html" %}

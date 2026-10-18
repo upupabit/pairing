@@ -1,0 +1,176 @@
+/* Dark themes; tokens explained in themes.css. */
+
+[data-theme="midnight"] {
+  --font-sans: var(--font-sans-system);
+  --color-slate-50: 248 250 252;
+  --color-slate-100: 241 245 249;
+  --color-slate-200: 226 232 240;
+  --color-slate-300: 203 213 225;
+  --color-slate-400: 148 163 184;
+  --color-slate-500: 100 116 139;
+  --color-slate-600: 71 85 105;
+  --color-slate-700: 51 65 85;
+  --color-slate-800: 30 41 59;
+  --color-slate-900: 15 23 42;
+  --color-slate-950: 2 6 23;
+  --color-brand-50: 242 247 255;
+  --color-brand-100: 230 239 255;
+  --color-brand-200: 194 217 255;
+  --color-brand-300: 157 194 255;
+  --color-brand-400: 83 149 255;
+  --color-brand-500: 10 104 255;
+  --color-brand-600: 9 84 204;
+  --color-brand-700: 7 63 153;
+  --color-brand-800: 5 42 102;
+  --color-brand-900: 3 21 51;
+  --color-brand-950: 2 12 31;
+  --chart-1: 56 189 248;
+  --chart-2: 167 139 250;
+  --chart-3: 251 146 60;
+  --chart-4: 52 211 153;
+  --chart-5: 244 114 182;
+  --chart-6: 250 204 21;
+  --chart-7: 251 191 36;
+  --chart-8: 251 113 133;
+  --chart-9: 248 113 113;
+}
+
+[data-theme="nord"] {
+  --font-sans: var(--font-sans-system);
+  --color-slate-50: 249 250 251;
+  --color-slate-100: 240 242 244;
+  --color-slate-200: 222 225 231;
+  --color-slate-300: 196 201 212;
+  --color-slate-400: 151 161 180;
+  --color-slate-500: 101 113 139;
+  --color-slate-600: 77 87 106;
+  --color-slate-700: 58 65 80;
+  --color-slate-800: 41 46 56;
+  --color-slate-900: 28 31 38;
+  --color-slate-950: 15 17 21;
+  --color-brand-50: 240 247 249;
+  --color-brand-100: 222 238 242;
+  --color-brand-200: 189 220 229;
+  --color-brand-300: 153 201 214;
+  --color-brand-400: 109 178 197;
+  --color-brand-500: 73 159 182;
+  --color-brand-600: 60 130 150;
+  --color-brand-700: 48 105 120;
+  --color-brand-800: 36 79 91;
+  --color-brand-900: 26 57 66;
+  --color-brand-950: 15 32 36;
+  --chart-1: 83 201 234;
+  --chart-2: 128 83 234;
+  --chart-3: 83 130 234;
+  --chart-4: 234 83 151;
+  --chart-5: 83 234 191;
+  --chart-6: 83 88 234;
+  --chart-7: 83 181 234;
+  --chart-8: 83 234 221;
+  --chart-9: 83 234 115;
+}
+
+[data-theme="monokai"] {
+  --font-sans: var(--font-sans-system);
+  --color-slate-50: 250 250 249;
+  --color-slate-100: 243 243 241;
+  --color-slate-200: 228 229 225;
+  --color-slate-300: 207 208 200;
+  --color-slate-400: 171 173 159;
+  --color-slate-500: 126 129 110;
+  --color-slate-600: 97 99 84;
+  --color-slate-700: 73 74 63;
+  --color-slate-800: 51 52 45;
+  --color-slate-900: 35 36 30;
+  --color-slate-950: 19 19 16;
+  --color-brand-50: 254 235 242;
+  --color-brand-100: 254 210 226;
+  --color-brand-200: 253 165 197;
+  --color-brand-300: 251 116 166;
+  --color-brand-400: 250 56 127;
+  --color-brand-500: 249 6 95;
+  --color-brand-600: 204 5 78;
+  --color-brand-700: 164 4 63;
+  --color-brand-800: 124 3 48;
+  --color-brand-900: 90 2 34;
+  --color-brand-950: 50 1 19;
+  --chart-1: 234 83 138;
+  --chart-2: 234 191 83;
+  --chart-3: 234 98 83;
+  --chart-4: 88 234 83;
+  --chart-5: 234 83 214;
+  --chart-6: 234 140 83;
+  --chart-7: 234 83 118;
+  --chart-8: 234 83 183;
+  --chart-9: 178 83 234;
+}
+
+[data-theme="forest-dusk"] {
+  --font-sans: var(--font-sans-system);
+  --color-slate-50: 249 251 250;
+  --color-slate-100: 240 245 243;
+  --color-slate-200: 221 233 229;
+  --color-slate-300: 194 214 207;
+  --color-slate-400: 148 184 172;
+  --color-slate-500: 96 144 128;
+  --color-slate-600: 73 110 98;
+  --color-slate-700: 55 83 73;
+  --color-slate-800: 39 58 52;
+  --color-slate-900: 27 40 35;
+  --color-slate-950: 14 21 19;
+  --color-brand-50: 246 251 239;
+  --color-brand-100: 235 246 218;
+  --color-brand-200: 215 237 182;
+  --color-brand-300: 192 226 141;
+  --color-brand-400: 165 214 92;
+  --color-brand-500: 143 204 51;
+  --color-brand-600: 117 167 42;
+  --color-brand-700: 94 135 34;
+  --color-brand-800: 71 102 25;
+  --color-brand-900: 51 73 18;
+  --color-brand-950: 29 41 10;
+  --chart-1: 173 234 83;
+  --chart-2: 83 234 156;
+  --chart-3: 103 234 83;
+  --chart-4: 83 123 234;
+  --chart-5: 234 219 83;
+  --chart-6: 83 234 105;
+  --chart-7: 153 234 83;
+  --chart-8: 219 234 83;
+  --chart-9: 234 143 83;
+}
+
+[data-theme="ember"] {
+  --font-sans: var(--font-sans-system);
+  --color-slate-50: 251 249 249;
+  --color-slate-100: 245 241 239;
+  --color-slate-200: 234 225 220;
+  --color-slate-300: 217 200 191;
+  --color-slate-400: 188 158 143;
+  --color-slate-500: 150 110 90;
+  --color-slate-600: 115 84 69;
+  --color-slate-700: 86 63 52;
+  --color-slate-800: 61 44 36;
+  --color-slate-900: 41 30 25;
+  --color-slate-950: 22 16 13;
+  --color-brand-50: 254 241 236;
+  --color-brand-100: 253 222 211;
+  --color-brand-200: 250 190 168;
+  --color-brand-300: 248 154 119;
+  --color-brand-400: 245 110 61;
+  --color-brand-500: 242 74 13;
+  --color-brand-600: 199 61 10;
+  --color-brand-700: 160 49 8;
+  --color-brand-800: 121 37 6;
+  --color-brand-900: 87 27 5;
+  --color-brand-950: 48 15 3;
+  --chart-1: 234 123 83;
+  --chart-2: 181 234 83;
+  --chart-3: 234 193 83;
+  --chart-4: 83 234 173;
+  --chart-5: 234 83 118;
+  --chart-6: 231 234 83;
+  --chart-7: 234 143 83;
+  --chart-8: 234 83 88;
+  --chart-9: 234 83 193;
+}

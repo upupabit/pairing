@@ -1637,10 +1637,11 @@ function updateSaveBarVisibility() {
 function activateTab(name) {
   for (const btn of tabButtons) {
     const active = btn.dataset.tab === name;
-    btn.classList.toggle("border-brand-500", active);
+    // Same look as stats.js activateStatsView.
+    btn.classList.toggle("bg-slate-800", active);
     btn.classList.toggle("text-slate-100", active);
-    btn.classList.toggle("border-transparent", !active);
-    btn.classList.toggle("text-slate-500", !active);
+    btn.classList.toggle("text-slate-300", !active);
+    btn.classList.toggle("hover:bg-slate-800", !active);
   }
   for (const id of TAB_CONTENT_IDS) {
     const el = document.getElementById(`tab-${id}`);
@@ -3644,7 +3645,7 @@ const createUserBtn = document.getElementById("create-user-btn");
 /* Renders one row of the Users list: a compact "view" state (username, role, status, Edit button) that swaps into an inline form (password/role/status) on Edit, as the app has no modals. */
 function renderUserRow(user) {
   const row = document.createElement("div");
-  row.className = "px-4 py-2.5";
+  row.className = "rounded-lg bg-slate-900 border border-slate-800 px-4 py-2.5";
 
   const userChrome = () => [addUserBtn, document.getElementById("system-user-pagination")];
 

@@ -18,6 +18,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import User
+from app.services.avatar_service import give_default_avatar
+from app.services.theme_service import start_ui_theme
 
 # Login throttling: in-memory client IP -> recent failure timestamps. Resets on restart and is not shared
 # across workers; fine for single-server use.
@@ -146,14 +148,16 @@ async def seed_default_users(db: AsyncSession) -> User:
     """
     existing = (await db.execute(select(User).where(User.username == "admin"))).scalar_one_or_none()
     if existing is None:
-        db.add(
-            User(
-                username="admin",
-                password_hash=hash_password("admin"),
-                role="admin",
-                first_name="Admin",
-                last_name="Demo",
-            )
+        admin = User(
+            username="admin",
+            password_hash=hash_password("admin"),
+            role="admin",
+            first_name="Admin",
+            last_name="Demo",
         )
+        db.add(admin)
+        await db.flush()  # gives admin.id, which names the picture file
+        give_default_avatar(admin)
+        start_ui_theme(db, admin)
         await db.commit()
     return (await db.execute(select(User).where(User.username == "admin"))).scalar_one()

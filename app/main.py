@@ -13,6 +13,7 @@ from app.config import (
     BASE_DIR,
     INSTANCE_INDEX,
     SECRET_KEY,
+    SESSION_COOKIE_NAME,
     SESSION_COOKIE_SECURE,
 )
 from app.routers import (
@@ -89,7 +90,11 @@ class InstanceIndexHeaderMiddleware:
 
 # Signed session cookie for login (app/services/auth_service.py, app/routers/auth.py); register before
 # any route reading request.session. https_only defaults to False (see SESSION_COOKIE_SECURE).
-app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, https_only=SESSION_COOKIE_SECURE)
+# Its own cookie name: browsers share cookies across ports, so another app on the same host using the default
+# "session" cookie (e.g. piebytes) would overwrite this login. All instances behind the load balancer share it.
+app.add_middleware(
+    SessionMiddleware, secret_key=SECRET_KEY, https_only=SESSION_COOKIE_SECURE, session_cookie=SESSION_COOKIE_NAME
+)
 
 # Starlette makes the last-registered middleware outermost. These two come after SessionMiddleware so a
 # proxied request never touches this process's session (the target decodes the shared cookie, see instance_proxy.py).

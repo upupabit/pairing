@@ -2148,8 +2148,10 @@ function collectServerConfig(server, section) {
   };
   // Local-mode-only fields live in inputs that stay in the DOM, hidden (applyServerVisibility), after switching to
   // remote; reading them would resend a stale local value (e.g. models_path) on every remote-mode Save, which reapplies
-  // if the admin switches back. So they are nulled/defaulted in remote mode.
+  // if the admin switches back. So in remote mode they are sent back as last saved (kept), never cleared: clearing
+  // them lost the admin's settings, e.g. keep-alive, the next time the engine went back to local.
   const isRemote = base.mode === "remote";
+  const kept = (field, fallback = null) => (section.loadedConfig ?? {})[field] ?? fallback;
   // models_path is the exception: the remote engine manages its own storage (downloads go through its API), but the
   // saved local path is kept so switching back to local still finds the models.
   const keptModelsPath = () => section.querySelector('[data-field="models_path"]').dataset.loadedValue || null;
@@ -2157,18 +2159,18 @@ function collectServerConfig(server, section) {
   if (server === "ollama") {
     return {
       ...base,
-      binary_path: isRemote ? null : section.querySelector('[data-field="binary_path"]').value.trim() || null,
+      binary_path: isRemote ? kept("binary_path") : section.querySelector('[data-field="binary_path"]').value.trim() || null,
       models_path: isRemote ? keptModelsPath() : section.querySelector('[data-field="models_path"]').value.trim() || null,
-      num_parallel: isRemote ? null : intFieldOrNull(section, "num_parallel"),
-      keep_alive: isRemote ? null : section.querySelector('[data-field="keep_alive"]').value.trim() || null,
-      max_loaded_models: isRemote ? null : intFieldOrNull(section, "max_loaded_models"),
-      context_length: isRemote ? null : intFieldOrNull(section, "context_length"),
+      num_parallel: isRemote ? kept("num_parallel") : intFieldOrNull(section, "num_parallel"),
+      keep_alive: isRemote ? kept("keep_alive") : section.querySelector('[data-field="keep_alive"]').value.trim() || null,
+      max_loaded_models: isRemote ? kept("max_loaded_models") : intFieldOrNull(section, "max_loaded_models"),
+      context_length: isRemote ? kept("context_length") : intFieldOrNull(section, "context_length"),
     };
   }
   if (server === "matricxon") {
     return {
       ...base,
-      project_dir: isRemote ? null : section.querySelector('[data-field="project_dir"]').value.trim() || null,
+      project_dir: isRemote ? kept("project_dir") : section.querySelector('[data-field="project_dir"]').value.trim() || null,
       models_path: isRemote ? keptModelsPath() : section.querySelector('[data-field="models_path"]').value.trim() || null,
       prompt_cache_path: isRemote
         ? keptCachePath()
@@ -2176,19 +2178,20 @@ function collectServerConfig(server, section) {
       // Not editable here (the Cluster page owns it) but must be sent back as loaded, or every Save would reset cluster
       // mode to "off".
       cluster_role: section.dataset.clusterRole || "off",
-      max_loaded_models: isRemote ? null : intFieldOrNull(section, "max_loaded_models"),
-      keep_alive_minutes: isRemote ? null : intFieldOrNull(section, "keep_alive_minutes"),
-      prompt_cache_slots: isRemote ? null : intFieldOrNull(section, "prompt_cache_slots"),
-      prompt_cache_budget_mb: isRemote ? null : intFieldOrNull(section, "prompt_cache_budget_mb"),
-      max_decode_batch: isRemote ? null : intFieldOrNull(section, "max_decode_batch"),
-      memory_safety_margin: isRemote ? null : floatFieldOrNull(section, "memory_safety_margin"),
-      log_level: isRemote ? 0 : parseInt(section.querySelector('[data-field="log_level"]').value, 10),
-      enable_quantized_native_compute:
-        isRemote || section.querySelector('[data-field="enable_quantized_native_compute"]').checked,
-      gemv_backend: isRemote ? "native" : section.querySelector('[data-field="gemv_backend"]').value,
-      torch_threads: isRemote ? null : intFieldOrNull(section, "torch_threads"),
-      device: isRemote ? "cpu" : matricxonDeviceValue(section),
-      gpu_weight_mode: isRemote ? "dequantized" : section.querySelector('[data-field="gpu_weight_mode"]').value,
+      max_loaded_models: isRemote ? kept("max_loaded_models") : intFieldOrNull(section, "max_loaded_models"),
+      keep_alive_minutes: isRemote ? kept("keep_alive_minutes") : intFieldOrNull(section, "keep_alive_minutes"),
+      prompt_cache_slots: isRemote ? kept("prompt_cache_slots") : intFieldOrNull(section, "prompt_cache_slots"),
+      prompt_cache_budget_mb: isRemote ? kept("prompt_cache_budget_mb") : intFieldOrNull(section, "prompt_cache_budget_mb"),
+      max_decode_batch: isRemote ? kept("max_decode_batch") : intFieldOrNull(section, "max_decode_batch"),
+      memory_safety_margin: isRemote ? kept("memory_safety_margin") : floatFieldOrNull(section, "memory_safety_margin"),
+      log_level: isRemote ? kept("log_level", 0) : parseInt(section.querySelector('[data-field="log_level"]').value, 10),
+      enable_quantized_native_compute: isRemote
+        ? kept("enable_quantized_native_compute", true)
+        : section.querySelector('[data-field="enable_quantized_native_compute"]').checked,
+      gemv_backend: isRemote ? kept("gemv_backend", "native") : section.querySelector('[data-field="gemv_backend"]').value,
+      torch_threads: isRemote ? kept("torch_threads") : intFieldOrNull(section, "torch_threads"),
+      device: isRemote ? kept("device", "cpu") : matricxonDeviceValue(section),
+      gpu_weight_mode: isRemote ? kept("gpu_weight_mode", "dequantized") : section.querySelector('[data-field="gpu_weight_mode"]').value,
     };
   }
   if (server === "sdcpp") {
@@ -2256,6 +2259,8 @@ async function loadServerSection(server) {
   );
   section.querySelector('[data-field="mode"]').value = config.mode;
   section.dataset.loadedMode = config.mode;
+  // As saved, for collectServerConfig: a remote-mode Save sends the local-only settings back unchanged.
+  section.loadedConfig = config;
   renderInstallSource(section, config, installDefaults);
 
   if (server === "ollama") {

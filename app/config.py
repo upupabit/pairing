@@ -61,6 +61,8 @@ if not SECRET_KEY:
 
 # Marks the session cookie Secure. Off by default so plain-HTTP local setups work; set
 # SESSION_COOKIE_SECURE=true under HTTPS, or the cookie is sent in cleartext.
+# The login cookie's name; distinct from Starlette's default "session" so other apps on the same host don't clash.
+SESSION_COOKIE_NAME = "pairing_session"
 SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "false").strip().lower() == "true"
 if not SESSION_COOKIE_SECURE:
     logging.getLogger("llama_chat").warning(

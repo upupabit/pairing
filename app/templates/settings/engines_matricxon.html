@@ -197,7 +197,9 @@
                 </div>
                 </div>
               </div>
-              <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-3 rounded-md border border-slate-800 bg-slate-950/40 px-3 py-3">
+                <h3 class="text-xs font-semibold text-slate-300">Logging</h3>
+                <div class="grid grid-cols-2 gap-3">
                 <div>
                   <label class="block text-xs font-medium text-slate-400 mb-1">Log level</label>
                   <select data-field="log_level" title="0: warnings/errors only (Matricxon's own default). 1: coarse per-request pipeline milestones (model load, prompt build, each generated token, generation summary) and, when tools are on, the tool-use milestones (tools offered, stop token, tool calls parsed). 2: also adds a per-decoder-layer trace line for every forward pass, plus tool names and call arguments — very verbose."
@@ -206,6 +208,7 @@
                     <option value="1">1 — pipeline milestones</option>
                     <option value="2">2 — per-layer trace (verbose)</option>
                   </select>
+                </div>
                 </div>
               </div>
               <button type="button" data-action="manual-path-entry-back"
@@ -228,7 +231,7 @@
               + Add host
             </button>
           </div>
-          <div data-field="actions-bar" class="hidden flex items-center gap-3 border-t border-slate-800 pt-3">
+          <div data-field="actions-bar" class="hidden flex items-center gap-3 border-t border-slate-800 px-3 pt-3">
             <button type="button" data-action="start"
               class="rounded-lg bg-[rgb(var(--solid-emerald))] px-4 py-2 text-sm font-medium text-white hover:bg-[rgb(var(--solid-emerald-hover))] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
               Start

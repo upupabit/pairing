@@ -153,12 +153,13 @@
                       <option value="native">Native C (default, needs gcc)</option>
                       <option value="numba">Numba (slower, no compiler needed)</option>
                     </select>
+                    <span class="h-5 w-px shrink-0 bg-slate-700"></span>
+                    <label for="matricxon-wide-simd" class="flex shrink-0 items-center gap-2 text-sm text-slate-300 cursor-pointer has-[:disabled]:opacity-40 has-[:disabled]:cursor-not-allowed" title="EXPERIMENTAL, not yet tested on such hardware: lets the native C kernels use wider integer instructions where this CPU has them (AVX2, AVX-VNNI / AVX-512 VNNI on x86, the dot-product instructions on ARM such as Apple Silicon). The results are the same; the speed should be higher on those CPUs. Older CPUs without them are unaffected. Needs a Matricxon restart (it rebuilds the kernels).">
+                      <input data-field="wide_simd" type="checkbox" id="matricxon-wide-simd"
+                        class="rounded border-slate-700 bg-slate-950 text-brand-600 focus:ring-brand-500">
+                      Wide SIMD
+                    </label>
                   </div>
-                  <label for="matricxon-wide-simd" class="mt-1.5 flex items-center gap-2 text-xs text-slate-400 cursor-pointer" title="EXPERIMENTAL, not yet tested on such hardware: lets the native C kernels use wider integer instructions where this CPU has them (AVX2, AVX-VNNI / AVX-512 VNNI on x86, the dot-product instructions on ARM such as Apple Silicon). The results are the same; the speed should be higher on those CPUs. Older CPUs without them are unaffected. Needs a Matricxon restart (it rebuilds the kernels).">
-                    <input data-field="wide_simd" type="checkbox" id="matricxon-wide-simd"
-                      class="rounded border-slate-700 bg-slate-950 text-brand-600 focus:ring-brand-500 disabled:opacity-40">
-                    Wider CPU instructions (AVX2 / VNNI / ARM dot product, experimental)
-                  </label>
                 </div>
                 <div class="col-span-2">
                   <label class="block text-xs font-medium text-slate-400 mb-1">Compute device (experimental GPU)</label>
@@ -173,15 +174,16 @@
                     <span class="shrink-0 text-xs text-slate-500">GPU weights</span>
                     <select data-field="gpu_weight_mode" title="Dequantized: weights are expanded to bf16/fp16 in VRAM — fastest, about 2 bytes of VRAM per parameter. Packed: quantized weights stay quantized in VRAM and are dequantized on every use — roughly 3-4x less VRAM for a 4-bit model, slower per token. Only applies with a GPU device."
                       class="min-w-0 flex-1 bg-transparent text-sm text-slate-100 focus:outline-none disabled:opacity-40 disabled:cursor-not-allowed">
-                      <option value="dequantized">Dequantized (fast, more VRAM)</option>
-                      <option value="packed">Packed (less VRAM, slower)</option>
+                      <option value="dequantized">Dequantized (fast)</option>
+                      <option value="packed">Packed (less VRAM)</option>
                     </select>
+                    <span class="h-5 w-px shrink-0 bg-slate-700"></span>
+                    <label for="matricxon-gpu-fused-kernels" class="flex shrink-0 items-center gap-2 text-sm text-slate-300 cursor-pointer has-[:disabled]:opacity-40 has-[:disabled]:cursor-not-allowed" title="EXPERIMENTAL, not yet run on a real GPU: with packed GPU weights, multiplies Q8_0 and Q4_K weights in one fused Triton kernel while generating, instead of dequantizing them on every call — less memory traffic, so faster per token. Other quantization types and long prompts keep the current path. Needs a Matricxon restart.">
+                      <input data-field="gpu_fused_kernels" type="checkbox" id="matricxon-gpu-fused-kernels"
+                        class="rounded border-slate-700 bg-slate-950 text-brand-600 focus:ring-brand-500">
+                      Fused kernels
+                    </label>
                   </div>
-                  <label for="matricxon-gpu-fused-kernels" class="mt-1.5 flex items-center gap-2 text-xs text-slate-400 cursor-pointer" title="EXPERIMENTAL, not yet run on a real GPU: with packed GPU weights, multiplies Q8_0 and Q4_K weights in one fused Triton kernel while generating, instead of dequantizing them on every call — less memory traffic, so faster per token. Other quantization types and long prompts keep the current path. Needs a Matricxon restart.">
-                    <input data-field="gpu_fused_kernels" type="checkbox" id="matricxon-gpu-fused-kernels"
-                      class="rounded border-slate-700 bg-slate-950 text-brand-600 focus:ring-brand-500 disabled:opacity-40">
-                    Fused GPU kernels for packed weights (Q8_0 / Q4_K, experimental)
-                  </label>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-slate-400 mb-1">CPU threads (optional)</label>

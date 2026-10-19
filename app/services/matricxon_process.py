@@ -136,6 +136,8 @@ def _build_env(config: MatricxonServerConfig, proxy_url: str | None = None) -> d
         env["MATRICXON_TORCH_THREADS"] = str(config.torch_threads)
     env["MATRICXON_ENABLE_QUANTIZED_NATIVE_COMPUTE"] = "true" if config.enable_quantized_native_compute else "false"
     env["MATRICXON_GEMV_BACKEND"] = config.gemv_backend
+    env["MATRICXON_WIDE_SIMD"] = "true" if config.wide_simd else "false"
+    env["MATRICXON_GPU_FUSED_KERNELS"] = "true" if config.gpu_fused_kernels else "false"
     env["MATRICXON_DEVICE"] = config.device
     env["MATRICXON_GPU_WEIGHT_MODE"] = config.gpu_weight_mode
     env["MATRICXON_LOG_LEVEL"] = str(config.log_level)
@@ -180,6 +182,8 @@ def write_env_file(config: MatricxonServerConfig) -> None:
             ),
             "MATRICXON_ENABLE_QUANTIZED_NATIVE_COMPUTE": "true" if config.enable_quantized_native_compute else "false",
             "MATRICXON_GEMV_BACKEND": config.gemv_backend,
+            "MATRICXON_WIDE_SIMD": "true" if config.wide_simd else "false",
+            "MATRICXON_GPU_FUSED_KERNELS": "true" if config.gpu_fused_kernels else "false",
             "MATRICXON_TORCH_THREADS": str(config.torch_threads) if config.torch_threads is not None else None,
             "MATRICXON_DEVICE": config.device,
             "MATRICXON_GPU_WEIGHT_MODE": config.gpu_weight_mode,

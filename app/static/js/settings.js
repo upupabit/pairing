@@ -2193,6 +2193,10 @@ function collectServerConfig(server, section) {
       torch_threads: isRemote ? kept("torch_threads") : intFieldOrNull(section, "torch_threads"),
       device: isRemote ? kept("device", "cpu") : matricxonDeviceValue(section),
       gpu_weight_mode: isRemote ? kept("gpu_weight_mode", "dequantized") : section.querySelector('[data-field="gpu_weight_mode"]').value,
+      wide_simd: isRemote ? kept("wide_simd", false) : section.querySelector('[data-field="wide_simd"]').checked,
+      gpu_fused_kernels: isRemote
+        ? kept("gpu_fused_kernels", false)
+        : section.querySelector('[data-field="gpu_fused_kernels"]').checked,
     };
   }
   if (server === "sdcpp") {
@@ -2311,6 +2315,8 @@ async function loadServerSection(server) {
     const device = config.device ?? "cpu";
     section.querySelector('[data-field="device"]').value = device.startsWith("cuda") ? "cuda" : device === "mps" ? "mps" : "cpu";
     section.querySelector('[data-field="gpu_weight_mode"]').value = config.gpu_weight_mode ?? "dequantized";
+    section.querySelector('[data-field="wide_simd"]').checked = config.wide_simd ?? false;
+    section.querySelector('[data-field="gpu_fused_kernels"]').checked = config.gpu_fused_kernels ?? false;
     syncMatricxonKernelSelect(section);
   } else if (server === "sdcpp") {
     section.querySelector('[data-field="binary_path"]').value = config.binary_path ?? "";
@@ -4197,10 +4203,16 @@ function syncMatricxonKernelSelect(section) {
   const device = section.querySelector('[data-field="device"]');
   const weights = section.querySelector('[data-field="gpu_weight_mode"]');
   if (device && weights) weights.disabled = device.value === "cpu";
+  // Wider CPU instructions only matter for the native kernels; fused GPU kernels only for packed GPU weights.
+  const wide = section.querySelector('[data-field="wide_simd"]');
+  if (wide && checkbox && select) wide.disabled = !checkbox.checked || select.value !== "native";
+  const fused = section.querySelector('[data-field="gpu_fused_kernels"]');
+  if (fused && device && weights) fused.disabled = device.value === "cpu" || weights.value !== "packed";
 }
 
 document.addEventListener("change", (event) => {
-  if (event.target.matches('[data-field="enable_quantized_native_compute"], [data-field="device"]')) {
+  const syncs = '[data-field="enable_quantized_native_compute"], [data-field="device"], [data-field="gemv_backend"], [data-field="gpu_weight_mode"]';
+  if (event.target.matches(syncs)) {
     syncMatricxonKernelSelect(event.target.closest("[data-server]") || document);
   }
 });

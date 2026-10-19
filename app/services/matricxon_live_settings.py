@@ -17,6 +17,8 @@ RESTART_FIELDS = {
     "cluster_role": "Cluster mode",
     "device": "Compute device",
     "torch_threads": "CPU threads",
+    "wide_simd": "Wider CPU instructions",
+    "gpu_fused_kernels": "Fused GPU kernels",
 }
 
 # Changed live. pAIring field -> Matricxon runtime-settings field.

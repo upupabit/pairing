@@ -154,6 +154,11 @@
                       <option value="numba">Numba (slower, no compiler needed)</option>
                     </select>
                   </div>
+                  <label for="matricxon-wide-simd" class="mt-1.5 flex items-center gap-2 text-xs text-slate-400 cursor-pointer" title="EXPERIMENTAL, not yet tested on such hardware: lets the native C kernels use wider integer instructions where this CPU has them (AVX2, AVX-VNNI / AVX-512 VNNI on x86, the dot-product instructions on ARM such as Apple Silicon). The results are the same; the speed should be higher on those CPUs. Older CPUs without them are unaffected. Needs a Matricxon restart (it rebuilds the kernels).">
+                    <input data-field="wide_simd" type="checkbox" id="matricxon-wide-simd"
+                      class="rounded border-slate-700 bg-slate-950 text-brand-600 focus:ring-brand-500 disabled:opacity-40">
+                    Wider CPU instructions (AVX2 / VNNI / ARM dot product, experimental)
+                  </label>
                 </div>
                 <div class="col-span-2">
                   <label class="block text-xs font-medium text-slate-400 mb-1">Compute device (experimental GPU)</label>
@@ -172,6 +177,11 @@
                       <option value="packed">Packed (less VRAM, slower)</option>
                     </select>
                   </div>
+                  <label for="matricxon-gpu-fused-kernels" class="mt-1.5 flex items-center gap-2 text-xs text-slate-400 cursor-pointer" title="EXPERIMENTAL, not yet run on a real GPU: with packed GPU weights, multiplies Q8_0 and Q4_K weights in one fused Triton kernel while generating, instead of dequantizing them on every call — less memory traffic, so faster per token. Other quantization types and long prompts keep the current path. Needs a Matricxon restart.">
+                    <input data-field="gpu_fused_kernels" type="checkbox" id="matricxon-gpu-fused-kernels"
+                      class="rounded border-slate-700 bg-slate-950 text-brand-600 focus:ring-brand-500 disabled:opacity-40">
+                    Fused GPU kernels for packed weights (Q8_0 / Q4_K, experimental)
+                  </label>
                 </div>
                 <div>
                   <label class="block text-xs font-medium text-slate-400 mb-1">CPU threads (optional)</label>

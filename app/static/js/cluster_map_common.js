@@ -16,7 +16,9 @@ function mapNodeColor(node) {
   if (node.badges.includes("not in cluster")) return MAP_OUTSIDE_COLOR;
   return MAP_STATUS_COLOR[node.status] || MAP_STATUS_COLOR.down;
 }
-const MAP_LEADER_COLOR = "#f8fafc"; // not amber: amber already means "needs attention"
+// The theme's strongest text color (near-white on dark themes, near-black on light ones), so the leader stands out on
+// any background. Not amber: amber already means "needs attention".
+const MAP_LEADER_COLOR = `rgb(${getComputedStyle(document.documentElement).getPropertyValue("--color-slate-50").trim() || "248 250 252"})`;
 const MAP_BADGE_COLOR = { leader: MAP_LEADER_COLOR, voter: "#38bdf8", seed: "#22c55e", joiner: "#2dd4bf", active: "#94a3b8", learner: "#64748b", pulls: "#a78bfa", cleans: "#f472b6", "no quorum": "#ef4444", "voter only": "#c084fc", "not in cluster": "#f59e0b" };
 const SVG_NS = "http://www.w3.org/2000/svg";
 

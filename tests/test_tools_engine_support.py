@@ -30,6 +30,9 @@ def test_only_the_local_engines_pass_tools():
         "groq": False,
         "nvidia": False,
         "cohere": False,
+        "azure": False,
+        "vertex": False,
+        "bedrock": False,
     }
 
 

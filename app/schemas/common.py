@@ -26,6 +26,9 @@ EngineName = Literal[
     "groq",
     "nvidia",
     "cohere",
+    "azure",
+    "vertex",
+    "bedrock",
 ]
 
 # Single source for "no engine chosen yet", used by ActiveEngineConfig and engine_service.DEFAULT_ENGINE.

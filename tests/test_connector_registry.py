@@ -12,6 +12,9 @@ def test_the_offered_connectors():
         "groq",
         "nvidia",
         "cohere",
+        "azure",
+        "vertex",
+        "bedrock",
         "runpod",
     ]
     assert get_connector("runpod").display_name

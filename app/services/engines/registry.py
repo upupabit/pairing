@@ -4,7 +4,9 @@ order; a third engine is one adapter file plus one line here.
 """
 
 from app.schemas import EngineName
+from app.services.engines.azure_engine import AzureEngine
 from app.services.engines.base import EngineCapabilityError, InferenceEngine
+from app.services.engines.bedrock_engine import BedrockEngine
 from app.services.engines.cloudflare_engine import CloudflareEngine
 from app.services.engines.cohere_engine import CohereEngine
 from app.services.engines.digitalocean_engine import DigitalOceanEngine
@@ -15,6 +17,7 @@ from app.services.engines.matricxon_engine import MatricxonEngine
 from app.services.engines.nvidia_engine import NvidiaEngine
 from app.services.engines.openrouter_engine import OpenRouterEngine
 from app.services.engines.runpod_engine import RunPodEngine
+from app.services.engines.vertex_engine import VertexEngine
 
 
 class EngineRegistry:
@@ -66,5 +69,8 @@ registry = EngineRegistry(
         GroqEngine(),
         NvidiaEngine(),
         CohereEngine(),
+        AzureEngine(),
+        VertexEngine(),
+        BedrockEngine(),
     ]
 )

@@ -2,7 +2,9 @@
 dependence). Connector #2 is one ConnectorDefinition (see runpod_connector.py) plus one line here.
 """
 
+from app.services.connectors.azure_connector import AZURE_CONNECTOR
 from app.services.connectors.base import ConnectorDefinition
+from app.services.connectors.bedrock_connector import BEDROCK_CONNECTOR
 from app.services.connectors.cloudflare_connector import CLOUDFLARE_CONNECTOR
 from app.services.connectors.cohere_connector import COHERE_CONNECTOR
 from app.services.connectors.digitalocean_connector import DIGITALOCEAN_CONNECTOR
@@ -11,6 +13,7 @@ from app.services.connectors.groq_connector import GROQ_CONNECTOR
 from app.services.connectors.nvidia_connector import NVIDIA_CONNECTOR
 from app.services.connectors.openrouter_connector import OPENROUTER_CONNECTOR
 from app.services.connectors.runpod_connector import RUNPOD_CONNECTOR
+from app.services.connectors.vertex_connector import VERTEX_CONNECTOR
 
 CONNECTORS: list[ConnectorDefinition] = [
     CLOUDFLARE_CONNECTOR,
@@ -20,6 +23,9 @@ CONNECTORS: list[ConnectorDefinition] = [
     GROQ_CONNECTOR,
     NVIDIA_CONNECTOR,
     COHERE_CONNECTOR,
+    AZURE_CONNECTOR,
+    VERTEX_CONNECTOR,
+    BEDROCK_CONNECTOR,
     RUNPOD_CONNECTOR,
 ]
 

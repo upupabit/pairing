@@ -34,11 +34,13 @@ class OpenAIChatStream:
         return (choices[0].get("delta") or {}).get("content") or ""
 
     async def stream(
-        self, url: str, payload: dict, headers: dict[str, str], timeout: httpx.Timeout
+        self, url: str, payload: dict, headers: dict[str, str], timeout: httpx.Timeout, body: bytes | None = None
     ) -> AsyncGenerator[str, None]:
+        """`body`: the payload already encoded, sent as is (a signed request must send the exact bytes it signed)."""
+        sent = {"json": payload} if body is None else {"content": body}
         async with httpx.AsyncClient(timeout=timeout) as client:
             try:
-                async with client.stream("POST", url, json=payload, headers=headers) as resp:
+                async with client.stream("POST", url, headers=headers, **sent) as resp:
                     try:
                         resp.raise_for_status()
                     except httpx.HTTPStatusError as exc:

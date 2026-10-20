@@ -145,7 +145,7 @@ It is also important not to expose more models to users than the system RAM/VRAM
 
 **Connectors**
 - Extend the system with connectors, which add support for more inference engines, such as cloud services that offer GPU and serverless ML. pAIring is intended to run privately or locally without external services and providers (except for downloading models or outer MCP tools), but this is a much appreciated optional extra.
-- Currently supported connectors are Cloudflare Workers AI, DigitalOcean Serverless Inference, OpenRouter, Google Gemini, Groq, NVIDIA NIM, Cohere and RunPod Serverless; more connectors will be added soon. All but RunPod can be tried for free.
+- Currently supported connectors are Cloudflare Workers AI, DigitalOcean Serverless Inference, OpenRouter, Google Gemini, Groq, NVIDIA NIM, Cohere, Azure OpenAI, Google Vertex AI, Amazon Bedrock and RunPod Serverless; more connectors will be added soon. All but Azure, Vertex AI, Bedrock and RunPod can be tried for free.
 - Setting one up takes an API key and a **Test connection**; then it is one pick away in the **Active engine** list.
 
 | Connector | Models | Free use | Knowledge base |
@@ -157,6 +157,9 @@ It is also important not to expose more models to users than the system RAM/VRAM
 | Groq | Fast open models | Free tier | No |
 | NVIDIA NIM | 100+: Llama, Nemotron, DeepSeek, Qwen | Free developer credits | Yes |
 | Cohere | Command and Embed | Trial key | Yes |
+| Azure OpenAI | Your own deployments: GPT, DeepSeek, Grok, Llama and more | No, billed to your Azure subscription | Yes |
+| Google Vertex AI | Gemini and Model Garden partner models | No, billed to your Google Cloud project | No |
+| Amazon Bedrock | GPT-OSS, Claude, Llama, Mistral, DeepSeek, Qwen and more | No, billed to your AWS account | No |
 | RunPod Serverless | Your own vLLM endpoint | No, billed by use | No |
 
 Setup, limits and privacy notes for each: [pAIring connectors](https://upupabit.ai/docs/pairing/connectors/).

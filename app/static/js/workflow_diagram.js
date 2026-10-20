@@ -9,7 +9,6 @@
 
 const WORKFLOW_ARROW_MARKER_ID = "wf-arrow";
 const isMlStage = (category) => category.startsWith("ml_");
-const FIRST_ML_CATEGORY = Object.keys(WORKFLOW_CATEGORY_COLORS).find(isMlStage);
 
 /* A smooth cubic-bezier path between two nodes' centers, leaving/entering the side that faces the other node (left/right for mostly-horizontal edges, top/bottom for vertical). Every WORKFLOW_EDGES edge is one of the two, so one function covers all. */
 function workflowEdgePath(from, to, dir) {
@@ -45,26 +44,6 @@ function workflowEdgePath(from, to, dir) {
     path.bezierCurveTo(sx, sy + cdy, ex, ey - cdy, ex, ey);
   }
   return path.toString();
-}
-
-/* Builds the border-color key pinned in the diagram's corner: a swatch + label per WORKFLOW_CATEGORY_COLORS/LABELS entry (workflow_diagram_data.js), so a new category is picked up automatically. */
-function renderWorkflowLegend() {
-  const legendEl = document.getElementById("workflow-legend");
-  legendEl.innerHTML =
-    `<p class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-0.5">Legend</p>` +
-    Object.keys(WORKFLOW_CATEGORY_COLORS)
-      .map((category) => {
-        const heading = category === FIRST_ML_CATEGORY
-          ? `<p class="mt-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">Inside the ML engine (forward pass)</p>`
-          : "";
-        const color = WORKFLOW_CATEGORY_COLORS[category];
-        const label = escapeHtml(WORKFLOW_CATEGORY_LABELS[category] || category);
-        return `${heading}<div class="flex items-center gap-2">
-          <span class="h-3 w-3 shrink-0 rounded-sm border" style="border-color:${color};background:${color}22"></span>
-          <span class="text-slate-300">${label}</span>
-        </div>`;
-      })
-      .join("");
 }
 
 /* The category label uses CSS `uppercase`, which would also capitalize every letter of the stylized app name (APP_NAME in workflow_diagram_data.js, e.g. "pAIring"). Escapes the label, then wraps APP_NAME in text-transform:none to keep its casing. */
@@ -112,11 +91,17 @@ function workflowCanvasBounds() {
 }
 
 function initWorkflowDiagram() {
-  renderWorkflowLegend();
-
   const svg = d3.select("#workflow-svg");
-  const { width, height, offsetX, offsetY } = workflowCanvasBounds();
-  svg.attr("width", width).attr("height", height);
+  const bounds = workflowCanvasBounds();
+  const { width, offsetX } = bounds;
+  // Width first: the legend is measured inside the canvas, which takes the svg's width.
+  svg.attr("width", width).attr("height", bounds.height);
+  // The legend sits in the top-right corner; the diagram moves down only as far as needed to keep it clear.
+  const legend = new WorkflowLegend(document.getElementById("workflow-legend"));
+  legend.render();
+  const shift = legend.place(WORKFLOW_NODES, offsetX, bounds.offsetY);
+  const offsetY = bounds.offsetY + shift;
+  svg.attr("height", bounds.height + shift);
 
   svg
     .append("defs")
@@ -133,6 +118,12 @@ function initWorkflowDiagram() {
     .attr("fill", ThemeColors.get("--color-slate-500"));
 
   const root = svg.append("g").attr("class", "wf-root").attr("transform", `translate(${offsetX},${offsetY})`);
+  // The legend's height depends on the font; once web fonts have loaded, measure again and move the diagram to match.
+  document.fonts?.ready.then(() => {
+    const settled = legend.place(WORKFLOW_NODES, offsetX, bounds.offsetY);
+    root.attr("transform", `translate(${offsetX},${bounds.offsetY + settled})`);
+    svg.attr("height", bounds.height + settled);
+  });
 
   const nodesById = new Map(WORKFLOW_NODES.map((n) => [n.id, n]));
 

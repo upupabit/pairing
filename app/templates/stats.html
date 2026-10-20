@@ -64,11 +64,15 @@
       <div id="stats-view-workflow" class="hidden flex-1 min-h-0 relative">
         <!-- Vertical diagram taller than any viewport, so it scrolls natively (both axes, mostly height) instead of drag-to-pan/wheel-zoom, which had no visible cue. The <svg> is sized to its content (workflow_diagram.js), so scrollbars appear where content overflows. -->
         <div id="workflow-canvas-wrap" class="absolute inset-0 overflow-auto">
-          <svg id="workflow-svg"></svg>
-        </div>
-        <!-- Legend: which border color is which app layer (workflow_diagram.js renderWorkflowLegend). Fixed in the corner, outside the scrolling canvas, so it is visible at any scroll position. -->
-        <div id="workflow-legend"
-          class="absolute top-4 right-6 z-10 rounded-lg border border-slate-800 bg-slate-900/90 backdrop-blur px-3 py-2.5 space-y-1.5 text-xs">
+          <!-- Centered when the diagram is narrower than the view (mx-auto + w-max); scrolls normally when wider. -->
+          <div class="relative mx-auto w-max">
+            <svg id="workflow-svg" class="block"></svg>
+            <!-- Legend: which border color is which app layer (workflow_diagram_legend.js), in the empty top-right corner
+            beside the first nodes, scrolling with the diagram. -->
+            <div id="workflow-legend"
+              class="absolute z-10 grid grid-cols-2 gap-x-6 rounded-lg border border-slate-800 bg-slate-900/90 backdrop-blur px-3 py-2.5 text-xs">
+            </div>
+          </div>
         </div>
         <!-- Detail panel: plain DOM (not D3), opened by clicking a node (workflow_diagram.js showDetail). -->
         <aside id="workflow-detail-panel"
@@ -213,6 +217,7 @@
 <script src="/static/js/workflow_diagram_ml.js?v={{ static_version }}"></script>
 <script src="/static/js/workflow_diagram_ml_embed.js?v={{ static_version }}"></script>
 <script src="/static/js/workflow_diagram_learn.js?v={{ static_version }}"></script>
+<script src="/static/js/workflow_diagram_legend.js?v={{ static_version }}"></script>
 <script src="/static/js/workflow_diagram.js?v={{ static_version }}"></script>
 <script src="/static/js/telemetry_charts.js?v={{ static_version }}"></script>
 <script src="/static/js/telemetry_bar_chart.js?v={{ static_version }}"></script>

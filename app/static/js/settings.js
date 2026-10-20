@@ -1686,7 +1686,6 @@ function loadTabData(name) {
   }
   if (name === "account") {
     loadAccountProfileIntoEditor();
-    loadDefaultNotesEnabledIntoEditor();
   }
   if (name === "external-servers") {
     loadExternalServersIntoEditor();
@@ -3386,38 +3385,6 @@ document.getElementById("ui-theme-save-btn")?.addEventListener("click", async ()
       statusEl.textContent = "";
       statusEl.classList.remove("text-warning-400");
     }, 3000);
-  }
-});
-
-// Default persona/rules/skill notes on new chats/channels (every user)
-// A plain on/off toggle, not a Save button: there is nothing to preview, so flipping it saves at once. It affects only
-// chats/channels this user starts afterward (note_service.seed_initial_disabled_notes).
-
-async function loadDefaultNotesEnabledIntoEditor() {
-  const toggleEl = document.getElementById("default-notes-enabled-toggle");
-  if (!toggleEl) return;
-  const { enabled } = await api("/api/notes/default-notes-enabled");
-  toggleEl.checked = enabled;
-}
-
-document.getElementById("default-notes-enabled-toggle")?.addEventListener("change", async (e) => {
-  const statusEl = document.getElementById("default-notes-enabled-status");
-  const enabled = e.target.checked;
-  e.target.disabled = true;
-  statusEl.textContent = "Saving…";
-  try {
-    await api("/api/notes/default-notes-enabled", { method: "PUT", body: JSON.stringify({ enabled }) });
-    statusEl.textContent = "Saved";
-  } catch (err) {
-    e.target.checked = !enabled;
-    statusEl.textContent = err.message;
-    statusEl.classList.add("text-warning-400");
-  } finally {
-    e.target.disabled = false;
-    setTimeout(() => {
-      statusEl.textContent = "";
-      statusEl.classList.remove("text-warning-400");
-    }, 2500);
   }
 });
 

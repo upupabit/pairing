@@ -1,6 +1,6 @@
-"""Whether a user's persona/rules/skill default notes are active on every new chat/channel (Settings >
-Account, under Theme). Its own tiny file because note_service.py and settings_service.py are at the line
-cap (like theme_service.py); same get_x/set_x per-user shape.
+"""Whether a user's persona/rules/skill default notes are active on every new chat/channel (the Notes
+page's "Rule notes" switch, above the notes list). Its own tiny file because note_service.py and
+settings_service.py are at the line cap (like theme_service.py); same get_x/set_x per-user shape.
 
 Doesn't depend on note_service (which depends on channel_service), so conversation_service and
 channel_service import it with no circular workaround; note_service.seed_initial_disabled_notes turns it

@@ -107,7 +107,12 @@ function renderNoteRow(note) {
       <div class="min-w-0">
         <p dir="auto" class="truncate text-sm font-medium text-slate-100">
           ${escapeHtml(note.title)}
-          ${note.is_default ? '<span class="ml-1.5 rounded-full bg-sky-400 px-1.5 py-0.5 text-xs font-semibold text-slate-900 align-middle">Default</span>' : ""}
+          ${
+            // Same pill style as the model cards' "In use" / "+Vision" badges (settings.js).
+            note.is_default
+              ? '<span class="ml-1.5 inline-flex items-center rounded-full bg-[rgb(var(--color-brand-500)/0.15)] border border-[rgb(var(--color-brand-500)/0.4)] px-1.5 py-0.5 text-[10px] font-medium text-brand-500 align-middle" title="One of your 3 default notes: it can be edited but not deleted">Default</span>'
+              : ""
+          }
         </p>
         <p class="text-xs text-slate-500 mt-0.5">Updated ${formatUpdatedAt(note.updated_at)}</p>
       </div>

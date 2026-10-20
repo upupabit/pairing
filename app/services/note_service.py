@@ -3,7 +3,7 @@
 prompt, and the pin-syncing/CRUD behind routers/notes.py. The chat page's one-slot view is
 note_slot_service.py (split for the file-size rule). Unrelated to document_ingest.py (embeddings/retrieval).
 
-seed_initial_disabled_notes turns the per-user "default notes enabled" preference (Settings > Account, in
+seed_initial_disabled_notes turns the per-user "default notes enabled" preference (the Notes page, in
 default_notes_setting.py) into a new chat/channel's initial disabled_default_notes. The getter/setter live
 there only to avoid a circular import (this module imports channel_service).
 """

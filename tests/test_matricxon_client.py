@@ -1,4 +1,4 @@
-"""Tests for services/matricxon_client.py, with the wiring coverage of tests/test_ollama_client.py
+"""Tests for services/matricxon_client.py, with the wiring coverage of tests/test_llamacpp_client.py
 (embed/chat_stream/stop_model route through
 matricxon_pool, not a fixed host), minus OpenTelemetry span assertions: matricxon_client has no span instrumentation
 yet.

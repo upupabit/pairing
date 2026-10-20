@@ -144,8 +144,8 @@ _capabilities: tuple[float, list[dict]] | None = None
 
 async def _model_can_use_tools(model: str) -> bool:
     """False only when the engine reports capabilities for this model and "tools" isn't among them (Matricxon does;
-    Ollama's model list doesn't, so it is tried and falls back if refused). The model list is cached briefly so a
-    tool reply doesn't pay for an extra engine call.
+    a remote llama-server's list doesn't, so it is tried and falls back if refused). The model list is cached briefly so
+    a tool reply doesn't pay for an extra engine call.
     """
     global _capabilities
     now = time.monotonic()

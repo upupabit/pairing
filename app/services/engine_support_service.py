@@ -1,6 +1,6 @@
 """The active engine's supported architectures and quantization (dequant) types, for the Stats "Supported
 architectures" view. Only for engines with format introspection (InferenceEngine.capabilities.format_introspection:
-Matricxon via GET /api/health, matricxon_client.get_capabilities). Ollama has no such API, so it returns
+Matricxon via GET /api/health, matricxon_client.get_capabilities). llama-server has no such API, so it returns
 `available=False` rather than a drifting hand-kept list; so would any future engine without it.
 """
 

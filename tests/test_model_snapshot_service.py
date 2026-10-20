@@ -1,4 +1,4 @@
-"""Tests for services/ollama_snapshot_service.py: dedupes poll history to the newest row per (host, model_name),
+"""Tests for services/model_snapshot_service.py: dedupes poll history to the newest row per (host, model_name),
 one engine at a time (see the module on why queries filter on engine), instead of a version-fragile SQL window query.
 """
 
@@ -8,7 +8,7 @@ import pytest
 
 from app.models import ModelSnapshot
 from app.models._base import utcnow
-from app.services import ollama_snapshot_service
+from app.services import model_snapshot_service
 
 
 @pytest.mark.asyncio
@@ -24,7 +24,7 @@ async def test_returns_only_the_newest_row_per_host_and_model(db):
     )
     await db.commit()
 
-    snapshots = await ollama_snapshot_service.get_latest_snapshots(db, "ollama")
+    snapshots = await model_snapshot_service.get_latest_snapshots(db, "llamacpp")
 
     assert len(snapshots) == 1
     assert snapshots[0].size_bytes == 2
@@ -42,7 +42,7 @@ async def test_distinguishes_different_hosts_and_models(db):
     )
     await db.commit()
 
-    snapshots = await ollama_snapshot_service.get_latest_snapshots(db, "ollama")
+    snapshots = await model_snapshot_service.get_latest_snapshots(db, "llamacpp")
 
     keys = {(s.host, s.model_name) for s in snapshots}
     assert keys == {
@@ -58,14 +58,14 @@ async def test_excludes_snapshots_outside_the_lookback_window(db):
     db.add(ModelSnapshot(host="http://x:11434", model_name="llama3:latest", polled_at=stale))
     await db.commit()
 
-    snapshots = await ollama_snapshot_service.get_latest_snapshots(db, "ollama")
+    snapshots = await model_snapshot_service.get_latest_snapshots(db, "llamacpp")
 
     assert snapshots == []
 
 
 @pytest.mark.asyncio
 async def test_empty_when_nothing_polled_yet(db):
-    assert await ollama_snapshot_service.get_latest_snapshots(db, "ollama") == []
+    assert await model_snapshot_service.get_latest_snapshots(db, "llamacpp") == []
 
 
 @pytest.mark.asyncio
@@ -76,14 +76,14 @@ async def test_a_matricxon_snapshot_never_leaks_into_ollamas_results(db):
     now = utcnow()
     db.add_all(
         [
-            ModelSnapshot(engine="ollama", host="http://x:11434", model_name="llama3:latest", polled_at=now),
+            ModelSnapshot(engine="llamacpp", host="http://x:11434", model_name="llama3:latest", polled_at=now),
             ModelSnapshot(engine="matricxon", host="http://x:8420", model_name="ministral-3:3b", polled_at=now),
         ]
     )
     await db.commit()
 
-    ollama_snapshots = await ollama_snapshot_service.get_latest_snapshots(db, "ollama")
-    matricxon_snapshots = await ollama_snapshot_service.get_latest_snapshots(db, "matricxon")
+    llamacpp_snapshots = await model_snapshot_service.get_latest_snapshots(db, "llamacpp")
+    matricxon_snapshots = await model_snapshot_service.get_latest_snapshots(db, "matricxon")
 
-    assert [s.model_name for s in ollama_snapshots] == ["llama3:latest"]
+    assert [s.model_name for s in llamacpp_snapshots] == ["llama3:latest"]
     assert [s.model_name for s in matricxon_snapshots] == ["ministral-3:3b"]

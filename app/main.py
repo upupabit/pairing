@@ -35,13 +35,13 @@ from app.routers import (
     image_generation,
     image_model_admin,
     instances_admin,
+    llamacpp_admin,
     matricxon_admin,
     matricxon_cache_admin,
     mcp_admin,
     mcp_tools,
     model_catalog_admin,
     notes,
-    ollama_admin,
     pages,
     proxy_admin,
     rerank_admin,
@@ -140,7 +140,7 @@ app.include_router(sdcpp_admin.router)
 app.include_router(proxy_admin.router)
 app.include_router(rerank_admin.router)
 app.include_router(http_proxy_admin.router)
-app.include_router(ollama_admin.router)
+app.include_router(llamacpp_admin.router)
 app.include_router(matricxon_admin.router)
 app.include_router(matricxon_cache_admin.router)
 app.include_router(engine_admin.router)

@@ -57,7 +57,7 @@ async def sync_folder_stream(db: AsyncSession, folder: Path, owner_id: str | Non
     if not embeddings_available:
         stats["errors"].append(
             "No embedding model available — new/changed files were not (re-)ingested. "
-            f"Run 'ollama pull {EMBEDDING_MODEL}'.",
+            f"Pull an embedding model (e.g. {EMBEDDING_MODEL}) in Settings > Model.",
         )
 
     files = sorted(on_disk)

@@ -17,7 +17,7 @@ router = APIRouter(prefix="/api/settings/matricxon/cache-persistence", tags=["ma
 
 
 async def _require_matricxon_engine(db: AsyncSession) -> None:
-    """The disk cache is Matricxon-only; Ollama has its own."""
+    """The disk cache is Matricxon-only; llama.cpp has its own."""
     if await engine_service.get_active_engine(db) != "matricxon":
         raise HTTPException(status_code=409, detail="Saved chat caches are only available with the Matricxon engine.")
 

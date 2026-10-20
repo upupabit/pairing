@@ -1,7 +1,7 @@
 """Thin async wrapper around a RunPod Serverless endpoint's OpenAI-compatible API (the vLLM worker template;
 https://docs.runpod.io/serverless/vllm/openai-compatibility).
 
-Knows nothing of FastAPI or the UI, like ollama_client/matricxon_client. It reads its live config (endpoint
+Knows nothing of FastAPI or the UI, like llamacpp_client/matricxon_client. It reads its live config (endpoint
 ID, API key, model) from connector_config_cache on every call, never bound at construction: an admin can
 reconfigure or enable/disable it any time on the Connectors page (routers/connectors.py), as every engine adapter does.
 
@@ -23,7 +23,7 @@ _CONNECTOR_ID = "runpod"
 # For a quick, non-generation call (list models, health).
 _REQUEST_TIMEOUT = httpx.Timeout(30.0, connect=10.0)
 _HEALTH_TIMEOUT = httpx.Timeout(10.0, connect=5.0)
-# chat_stream's own, unbounded as ollama_client._CHAT_TIMEOUT: a fixed timeout would undercut
+# chat_stream's own, unbounded as llamacpp_client._CHAT_TIMEOUT: a fixed timeout would undercut
 # reply_generation_service's.
 _CHAT_TIMEOUT = httpx.Timeout(None, connect=10.0)
 
@@ -94,7 +94,7 @@ def _chat_payload(model: str, messages: list[dict], params: dict, *, stream: boo
 
 async def chat_stream(model: str, messages: list[dict], params: dict) -> AsyncGenerator[str, None]:
     """Streams a chat completion from RunPod's OpenAI-compatible endpoint as text chunks. `messages` is oldest-first
-    {"role", "content"} dicts, the shape Ollama's chat_stream takes, so history forwards unchanged.
+    {"role", "content"} dicts, the shape every engine's chat_stream takes, so history forwards unchanged.
     """
     config = _live_config()
     payload = _chat_payload(model, messages, params, stream=True)
@@ -105,7 +105,7 @@ async def chat_stream(model: str, messages: list[dict], params: dict) -> AsyncGe
 
 async def chat_once(model: str, messages: list[dict], params: dict | None = None) -> str:
     """Non-streaming helper for one-off internal calls (e.g. titles); built on chat_stream like
-    ollama_client.chat_once."""
+    llamacpp_client.chat_once."""
     params = params or {"temperature": 0.3, "top_p": 0.9, "top_k": 40, "repeat_penalty": 1.1, "num_predict": 64}
     text = ""
     async for chunk in chat_stream(model, messages, params):

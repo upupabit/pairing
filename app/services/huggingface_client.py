@@ -5,8 +5,8 @@ models" (extended_model_catalog_service.py). Fields come from the real Hub API:
 - GET /api/models/<repo_id>?blobs=true: each file's byte size plus a `gguf` block with parameter count and context
   length.
 
-Pulls go through Ollama's hf.co/ passthrough (`ollama pull hf.co/<repo_id>:<tag>`) or Matricxon's
-equivalent; this file never downloads weights. `<tag>` is the exact GGUF filename minus extension, not a
+Pulls go through gguf_direct_puller (llama.cpp and local Matricxon) or Matricxon's /api/pull; this file never
+downloads weights. `<tag>` is the exact GGUF filename minus extension, not a
 quant code: both engines match tags to filenames case-insensitively, so the full name is unambiguous where
 substring extraction could pick the wrong file.
 """
@@ -20,7 +20,7 @@ _SEARCH_LIMIT = 20
 
 class HuggingFaceLookupError(Exception):
     """Raised when a repo/search can't be reached or resolved (not found, or Hugging Face unreachable: no internet or
-    bad proxy). A clean message, like ollama_client.OllamaError."""
+    bad proxy). A clean message, like llamacpp_client.LlamaCppError."""
 
 
 class HuggingFaceCatalogSearch:
@@ -95,8 +95,8 @@ class HuggingFaceCatalogSearch:
             for s in repo.get("siblings", [])
             if HuggingFaceCatalogSearch._is_single_file_gguf(s["rfilename"]) and s.get("size")
         ]
-        # A same-repo mmproj sidecar makes every non-projector file a vision model (Ollama auto-pairs it on hf.co/
-        # pull, Matricxon pulls it alongside; see model_catalog_service's curated `vision` flag), so the picker badges
+        # A same-repo mmproj sidecar makes every non-projector file a vision model (llama.cpp pulls it with the
+        # model, Matricxon pulls it alongside; see model_catalog_service's curated `vision` flag), so the picker badges
         # "+Vision".
         has_projector = any(HuggingFaceCatalogSearch.is_projector_file(s["rfilename"]) for s in gguf_siblings)
         files = [

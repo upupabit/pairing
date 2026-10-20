@@ -19,7 +19,7 @@ from app.models import SYSTEM_OWNER_ID, AppSetting, User
 from app.schemas import CatalogEntry, ModelCatalogResponse
 from app.services import settings_service
 from app.services.default_model_settings import DefaultModelSettings
-from app.services.engine_support_checker import OLLAMA_RAM_ESTIMATE_MULTIPLIER, EngineSupportSet
+from app.services.engine_support_checker import GGUF_RAM_ESTIMATE_MULTIPLIER, EngineSupportSet
 from app.services.engines.registry import registry
 from app.services.extended_model_catalog_enrichment import HuggingFaceModelProbe
 from app.services.inference_client import list_models
@@ -65,7 +65,7 @@ async def resolve_installed_model(db: AsyncSession, user: User, model: str) -> s
     system default for new users, then the first installed. Returns `model` unchanged if installed or if no
     fallback exists (the caller's attempt then fails clearly; this never raises).
 
-    Needed because a conversation's `model` doesn't change on an engine switch (engine_service) and Ollama and
+    Needed because a conversation's `model` doesn't change on an engine switch (engine_service) and llama.cpp and
     Matricxon have separate catalogs; sending after a switch failed with a raw "404 Not Found", reading as if the
     switch hadn't worked. Callers persist a changed result (chat_service.build_reply_stream), so it runs once per
     conversation.
@@ -278,7 +278,7 @@ class ChatModelCatalogBuilder:
             hardware_ok=installed or (entry.locally_runnable and capacity_gb >= entry.min_ram_gb),
             unavailable_reason=entry.unavailable_reason,
             hidden=tag in hidden_tags,
-            # The curated flag is a pre-install promise (moondream's is true because Ollama auto-pairs its mmproj on an
+            # The curated flag is a pre-install promise (moondream's is true because llama.cpp pulls its mmproj with an
             # hf.co/ pull); Matricxon doesn't pair, so trusting it post-install could show "+vision" while
             # installed_vision_models (the live check _auto_discovered_entry uses) says no. Once installed the
             # engine's
@@ -308,7 +308,7 @@ class ChatModelCatalogBuilder:
     ) -> CatalogEntry:
         details = installed_model.get("details", {})
         size_gb = (installed_model.get("size") or 0) / 1_000_000_000
-        ollama_ram_gb = round(size_gb * OLLAMA_RAM_ESTIMATE_MULTIPLIER, 1) if size_gb else 0
+        gguf_ram_gb = round(size_gb * GGUF_RAM_ESTIMATE_MULTIPLIER, 1) if size_gb else 0
         # Prefer ExtendedModelCatalog's HF-sourced family/parameter_size (_extended_catalog_entries) over Matricxon's
         # per-tag report, often the literal "unknown": truthy, it skipped the `or` fallback and rendered "Llama unknown"
         # . _clean_engine_reported filters it case-insensitively (applied to family defensively; not yet
@@ -337,7 +337,7 @@ class ChatModelCatalogBuilder:
         # registered
         # tag, else what the engine reports: both /api/tags report the GGUF general.architecture as details.family
         # whichever
-        # engine is active, so even an Ollama-installed model gets a real verdict, not the old unconditional "not
+        # engine is active, so even a llama.cpp-installed model gets a real verdict, not the old unconditional "not
         # verified".
         architecture = (extended_entry or {}).get("architecture") or self._clean_engine_reported(details.get("family"))
         quantizations = (extended_entry or {}).get(
@@ -345,13 +345,13 @@ class ChatModelCatalogBuilder:
         ) or HuggingFaceModelProbe.guess_quantizations_from_filename(name)
         # support_set.support_for is the single check every other entry (curated, extended, embedding) uses; sharing it
         # avoids a second guess that could disagree (the bug above). download_gb is passed raw so each engine's RAM
-        # formula gives the same figure as ollama_ram_gb above, not a second rounding.
+        # formula gives the same figure as gguf_ram_gb above, not a second rounding.
         engine_support = support_set.support_for(
             tag=name,
             architecture=architecture,
             quantizations=quantizations,
             download_gb=size_gb or None,
-            min_ram_gb=ollama_ram_gb,
+            min_ram_gb=gguf_ram_gb,
         )
         return CatalogEntry(
             family=family,
@@ -360,7 +360,7 @@ class ChatModelCatalogBuilder:
             parameter_size=parameter_size,
             context_length=details.get("context_length"),
             download_gb=round(size_gb, 1) if size_gb else None,
-            min_ram_gb=ollama_ram_gb,
+            min_ram_gb=gguf_ram_gb,
             engine_support=engine_support,
             locally_runnable=True,
             installed=True,

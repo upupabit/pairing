@@ -4,7 +4,7 @@ matricxon_client.get_capabilities) flowing through ChatModelCatalogBuilder/Embed
 ExtendedModelCatalog.build's same check for an admin-added entry (once its architecture is known:
 extended_model_catalog_enrichment.HuggingFaceModelProbe.probe; else the old always-unverified default).
 Network dependencies are patched on each service module's binding (module-split gotcha): no real
-Ollama/Matricxon/Hugging Face call, including matricxon_client.get_capabilities/list_models and
+llama.cpp/Matricxon/Hugging Face call, including matricxon_client.get_capabilities/list_models and
 gguf_probe.probe_metadata.
 """
 
@@ -304,7 +304,7 @@ async def test_build_model_catalog_auto_discovered_entry_is_unverified_when_olla
     for every entry type; see its docstring), so even a known-supported architecture reads "not verified": the honest
     "we never asked" reason, not a reachability claim either way.
     """
-    engine_service._cached_engine = "ollama"
+    engine_service._cached_engine = "llamacpp"
     monkeypatch.setattr(
         svc,
         "list_models",

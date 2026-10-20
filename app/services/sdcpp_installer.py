@@ -157,7 +157,7 @@ async def install_stream(
                 resp.raise_for_status()
                 total = int(resp.headers.get("content-length", 0)) or None
                 completed = 0
-                last_pct = -1  # report whole-percent changes only — see ollama_installer for why
+                last_pct = -1  # report whole-percent changes only — see llamacpp_installer for why
                 with open(archive_path, "wb") as f:
                     async for chunk in resp.aiter_bytes(chunk_size=1024 * 1024):
                         f.write(chunk)

@@ -137,12 +137,12 @@ async def test_apply_image_attachment_is_a_noop_for_text(db, tmp_path, monkeypat
     path = tmp_path / "notes.txt"
     path.write_text("hi")
     attachment = AttachmentInfo(path=path, filename="notes.txt", type="text")
-    ollama_messages = [{"role": "user", "content": "hi"}]
+    chat_messages = [{"role": "user", "content": "hi"}]
 
-    result = await chat_attachment_service.apply_image_attachment(db, [attachment], ollama_messages)
+    result = await chat_attachment_service.apply_image_attachment(db, [attachment], chat_messages)
 
     assert result is None
-    assert ollama_messages == [{"role": "user", "content": "hi"}]
+    assert chat_messages == [{"role": "user", "content": "hi"}]
 
 
 @pytest.mark.asyncio
@@ -155,12 +155,12 @@ async def test_apply_image_attachment_returns_none_when_no_vision_model_installe
     path = tmp_path / "photo.png"
     path.write_bytes(b"fake-image-bytes")
     attachment = AttachmentInfo(path=path, filename="photo.png", type="image")
-    ollama_messages = [{"role": "user", "content": "look at this"}]
+    chat_messages = [{"role": "user", "content": "look at this"}]
 
-    result = await chat_attachment_service.apply_image_attachment(db, [attachment], ollama_messages)
+    result = await chat_attachment_service.apply_image_attachment(db, [attachment], chat_messages)
 
     assert result is None
-    assert "images" not in ollama_messages[-1]
+    assert "images" not in chat_messages[-1]
 
 
 @pytest.mark.asyncio
@@ -178,19 +178,19 @@ async def test_apply_image_attachment_attaches_base64_bytes_to_the_last_message(
         AttachmentInfo(path=doc_path, filename="notes.txt", type="text"),
         AttachmentInfo(path=path, filename="photo.png", type="image"),
     ]
-    ollama_messages = [
+    chat_messages = [
         {"role": "system", "content": "be nice"},
         {"role": "user", "content": "look at this"},
     ]
 
-    result = await chat_attachment_service.apply_image_attachment(db, attachments, ollama_messages)
+    result = await chat_attachment_service.apply_image_attachment(db, attachments, chat_messages)
 
     assert result == "llava:latest"
     # Only the last entry (the user's turn) is touched.
-    assert ollama_messages[0] == {"role": "system", "content": "be nice"}
-    assert ollama_messages[-1]["role"] == "user"
-    assert ollama_messages[-1]["content"] == "look at this"
-    assert base64.b64decode(ollama_messages[-1]["images"][0]) == b"fake-image-bytes"
+    assert chat_messages[0] == {"role": "system", "content": "be nice"}
+    assert chat_messages[-1]["role"] == "user"
+    assert chat_messages[-1]["content"] == "look at this"
+    assert base64.b64decode(chat_messages[-1]["images"][0]) == b"fake-image-bytes"
 
 
 def test_turn_context_goes_in_front_of_the_newest_user_message_only():

@@ -229,7 +229,7 @@ async def test_cancel_on_disconnect_stops_generation_and_marks_it_errored(monkey
 
     monkeypatch.setattr(reply_generation_service, "chat_stream", fake_chat_stream)
 
-    # A cancelled reply also force-stops the model (ollama_client.stop_model), faked to avoid a real Ollama host.
+    # A cancelled reply also force-stops the model (llamacpp_client.stop_model), faked to avoid a real Ollama host.
     # reply_model_unload_service calls it (schedule_cancelled_write/_persist_cancelled_reply), not
     # reply_generation_service.
     stopped_models: list[str] = []
@@ -546,7 +546,7 @@ async def test_generation_error_preserves_partial_content_and_marks_status_error
 async def test_generation_times_out_and_marks_it_errored(monkeypatch):
     """The admin reply timeout (chat_settings_service.get_reply_timeout_seconds) is a wall-clock deadline over the whole
     generation, not a per-chunk read timeout: this model keeps producing something, just too slowly overall, which
-    ollama_client's lower-level timeout wouldn't catch.
+    llamacpp_client's lower-level timeout wouldn't catch.
     """
     engine, session_factory = await _build_session_factory()
     monkeypatch.setattr(reply_generation_service, "AsyncSessionLocal", session_factory)
@@ -570,7 +570,7 @@ async def test_generation_times_out_and_marks_it_errored(monkeypatch):
 
     monkeypatch.setattr(reply_generation_service, "chat_stream", fake_chat_stream)
 
-    # A timed-out reply also force-stops the model (ollama_client.stop_model): closing our side doesn't reliably
+    # A timed-out reply also force-stops the model (llamacpp_client.stop_model): closing our side doesn't reliably
     # interrupt an in-progress llama.cpp compute phase. Faked to avoid a real Ollama host.
     stopped_models: list[str] = []
     stopped_request_ids: list[str | None] = []

@@ -1,22 +1,22 @@
-"""Tests for engines/ollama_engine.py, matricxon_engine.py and runpod_engine.py: each method forwards to its
+"""Tests for engines/llamacpp_engine.py, matricxon_engine.py and runpod_engine.py: each method forwards to its
 client/admin/pool module by reference (looked up per call, never bound at construction), so
-monkeypatch.setattr(ollama_client,...) patches keep working through the adapters as through inference_client.
+monkeypatch.setattr(llamacpp_client,...) patches keep working through the adapters as through inference_client.
 """
 
 import pytest
 
 from app.services import (
     connector_config_cache,
+    llamacpp_admin,
+    llamacpp_client,
+    llamacpp_pool,
     matricxon_admin,
     matricxon_client,
     matricxon_pool,
-    ollama_admin,
-    ollama_client,
-    ollama_pool,
     runpod_client,
 )
+from app.services.engines.llamacpp_engine import LlamaCppEngine
 from app.services.engines.matricxon_engine import MatricxonEngine
-from app.services.engines.ollama_engine import OllamaEngine
 from app.services.engines.runpod_engine import RunPodEngine
 
 
@@ -28,32 +28,32 @@ def reset_connector_cache():
 
 
 @pytest.mark.asyncio
-async def test_ollama_engine_list_models_forwards_to_ollama_client(monkeypatch):
+async def test_llamacpp_engine_list_models_forwards_to_llamacpp_client(monkeypatch):
     async def fake():
         return [{"name": "m"}]
 
-    monkeypatch.setattr(ollama_client, "list_models", fake)
-    assert await OllamaEngine().list_models() == [{"name": "m"}]
+    monkeypatch.setattr(llamacpp_client, "list_models", fake)
+    assert await LlamaCppEngine().list_models() == [{"name": "m"}]
 
 
 @pytest.mark.asyncio
-async def test_ollama_engine_check_health_forwards_to_ollama_pool(monkeypatch):
+async def test_llamacpp_engine_check_health_forwards_to_llamacpp_pool(monkeypatch):
     async def fake():
         return {"http://h1": True}
 
-    monkeypatch.setattr(ollama_pool, "check_hosts", fake)
-    assert await OllamaEngine().check_health() == {"http://h1": True}
+    monkeypatch.setattr(llamacpp_pool, "check_hosts", fake)
+    assert await LlamaCppEngine().check_health() == {"http://h1": True}
 
 
 @pytest.mark.asyncio
-async def test_ollama_engine_delete_model_forwards_to_ollama_admin(monkeypatch):
+async def test_llamacpp_engine_delete_model_forwards_to_llamacpp_admin(monkeypatch):
     calls = []
 
     async def fake(tag):
         calls.append(tag)
 
-    monkeypatch.setattr(ollama_admin, "delete_model", fake)
-    await OllamaEngine().delete_model("some-tag")
+    monkeypatch.setattr(llamacpp_admin, "delete_model", fake)
+    await LlamaCppEngine().delete_model("some-tag")
     assert calls == ["some-tag"]
 
 
@@ -96,8 +96,8 @@ async def test_matricxon_engine_delete_model_forwards_to_matricxon_admin(monkeyp
     assert calls == ["some-tag"]
 
 
-def test_ollama_engine_has_no_format_introspection():
-    assert OllamaEngine().capabilities.format_introspection is False
+def test_llamacpp_engine_has_no_format_introspection():
+    assert LlamaCppEngine().capabilities.format_introspection is False
 
 
 def test_matricxon_engine_has_format_introspection():
@@ -105,8 +105,8 @@ def test_matricxon_engine_has_format_introspection():
 
 
 @pytest.mark.asyncio
-async def test_ollama_engine_is_ready_defaults_true():
-    assert await OllamaEngine().is_ready() is True
+async def test_llamacpp_engine_is_ready_defaults_true():
+    assert await LlamaCppEngine().is_ready() is True
 
 
 @pytest.mark.asyncio

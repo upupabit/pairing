@@ -89,7 +89,7 @@ function capitalizeFirst(value) {
   return value.length ? value.charAt(0).toUpperCase() + value.slice(1) : value;
 }
 
-/* Display-only relabeling for the Messages "By role" breakdown: the API's roles (user/assistant/system) mirror Ollama's chat roles (app/models/conversation.py), so "assistant" reads "AI (model)" and the rest are capitalized. The data and other breakdowns sharing the CountByKey shape (e.g. Users' "By role", which has no "assistant") are unchanged. */
+/* Display-only relabeling for the Messages "By role" breakdown: the API's roles (user/assistant/system) mirror the engines' chat roles (app/models/conversation.py), so "assistant" reads "AI (model)" and the rest are capitalized. The data and other breakdowns sharing the CountByKey shape (e.g. Users' "By role", which has no "assistant") are unchanged. */
 const MESSAGE_ROLE_DISPLAY_LABELS = { assistant: "AI (model)" };
 
 function relabelMessageRoleEntries(entries) {

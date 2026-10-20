@@ -1,4 +1,4 @@
-"""Aggregation queries behind GET /api/telemetry/{ollama,matricxon}/summary, the per-engine Telemetry dashboard
+"""Aggregation queries behind GET /api/telemetry/{engine}/summary, the per-engine Telemetry dashboard
 (routers/telemetry.py, telemetry.js). One engine's rows at a time: queries filter on TelemetryEvent.engine
 rather than group by it (the admin picks which, see telemetry.js). Counts by host/model use plain SQL group_by
 (small cardinality; as stats_service.py).
@@ -20,12 +20,12 @@ from app.models import TelemetryEvent
 from app.models._base import utcnow
 from app.schemas import (
     CountByKey,
+    EngineTelemetrySummary,
     HostStats,
     LatencyTimeBucket,
     ModelLatencyStats,
-    OllamaTelemetrySummary,
 )
-from app.services import ollama_snapshot_service
+from app.services import model_snapshot_service
 
 _LOOKBACK_WINDOW = timedelta(days=7)
 _MAX_EVENTS_FETCHED = 10_000
@@ -123,8 +123,8 @@ def _latency_time_series(events: list[TelemetryEvent]) -> list[LatencyTimeBucket
     ]
 
 
-async def get_engine_telemetry_summary(db: AsyncSession, engine: str) -> OllamaTelemetrySummary:
-    """The one entry point routers/telemetry.py calls. `engine` is "ollama" or "matricxon" (engine_service.EngineName),
+async def get_engine_telemetry_summary(db: AsyncSession, engine: str) -> EngineTelemetrySummary:
+    """The one entry point routers/telemetry.py calls. `engine` is "llamacpp" or "matricxon" (EngineName),
     never "whichever is active": the Telemetry page shows either engine's history regardless of what serves traffic.
     """
     total = (
@@ -138,12 +138,12 @@ async def get_engine_telemetry_summary(db: AsyncSession, engine: str) -> OllamaT
         )
     ).scalar_one()
     events = await _fetch_recent_events(db, engine)
-    return OllamaTelemetrySummary(
+    return EngineTelemetrySummary(
         total_requests=total,
         error_count=errors,
         by_model=await _counts_by_model(db, engine),
         by_host=await _stats_by_host(db, engine),
         latency_by_model=_latency_by_model(events),
         latency_time_series=_latency_time_series(events),
-        loaded_models=await ollama_snapshot_service.get_latest_snapshots(db, engine),
+        loaded_models=await model_snapshot_service.get_latest_snapshots(db, engine),
     )

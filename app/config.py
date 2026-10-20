@@ -115,8 +115,9 @@ IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 
 # Local-mode auto-install (Settings > Inference engines)
 # Tested tags, never "latest": bump them on purpose after verifying. Read only by the installers in app/services/.
-OLLAMA_GITHUB_REPO = "ollama/ollama"
-OLLAMA_PINNED_VERSION = "v0.33.3"
+LLAMACPP_GITHUB_REPO = "ggml-org/llama.cpp"
+# Verified with router mode (--models-preset), streamed tool calls and embeddings.
+LLAMACPP_PINNED_VERSION = "b11443"
 SDCPP_GITHUB_REPO = "leejet/stable-diffusion.cpp"
 SDCPP_PINNED_VERSION = "master-929-3f8527a"
 MATRICXON_GITHUB_REPO = "upupabit/matricxon"

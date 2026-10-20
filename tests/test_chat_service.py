@@ -449,7 +449,7 @@ async def test_build_reply_stream_merges_consecutive_channel_messages_before_cal
 ):
     """Covers several members posting with ask_ai=False in a row before anyone asks the AI (see
     test_build_reply_stream_skips_generation_for_a_normal_channel_message): consecutive "user" messages, which a
-    strict chat template (Mistral/Ministral, used by Ollama and Matricxon) rejects: "conversation roles must
+    strict chat template (Mistral/Ministral, used by llama.cpp and Matricxon) rejects: "conversation roles must
     alternate user and assistant roles" (seen in Ollama's logs). chat_history_service must fold them into one
     turn, each line attributed to its sender, before the model sees them.
     """
@@ -734,7 +734,7 @@ async def test_build_reply_stream_falls_back_to_conversation_model_with_no_visio
 @pytest.mark.asyncio
 async def test_build_reply_stream_falls_back_when_the_conversation_model_is_not_installed(db, user, monkeypatch):
     """Covers: after an admin switches the active engine (engine_service), an *existing* conversation's model still
-    names a tag that engine lacks (Ollama and Matricxon have separate catalogs), and sending used to fail at once
+    names a tag that engine lacks (llama.cpp and Matricxon have separate catalogs), and sending used to fail at once
     with a raw 404. Now it falls back to an installed model and saves that correction on the conversation, so it
     isn't re-resolved on every message.
     """

@@ -1,5 +1,5 @@
 """Tests for GET /health (routers/health.py): how it combines the active engine's pool probe and a database
-check into one status and code. Per-host probing is tested in tests/test_ollama_pool.py/test_matricxon_pool.py
+check into one status and code. Per-host probing is tested in tests/test_llamacpp_pool.py/test_matricxon_pool.py
 (check_hosts); this stubs it and covers the combining logic for both engines.
 """
 
@@ -9,7 +9,7 @@ import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.routers.health import health
-from app.services import engine_service, matricxon_pool, ollama_pool
+from app.services import engine_service, llamacpp_pool, matricxon_pool
 
 
 def _body(response) -> dict:
@@ -25,12 +25,12 @@ def reset_cache():
 
 @pytest.mark.asyncio
 async def test_health_ok_when_the_active_engine_and_database_are_both_reachable(db, monkeypatch):
-    engine_service._cached_engine = "ollama"
+    engine_service._cached_engine = "llamacpp"
 
     async def fake_check_hosts():
         return {"http://h1:11434": True}
 
-    monkeypatch.setattr(ollama_pool, "check_hosts", fake_check_hosts)
+    monkeypatch.setattr(llamacpp_pool, "check_hosts", fake_check_hosts)
 
     response = await health(db=db)
 
@@ -39,7 +39,7 @@ async def test_health_ok_when_the_active_engine_and_database_are_both_reachable(
     assert body == {
         "status": "ok",
         "database": True,
-        "active_engine": "ollama",
+        "active_engine": "llamacpp",
         "engine_hosts": {"http://h1:11434": True},
     }
 
@@ -54,7 +54,7 @@ async def test_health_checks_matricxon_when_it_is_the_active_engine(db, monkeypa
     async def fake_matricxon_check_hosts():
         return {"http://m1:8420": True}
 
-    monkeypatch.setattr(ollama_pool, "check_hosts", fake_ollama_check_hosts)
+    monkeypatch.setattr(llamacpp_pool, "check_hosts", fake_ollama_check_hosts)
     monkeypatch.setattr(matricxon_pool, "check_hosts", fake_matricxon_check_hosts)
 
     response = await health(db=db)
@@ -67,12 +67,12 @@ async def test_health_checks_matricxon_when_it_is_the_active_engine(db, monkeypa
 
 @pytest.mark.asyncio
 async def test_health_ok_when_at_least_one_engine_host_is_up(db, monkeypatch):
-    engine_service._cached_engine = "ollama"
+    engine_service._cached_engine = "llamacpp"
 
     async def fake_check_hosts():
         return {"http://h1:11434": False, "http://h2:11434": True}
 
-    monkeypatch.setattr(ollama_pool, "check_hosts", fake_check_hosts)
+    monkeypatch.setattr(llamacpp_pool, "check_hosts", fake_check_hosts)
 
     response = await health(db=db)
 
@@ -84,12 +84,12 @@ async def test_health_ok_when_at_least_one_engine_host_is_up(db, monkeypatch):
 async def test_health_unhealthy_when_every_engine_host_is_down(db, monkeypatch):
     """The scenario it exists for: a machine's only local engine died, so every instance there reports unhealthy and the
     proxy stops routing to it."""
-    engine_service._cached_engine = "ollama"
+    engine_service._cached_engine = "llamacpp"
 
     async def fake_check_hosts():
         return {"http://h1:11434": False, "http://h2:11434": False}
 
-    monkeypatch.setattr(ollama_pool, "check_hosts", fake_check_hosts)
+    monkeypatch.setattr(llamacpp_pool, "check_hosts", fake_check_hosts)
 
     response = await health(db=db)
 
@@ -102,7 +102,7 @@ async def test_health_unhealthy_when_every_engine_host_is_down(db, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_health_unhealthy_when_database_is_unreachable(db, monkeypatch):
-    engine_service._cached_engine = "ollama"
+    engine_service._cached_engine = "llamacpp"
 
     async def fake_check_hosts():
         return {"http://h1:11434": True}
@@ -110,7 +110,7 @@ async def test_health_unhealthy_when_database_is_unreachable(db, monkeypatch):
     async def fake_execute(*_args, **_kwargs):
         raise SQLAlchemyError("database is down")
 
-    monkeypatch.setattr(ollama_pool, "check_hosts", fake_check_hosts)
+    monkeypatch.setattr(llamacpp_pool, "check_hosts", fake_check_hosts)
     monkeypatch.setattr(db, "execute", fake_execute)
 
     response = await health(db=db)

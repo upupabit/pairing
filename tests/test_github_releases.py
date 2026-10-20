@@ -1,5 +1,5 @@
 """Tests for services/github_releases.py, the GitHub-tags fetcher behind Settings > Inference engines' version
-datalist (shared available-versions endpoint of routers/ollama_admin.py|matricxon_admin.py|sdcpp_admin.py).
+datalist (shared available-versions endpoint of routers/llamacpp_admin.py|matricxon_admin.py|sdcpp_admin.py).
 No network: every httpx.AsyncClient call is monkeypatched.
 """
 

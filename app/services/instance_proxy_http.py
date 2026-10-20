@@ -10,20 +10,19 @@ import httpx
 #   - the local-instances supervisor's tracking/reconcile state
 #   - db_admin's switch_database, which changes only *that process's* connection
 #   - the proxy-mode setting
-#   - ollama_process's restart (one shared Ollama; it must fire once, not twice on a random sibling)
+#   - llamacpp_process's restart (one shared llama-server; it must fire once, not twice on a random sibling)
 #   - /health, which must answer for the port asked, or health checks mean nothing
 # /static/ is exempt as an optimization (identical files everywhere, no need for a hop).
 EXEMPT_PREFIXES = (
     "/api/settings/instances",
     "/api/settings/database",
     "/api/settings/proxy-mode",
-    # Ollama process state (ollama_process.py) exists only on the primary, as for sd-server below. Covers
-    # local-mode start/stop/status and the old "Ollama concurrency" config, now under the same prefix.
-    "/api/settings/ollama",
+    # llama-server process state (llamacpp_process.py) exists only on the primary, as for sd-server below.
+    "/api/settings/llamacpp",
     # stable-diffusion.cpp's sd-server: primary-only process state. Without this, a start/stop/status load-balanced to
     # a sibling would 400 (sdcpp_service's IS_PRIMARY guard) or read/write that *sibling's* own tracking file.
     "/api/settings/sdcpp",
-    # Matricxon process state (matricxon_process.py) exists only on the primary, like Ollama/sd-server. It was
+    # Matricxon process state (matricxon_process.py) exists only on the primary, like llama-server/sd-server. It was
     # missing: a start/stop landing on a sibling 400'd with "Matricxon can only be managed from the primary
     # instance", so the button worked about half the time.
     "/api/settings/matricxon",

@@ -234,7 +234,7 @@
       "vision": false,
       "unavailable_reason": null,
       "embedding_dim": null,
-      "note": "ggml-org's official llama.cpp conversion: arch \"qwen3\" with rank pooling and a yes/no scoring head (cls.output.weight). Checked 2026-10-15 against llama.cpp's own reranking on this exact file: identical tokens, scores within 0.01 (matricxon tools/oracle/validate_qwen3_reranker.py). Matricxon only (Ollama can't rerank). Multilingual, 0.6B: a fair CPU cost per passage."
+      "note": "ggml-org's official llama.cpp conversion: arch \"qwen3\" with rank pooling and a yes/no scoring head (cls.output.weight). Checked 2026-10-15 against llama.cpp's own reranking on this exact file: identical tokens, scores within 0.01 (matricxon tools/oracle/validate_qwen3_reranker.py). Runs on Matricxon and llama.cpp. Multilingual, 0.6B: a fair CPU cost per passage."
     }
   ]
 }

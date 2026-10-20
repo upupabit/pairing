@@ -1,5 +1,5 @@
 """Polls Matricxon's GET /api/ps ("what's loaded now") on every host and appends a snapshot row per (host,
-model): the twin of ollama_ps_poller (see its docstring for why a poller, primary-gated). Field-compatible
+model): the twin of llamacpp_ps_poller (see its docstring for why a poller, primary-gated). Field-compatible
 with../matricxon/app/schemas/ps.py (name/size/size_vram/expires_at, as _poll_host parses): /api/ps is
 Ollama-compatible like every endpoint matricxon_client.py uses.
 """
@@ -19,7 +19,7 @@ logger = logging.getLogger("llama_chat")
 POLL_INTERVAL_SECONDS = 30.0
 _PS_TIMEOUT = httpx.Timeout(5.0, connect=2.0)
 
-# Same strong-ref set/done-callback idiom as ollama_ps_poller: a bare create_task result is weakly
+# Same strong-ref set/done-callback idiom as llamacpp_ps_poller: a bare create_task result is weakly
 # referenced and could be garbage-collected mid-run.
 _background_poller_tasks: set[asyncio.Task] = set()
 
@@ -78,7 +78,7 @@ async def _run_matricxon_ps_poller() -> None:
 
 
 def start_matricxon_ps_poller() -> None:
-    """Called once from startup_service.run_startup_tasks (primary only); see ollama_ps_poller."""
+    """Called once from startup_service.run_startup_tasks (primary only); see llamacpp_ps_poller."""
     task = asyncio.create_task(_run_matricxon_ps_poller())
     _background_poller_tasks.add(task)
     task.add_done_callback(_background_poller_tasks.discard)

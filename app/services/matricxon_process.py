@@ -1,5 +1,5 @@
 """Starts/stops the local Matricxon via its scripts/start.sh and scripts/stop.sh: the supervisor behind
-Settings > Inference engines > Matricxon "local" mode. Unlike Ollama (one binary, ollama_process.py) or
+Settings > Inference engines > Matricxon "local" mode. Unlike llama.cpp (one binary, llamacpp_process.py) or
 stable-diffusion.cpp (an `sd-server` this app tracks, sdcpp_process.py), Matricxon is a sibling Python project
 with its own venv whose scripts/start.sh manages a PID file (`run/matricxon.pid` in the project), read here
 directly instead of reinventing tracking.
@@ -31,7 +31,7 @@ _DEFAULT_PROJECT_DIR = BASE_DIR.parent / "matricxon"
 _START_TIMEOUT_SECONDS = 30.0
 _HEALTH_CHECK_TIMEOUT = httpx.Timeout(3.0, connect=2.0)
 
-# As ollama_process._lock / sdcpp_service._lock: a Start/Stop must not interleave with a status poll or another
+# As llamacpp_process._lock / sdcpp_service._lock: a Start/Stop must not interleave with a status poll or another
 # start/stop.
 _lock = asyncio.Lock()
 
@@ -39,7 +39,7 @@ _lock = asyncio.Lock()
 def _find_project_dir(project_dir: str | None = None) -> Path | None:
     """`project_dir` is the admin's override (Settings > Inference engines' "Already have Matricxon installed
     elsewhere?"): used exclusively if it looks like a checkout (has scripts/start.sh), else the sibling-directory
-    default (like ollama_process._find_binary).
+    default (like llamacpp_process.find_binary).
     """
     candidates = [Path(project_dir).expanduser()] if project_dir else []
     candidates.append(_DEFAULT_PROJECT_DIR)
@@ -57,7 +57,7 @@ def is_installed(project_dir: str | None = None) -> bool:
 
 def auto_detect_project_dir() -> str | None:
     """What _find_project_dir resolves to with no override; the project_dir placeholder (like
-    ollama_process.auto_detect_binary)."""
+    llamacpp_process.find_binary)."""
     found = _find_project_dir()
     return str(found) if found else None
 
@@ -142,7 +142,7 @@ def _build_env(config: MatricxonServerConfig, proxy_url: str | None = None) -> d
     env["MATRICXON_GPU_WEIGHT_MODE"] = config.gpu_weight_mode
     env["MATRICXON_LOG_LEVEL"] = str(config.log_level)
     env["MATRICXON_CLUSTER_ROLE"] = config.cluster_role
-    # Matricxon's model-pull downloader (plain httpx) honors these like Ollama's Go binary (ollama_process._build_env).
+    # Matricxon's model-pull downloader (plain httpx) honors these, as llama-server does (llamacpp_process._start).
     if proxy_url:
         env["HTTP_PROXY"] = proxy_url
         env["HTTPS_PROXY"] = proxy_url
@@ -237,7 +237,7 @@ def _start(project_dir: Path, config: MatricxonServerConfig, proxy_url: str | No
 
 def _stop(project_dir: Path) -> None:
     # scripts/stop.sh already waits gracefully then SIGKILLs; no polling loop like
-    # ollama_process._stop/tracked_process.terminate's raw signals.
+    # llamacpp_process._stop/tracked_process.terminate's raw signals.
     if not _is_running(project_dir):
         return
     result = _run_script(project_dir, "stop.sh", {**os.environ})
@@ -272,7 +272,7 @@ async def get_status(project_dir_override: str | None = None) -> MatricxonServer
 
 async def start(config: MatricxonServerConfig, proxy_url: str | None = None) -> MatricxonServerStatus:
     """POST.../start. RuntimeError if no checkout is found or it doesn't come up healthy in time; ValueError if not
-    the primary (as ollama_process.start).
+    the primary (as llamacpp_process.start).
     """
     if not IS_PRIMARY:
         raise ValueError("Matricxon can only be managed from the primary instance.")
@@ -307,7 +307,7 @@ async def stop(project_dir_override: str | None = None) -> MatricxonServerStatus
 async def apply_local_config(
     config: MatricxonServerConfig, proxy_url: str | None = None, previous: MatricxonServerConfig | None = None
 ) -> MatricxonServerStatus:
-    """Backs a config Save while Matricxon runs locally. It reads MATRICXON_* only at startup (like Ollama), so this
+    """Backs a config Save while Matricxon runs locally. It reads MATRICXON_* only at startup (like llama.cpp), so this
     stops and restarts it. Callers (routers/matricxon_admin.py) should have warned about the interruption.
     `previous` (the config before the Save): a changed project_dir stops the old checkout's process first.
     """

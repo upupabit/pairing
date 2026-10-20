@@ -1,5 +1,5 @@
 """Tests for services/inference_client.py, the engine-agnostic dispatch every generic call site (chat, RAG,
-titles, model management) uses instead of importing ollama_client/matricxon_client. Confirms dispatch follows
+titles, model management) uses instead of importing llamacpp_client/matricxon_client. Confirms dispatch follows
 engine_service.current_engine and both engines' exception types normalize into one InferenceError.
 """
 
@@ -8,10 +8,10 @@ import pytest
 from app.services import (
     engine_service,
     inference_client,
+    llamacpp_admin,
+    llamacpp_client,
     matricxon_admin,
     matricxon_client,
-    ollama_admin,
-    ollama_client,
 )
 
 
@@ -24,12 +24,12 @@ def reset_cache():
 
 @pytest.mark.asyncio
 async def test_list_models_dispatches_to_ollama_when_active(monkeypatch):
-    engine_service._cached_engine = "ollama"
+    engine_service._cached_engine = "llamacpp"
 
     async def fake_list_models():
         return [{"name": "from-ollama"}]
 
-    monkeypatch.setattr(ollama_client, "list_models", fake_list_models)
+    monkeypatch.setattr(llamacpp_client, "list_models", fake_list_models)
     monkeypatch.setattr(matricxon_client, "list_models", lambda: pytest.fail("must not call matricxon"))
 
     assert await inference_client.list_models() == [{"name": "from-ollama"}]
@@ -48,12 +48,12 @@ async def test_list_models_dispatches_to_matricxon_when_active(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_list_models_wraps_ollama_error_as_inference_error(monkeypatch):
-    engine_service._cached_engine = "ollama"
+    engine_service._cached_engine = "llamacpp"
 
     async def fake_list_models():
-        raise ollama_client.OllamaError("down")
+        raise llamacpp_client.LlamaCppError("down")
 
-    monkeypatch.setattr(ollama_client, "list_models", fake_list_models)
+    monkeypatch.setattr(llamacpp_client, "list_models", fake_list_models)
 
     with pytest.raises(inference_client.InferenceError):
         await inference_client.list_models()
@@ -73,24 +73,24 @@ async def test_list_models_wraps_matricxon_error_as_inference_error(monkeypatch)
 
 @pytest.mark.asyncio
 async def test_chat_stream_dispatches_by_active_engine(monkeypatch):
-    engine_service._cached_engine = "ollama"
+    engine_service._cached_engine = "llamacpp"
 
     async def fake_ollama_stream(_model, _messages, _params):
         yield "from-ollama"
 
-    monkeypatch.setattr(ollama_client, "chat_stream", fake_ollama_stream)
+    monkeypatch.setattr(llamacpp_client, "chat_stream", fake_ollama_stream)
     result = [c async for c in inference_client.chat_stream("m", [], {})]
     assert result == ["from-ollama"]
 
 
 @pytest.mark.asyncio
 async def test_pull_model_stream_dispatches_to_the_active_engines_admin_service(monkeypatch):
-    engine_service._cached_engine = "ollama"
+    engine_service._cached_engine = "llamacpp"
 
     async def fake_pull(tag):
         yield {"status": f"pulling {tag} via ollama"}
 
-    monkeypatch.setattr(ollama_admin, "pull_model_stream", fake_pull)
+    monkeypatch.setattr(llamacpp_admin, "pull_model_stream", fake_pull)
     result = [p async for p in inference_client.pull_model_stream("hf.co/some/repo:some-file")]
     assert result == [{"status": "pulling hf.co/some/repo:some-file via ollama"}]
 
@@ -100,8 +100,8 @@ async def test_pull_model_stream_rejects_a_non_hf_tag_for_ollama(monkeypatch):
     """Ollama (unlike Matricxon, which can't use Ollama's registry protocol) will pull a bare library name like
     "llama3", which Matricxon could never resolve, making it unusable once an admin switches engine.
     """
-    engine_service._cached_engine = "ollama"
-    monkeypatch.setattr(ollama_admin, "pull_model_stream", lambda _tag: pytest.fail("must not reach the engine"))
+    engine_service._cached_engine = "llamacpp"
+    monkeypatch.setattr(llamacpp_admin, "pull_model_stream", lambda _tag: pytest.fail("must not reach the engine"))
 
     with pytest.raises(inference_client.InferenceError):
         async for _ in inference_client.pull_model_stream("llama3"):
@@ -132,7 +132,7 @@ async def test_delete_model_dispatches_to_matricxon_admin_when_active(monkeypatc
 
 
 def test_active_capabilities_reflects_the_active_engine():
-    engine_service._cached_engine = "ollama"
+    engine_service._cached_engine = "llamacpp"
     assert inference_client.active_capabilities().support_checking is False
 
     engine_service._cached_engine = "matricxon"
@@ -148,7 +148,7 @@ async def test_embed_raises_inference_error_when_the_active_engine_cannot_embed(
     from app.services.engines.registry import EngineRegistry
 
     class _NoEmbeddingsEngine(InferenceEngine):
-        name = "ollama"
+        name = "llamacpp"
         display_name = "No-Embeddings Test Engine"
         capabilities = EngineCapabilities(
             embeddings=False,
@@ -179,7 +179,7 @@ async def test_embed_raises_inference_error_when_the_active_engine_cannot_embed(
 
     fake_registry = EngineRegistry([_NoEmbeddingsEngine()])
     monkeypatch.setattr(inference_client, "registry", fake_registry)
-    engine_service._cached_engine = "ollama"
+    engine_service._cached_engine = "llamacpp"
 
     with pytest.raises(inference_client.InferenceError):
         await inference_client.embed("some text", "some-model")
@@ -187,14 +187,14 @@ async def test_embed_raises_inference_error_when_the_active_engine_cannot_embed(
 
 @pytest.mark.asyncio
 async def test_stop_model_does_not_wrap_errors(monkeypatch):
-    # stop_model is best-effort cleanup on both engines (ollama_client/matricxon_client.stop_model swallow failures), so
-    # the dispatcher passes it through.
-    engine_service._cached_engine = "ollama"
+    # stop_model is best-effort cleanup on both engines (llamacpp_client/matricxon_client.stop_model swallow
+    # failures), so the dispatcher passes it through.
+    engine_service._cached_engine = "llamacpp"
     called = []
 
     async def fake_stop(model):
         called.append(model)
 
-    monkeypatch.setattr(ollama_client, "stop_model", fake_stop)
+    monkeypatch.setattr(llamacpp_client, "stop_model", fake_stop)
     await inference_client.stop_model("some-model")
     assert called == ["some-model"]

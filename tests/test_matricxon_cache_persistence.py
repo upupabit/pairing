@@ -114,7 +114,7 @@ async def test_router_passes_the_update_through(db, monkeypatch: pytest.MonkeyPa
 @pytest.mark.asyncio
 @pytest.mark.parametrize("call", ["get", "put", "delete"])
 async def test_every_endpoint_refuses_while_ollama_is_the_active_engine(db, call: str) -> None:
-    await engine_service.set_active_engine(db, "ollama")
+    await engine_service.set_active_engine(db, "llamacpp")
     calls = {
         "get": lambda: matricxon_cache_admin.get_cache_persistence(db=db, _admin=None),
         "put": lambda: matricxon_cache_admin.update_cache_persistence(

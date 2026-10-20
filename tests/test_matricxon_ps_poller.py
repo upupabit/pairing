@@ -1,4 +1,4 @@
-"""Tests for services/matricxon_ps_poller.py, the twin of tests/test_ollama_ps_poller.py (same loop precedent).
+"""Tests for services/matricxon_ps_poller.py, the twin of tests/test_llamacpp_ps_poller.py (same loop precedent).
 Uses the shared `db` fixture, which patches matricxon_ps_poller.AsyncSessionLocal (conftest.py).
 """
 
@@ -116,7 +116,7 @@ async def test_run_matricxon_ps_poller_survives_a_poll_failure(monkeypatch):
 @pytest.mark.asyncio
 async def test_start_matricxon_ps_poller_tracks_its_own_task_with_a_strong_reference(monkeypatch):
     """asyncio keeps only a weak reference to a bare create_task result; without this module's strong-ref set the
-    poller task could be garbage-collected mid-run (as ollama_ps_poller).
+    poller task could be garbage-collected mid-run (as llamacpp_ps_poller).
     """
 
     async def fake_run_forever():

@@ -25,7 +25,7 @@ def _reset_engine_cache():
 
 @pytest.mark.asyncio
 async def test_unavailable_with_no_embedding_model_configured_on_an_embeddings_capable_engine(db, user):
-    engine_service._cached_engine = "ollama"
+    engine_service._cached_engine = "llamacpp"
 
     result = await rag_availability(db=db, _user=user)
 
@@ -35,7 +35,7 @@ async def test_unavailable_with_no_embedding_model_configured_on_an_embeddings_c
 
 @pytest.mark.asyncio
 async def test_available_once_an_embedding_model_is_configured(db, user, monkeypatch):
-    engine_service._cached_engine = "ollama"
+    engine_service._cached_engine = "llamacpp"
     monkeypatch.setattr(
         default_model_settings_module,
         "list_models",
@@ -54,7 +54,7 @@ async def test_unavailable_when_admin_disabled_rag_regardless_of_engine_or_confi
     """The admin switch (RagLimits.enabled, Settings > System) is checked first: an embeddings-capable engine with a
     configured model must still be unavailable once it's off, with the message shown on Settings > Knowledge's title.
     """
-    engine_service._cached_engine = "ollama"
+    engine_service._cached_engine = "llamacpp"
     monkeypatch.setattr(
         default_model_settings_module,
         "list_models",

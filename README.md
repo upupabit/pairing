@@ -8,7 +8,7 @@
 
 # pAIring
 
-Private AI ring is a self-hosted, production-ready platform for deploying private LLMs & image generation models across a single node, a team, a department, or an organization — role-based access, load balancing failover across servers, and rock solid UI validations to avoid configuration mistakes. Start chatting with open weights LLMs, create images and much more. Supports every existing public GGUF model out of the box, browsable from Hugging Face or your own private repository. Switch the inference engine with one setting: local Ollama or Matricxon, or one of a growing number of cloud connectors.
+Private AI ring is a self-hosted, production-ready platform for deploying private LLMs & image generation models across a single node, a team, a department, or an organization — role-based access, load balancing failover across servers, and rock solid UI validations to avoid configuration mistakes. Start chatting with open weights LLMs, create images and much more. Supports every existing public GGUF model out of the box, browsable from Hugging Face or your own private repository. Switch the inference engine with one setting: local llama.cpp or Matricxon, or one of a growing number of cloud connectors.
 
 ## Quick start
 
@@ -33,11 +33,12 @@ Supports MySQL migration and multi-server deployment.
 
 **After install, open the UI and configure the essentials to get started:**
 
-1. Go to **Settings → Inference engines** and choose your inference engine. Ollama and Matricxon are supported (Matricxon has many more options — see the Matricxon repository for details). Both can be pulled and installed directly from there. Prefer the cloud? Set up a connector on the **Connectors** page and pick it here instead; switching back is just as quick.
-2. After configuring the engine, go to **Settings → Models** and download some models. Embedding models are needed for RAG support, an optional reranker model (Matricxon) makes RAG answers more accurate, and vision projectors are needed for image understanding in chats and channels.
+1. Go to **Settings → Inference engines** and choose your inference engine. llama.cpp and Matricxon are supported (Matricxon has many more options — see the Matricxon repository for details). Both can be installed directly from there: llama.cpp from its official prebuilt release (CPU by default, or a Vulkan/CUDA build). By default both use one shared models folder, so a model downloaded under either engine is stored once and is ready for both. Prefer the cloud? Set up a connector on the **Connectors** page and pick it here instead; switching back is just as quick.
+2. After configuring the engine, go to **Settings → Models** and download some models. Embedding models are needed for RAG support, an optional reranker model makes RAG answers more accurate, and vision projectors are needed for image understanding in chats and channels.
 3. Want images? Go to **Settings → Image**, press **Install from GitHub** for stable-diffusion.cpp (or, on Linux, **Build from source** — needs `git`, `cmake` and `g++`: `sudo apt install git cmake build-essential`; `scripts/install_on_fresh_server.sh` installs them), then download a diffusion model (SD-Turbo is a good start) under **Settings → Models → Diffusion models**, choose it in the engine's *Model* dropdown and press **Start**.
 4. Once the models are ready, go to **Settings → System** and set the important parameters (such as the default vision model).
 5. Run a few tests.
+
 
 **Production notes**
 
@@ -102,7 +103,7 @@ It is also important not to expose more models to users than the system RAM/VRAM
 - Admins connect MCP tool servers (streamable HTTP) under Settings → Knowledge → Configure MCP, with
   encrypted headers and a Test connection button, and can switch MCP off for everyone in Settings → System. Users switch **Tools** on per chat; the model can then call those
   tools (up to 5 rounds per reply) and each call is shown under the reply. Works with Matricxon
-  (Qwen, Mistral, Llama 3.x and Gemma 4 templates) and with Ollama for models that support tools.
+  (Qwen, Mistral, Llama 3.x and Gemma 4 templates) and with llama.cpp for models whose chat template supports tools.
 
 **Live dashboards**
 - A real usage overview (conversations, messages, users, knowledge
@@ -130,10 +131,10 @@ It is also important not to expose more models to users than the system RAM/VRAM
 - Live GPUs usage shows up right in the dashboard, alongside CPU/RAM/disk.
 
 **One place to switch engines**
-- Ollama, Matricxon and every cloud connector sit in the same **Active engine** picker (Settings → Inference engines): change it and the whole app follows, with no reinstall and nothing lost.
+- llama.cpp, Matricxon and every cloud connector sit in the same **Active engine** picker (Settings → Inference engines): change it and the whole app follows, with no reinstall and nothing lost.
 
 **Load balancing**
-- Point at extra ML engine (Ollama or Matricxon) servers (more GPUs, more machines) and this app spreads requests across them, with automatic failover if one goes down.
+- Point at extra ML engine (llama-server or Matricxon) servers (more GPUs, more machines) and this app spreads requests across them, with automatic failover if one goes down.
 - Can also run multiple copies of itself behind one URL, no reverse proxy needed.
 - Or, if you'd rather test it for enterprise use, use a reverse proxy (Nginx, HAProxy, ...) to balance across a ring of pAIring servers — that works too. All configurable directly from the UI.
 
@@ -184,7 +185,7 @@ Setup, limits and privacy notes for each: [pAIring connectors](https://upupabit.
 
 **Runs on**
 - Linux — All features installed.
-- macOS also works — install Ollama or Matricxon yourself and point pAIring at it.
+- macOS also works — install llama.cpp (`llama-server`) or Matricxon yourself and point pAIring at it.
   Windows isn't supported at this point.
 - x86_64 or arm64, GPU optional — CPU-only works fine, a GPU (NVIDIA or Apple Silicon) just makes replies much faster.
 - No fixed RAM requirement — depends on which model(s) you run; Models settings section shows what actually fits your hardware.

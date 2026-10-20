@@ -25,7 +25,7 @@
 
   <div class="flex flex-1 min-h-0">
 
-    <!-- This page's own left sidebar, separate from chat.html's app sidebar (not rendered here), like settings.html's tab nav. "Overview" is the default (a usage dashboard filled by stats.js); "Visual chat workflow" swaps in the D3 pipeline diagram (workflow_diagram.js); "Telemetry" the Ollama call-telemetry dashboard (telemetry.js); "System" this machine's live CPU/RAM/disk dashboard (system_metrics.js). A new option needs a data-view button here plus a matching #stats-view-<name> panel in <main>. -->
+    <!-- This page's own left sidebar, separate from chat.html's app sidebar (not rendered here), like settings.html's tab nav. "Overview" is the default (a usage dashboard filled by stats.js); "Visual chat workflow" swaps in the D3 pipeline diagram (workflow_diagram.js); "Telemetry" the per-engine call-telemetry dashboard (telemetry.js); "System" this machine's live CPU/RAM/disk dashboard (system_metrics.js). A new option needs a data-view button here plus a matching #stats-view-<name> panel in <main>. -->
     <aside class="hidden md:flex w-64 shrink-0 flex-col border-r border-slate-800 bg-slate-900/60">
       <nav class="flex-1 overflow-y-auto px-2 py-3 space-y-1">
         <button type="button" data-view="overview"
@@ -44,7 +44,7 @@
           class="stats-nav-btn w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors">
           System
         </button>
-        <!-- Matricxon-only (Ollama has no API listing what it can load); engine_support.js reveals it once /health confirms Matricxon is active. -->
+        <!-- Matricxon-only (llama-server has no API listing what it can load); engine_support.js reveals it once /health confirms Matricxon is active. -->
         <button type="button" data-view="architectures" id="stats-nav-architectures"
           class="stats-nav-btn hidden w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors">
           Supported architectures
@@ -89,7 +89,7 @@
           <div class="flex items-center gap-2">
             <!-- "You're currently on: <engine>" (see telemetry.js): filled once, the first time this view loads, from the /health endpoint the Model tab uses for its active-engine badge. Informational; switching the dropdown below to the other engine's history doesn't change what serves live chat. -->
             <span id="telemetry-active-engine-note" class="text-xs text-slate-500"></span>
-            <!-- Which engine's history this dashboard shows: the active engine the first time the view opens (loadTelemetry), then wherever an admin leaves it for the page load. Starts `invisible` (space kept, no layout jump) so "Ollama" never flashes before the active engine is known. -->
+            <!-- Which engine's history this dashboard shows: the active engine the first time the view opens (loadTelemetry), then wherever an admin leaves it for the page load. Starts `invisible` (space kept, no layout jump) so a wrong engine never flashes before the active engine is known. -->
             <select id="telemetry-source-select"
               class="invisible rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
             </select>

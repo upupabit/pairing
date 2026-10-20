@@ -4,7 +4,7 @@ from pydantic import BaseModel
 class EngineSupportResponse(BaseModel):
     """GET /api/stats/engine-support: the Stats "Supported architectures" view
     (engine_support_service.EngineSupportService).
-    Only Matricxon exposes it (GET /api/health), so `available` is False for Ollama. `error` is set (lists empty)
+    Only Matricxon exposes it (GET /api/health), so `available` is False for llama.cpp. `error` is set (lists empty)
     if Matricxon can't be reached.
     """
 

@@ -1,4 +1,4 @@
-"""Tests for services/engine_support_checker.py: the AlwaysSupportedChecker/OllamaSupportChecker defaults, and
+"""Tests for services/engine_support_checker.py: the AlwaysSupportedChecker/LlamaCppSupportChecker defaults, and
 EngineSupportSet ("only the active engine's checker does real I/O", once inside MatricxonSupportChecker.load;
 its own test file covers the checker-specific parts).
 """
@@ -9,7 +9,7 @@ from app.services import engine_service, matricxon_client
 from app.services.engine_support_checker import (
     AlwaysSupportedChecker,
     EngineSupportSet,
-    OllamaSupportChecker,
+    LlamaCppSupportChecker,
     SupportVerdict,
 )
 
@@ -32,12 +32,12 @@ def test_always_supported_checker_estimates_no_ram():
 
 
 def test_ollama_checker_estimates_ram_from_download_size():
-    checker = OllamaSupportChecker()
+    checker = LlamaCppSupportChecker()
     assert checker.estimated_ram_gb("tag", download_gb=4.0) == 5.0
 
 
 def test_ollama_checker_falls_back_when_download_size_is_unknown():
-    checker = OllamaSupportChecker()
+    checker = LlamaCppSupportChecker()
     assert checker.estimated_ram_gb("tag", download_gb=None, fallback_min_ram_gb=2.5) == 2.5
 
 
@@ -46,7 +46,7 @@ async def test_engine_support_set_only_gives_the_active_engine_a_real_load(monke
     """Guards asking a non-active engine (possibly a paid remote API) about its support surface on every catalog
     load: the rule MatricxonSupportChecker.load enforced alone, now shared by all engines.
     """
-    engine_service._cached_engine = "ollama"
+    engine_service._cached_engine = "llamacpp"
 
     async def _fail_if_called():
         raise AssertionError("Matricxon must not be queried while Ollama is active")
@@ -57,7 +57,7 @@ async def test_engine_support_set_only_gives_the_active_engine_a_real_load(monke
     support_set = await EngineSupportSet.load()
 
     result = support_set.support_for(tag="some-tag", architecture="mistral3", quantizations=["Q4_K"])
-    assert result["ollama"].supported is True
+    assert result["llamacpp"].supported is True
     assert result["matricxon"].supported is False
     assert "Could not reach Matricxon" in result["matricxon"].reason
 
@@ -84,10 +84,10 @@ async def test_engine_support_set_gives_the_active_engine_a_real_load(monkeypatc
 
 
 def test_engine_support_set_min_ram_falls_back_when_the_engine_has_no_estimate():
-    support_set = EngineSupportSet({"ollama": OllamaSupportChecker()})
+    support_set = EngineSupportSet({"llamacpp": LlamaCppSupportChecker()})
 
     result = support_set.support_for(
         tag="tag", architecture="x", quantizations=["Q4_K"], download_gb=None, min_ram_gb=1.2
     )
 
-    assert result["ollama"].min_ram_gb == 1.2
+    assert result["llamacpp"].min_ram_gb == 1.2

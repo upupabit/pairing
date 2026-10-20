@@ -1,7 +1,7 @@
 /* Settings > Models: why the model list couldn't load. Tells "the engine isn't running" apart from a slow or
-   flaky engine, for Ollama and Matricxon. Used by settings.js initModelTab. */
+   flaky engine, for llama.cpp and Matricxon. Used by settings.js initModelTab. */
 class EngineDownReason {
-  static LABELS = { ollama: "Ollama", matricxon: "Matricxon" };
+  static LABELS = { llamacpp: "llama.cpp", matricxon: "Matricxon" };
 
   // GET /health answers 503 while the engine is down, but its body still names the engine and its hosts.
   static async health() {

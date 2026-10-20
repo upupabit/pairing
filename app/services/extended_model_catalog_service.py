@@ -2,8 +2,8 @@
 app/model_catalog.py). Stored as one system-wide AppSetting JSON row (catalog curation, not a personal
 preference; like model_catalog_service.HiddenModelTags).
 
-Sourced from Hugging Face (huggingface_client.HuggingFaceCatalogSearch). Models are still *pulled* through
-Ollama's hf.co/ passthrough (see add for the tag); Ollama is never used to find or confirm one.
+Sourced from Hugging Face (huggingface_client.HuggingFaceCatalogSearch). Models are *pulled* by the active
+engine (see add for the tag); no engine is used to find or confirm one.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ from app import hardware
 from app.model_catalog import CuratedModel
 from app.models import SYSTEM_OWNER_ID, AppSetting, User
 from app.schemas import CatalogEntry
-from app.services.engine_support_checker import OLLAMA_RAM_ESTIMATE_MULTIPLIER, EngineSupportSet
+from app.services.engine_support_checker import GGUF_RAM_ESTIMATE_MULTIPLIER, EngineSupportSet
 from app.services.engines.registry import registry
 from app.services.extended_model_catalog_enrichment import HuggingFaceModelProbe
 from app.services.huggingface_client import HuggingFaceCatalogSearch, HuggingFaceLookupError
@@ -61,8 +61,8 @@ class ExtendedModelCatalog:
 
     @staticmethod
     def _min_ram_gb(download_gb: float | None) -> float:
-        """Ollama's rule-of-thumb multiplier (OLLAMA_RAM_ESTIMATE_MULTIPLIER, as OllamaSupportChecker)."""
-        return round(download_gb * OLLAMA_RAM_ESTIMATE_MULTIPLIER, 1) if download_gb else 0.0
+        """The rule-of-thumb multiplier (GGUF_RAM_ESTIMATE_MULTIPLIER, as LlamaCppSupportChecker)."""
+        return round(download_gb * GGUF_RAM_ESTIMATE_MULTIPLIER, 1) if download_gb else 0.0
 
     async def list(self) -> list[dict]:
         row = await self._db.get(AppSetting, (SYSTEM_OWNER_ID, self._KEY))
@@ -88,7 +88,7 @@ class ExtendedModelCatalog:
 
         Every entry records `discovered_via_engine` (the active engine), including admin searches and adds
         (found in two rounds): the list is engine-specific like the installed-models list, so an entry
-        found under Ollama must not resurface as a suggestion when Matricxon becomes active, whether it was
+        found under llama.cpp must not resurface as a suggestion when Matricxon becomes active, whether it was
         noticed on disk or searched by hand.
         """
         from app.services.image_model_service import ImageModelStore  # lazy: it imports this module
@@ -155,7 +155,7 @@ class ExtendedModelCatalog:
             "download_gb": matched["download_gb"],
             "is_projector": is_projector,
             # Same "repo ships an mmproj sidecar" signal as the HF file picker's +Vision badge
-            # (HuggingFaceCatalogSearch.repo_files); Ollama auto-pairs it on pull, Matricxon pulls it alongside.
+            # (HuggingFaceCatalogSearch.repo_files); llama.cpp pulls it with the model, Matricxon pulls it alongside.
             "vision": not is_projector and any(f.get("is_projector", False) for f in repo["files"]),
             "architecture": architecture,
             "quantizations": probed["quantizations"],
@@ -197,7 +197,7 @@ class ExtendedModelCatalog:
         engine-specific analogue of ChatModelCatalogBuilder.build.
 
         Closes a gap (two rounds): entries record the engine active when added (see add), so a tag
-        found installed under Matricxon, or added by hand while Ollama was active, doesn't resurface as a new
+        found installed under Matricxon, or added by hand while llama.cpp was active, doesn't resurface as a new
         "Browse more models" suggestion under another engine, even once uninstalled everywhere: the recorded engine
         is the only remaining answer to "is this new to this engine" (see backfill_discovered_via_engine).
         """

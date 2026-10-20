@@ -74,7 +74,7 @@ class MatricxonCachePanel {
 document.addEventListener("DOMContentLoaded", async () => {
   const root = document.getElementById("matricxon-cache-panel");
   if (!root) return;
-  // Matricxon-only feature: with Ollama (or anything else) as the active engine the panel stays hidden.
+  // Matricxon-only feature: with llama.cpp (or anything else) as the active engine the panel stays hidden.
   const { active_engine: activeEngine } = await api("/health");
   if (activeEngine !== "matricxon") return;
   const managed = await api("/api/settings/matricxon/config").then((c) => c.cluster_role !== "off", () => false);

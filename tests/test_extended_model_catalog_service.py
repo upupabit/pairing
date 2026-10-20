@@ -80,7 +80,7 @@ async def test_list_defaults_to_empty(db):
 async def test_add_verifies_and_stores_a_new_entry(db, monkeypatch):
     monkeypatch.setattr(svc, "list_models", lambda: _async_return([]))
     _stub_repo_files(monkeypatch, _REPO)
-    engine_service._cached_engine = "ollama"
+    engine_service._cached_engine = "llamacpp"
     catalog = ExtendedModelCatalog(db)
 
     entry = await catalog.add(_REPO["repo_id"], _REPO["files"][0]["filename"], proxy_url=None)
@@ -101,7 +101,7 @@ async def test_add_verifies_and_stores_a_new_entry(db, monkeypatch):
         "note": None,
         # Whichever engine was active at add time: every entry gets this, including a real admin search/add like this
         # one.
-        "discovered_via_engine": "ollama",
+        "discovered_via_engine": "llamacpp",
     }
     assert await catalog.list() == [entry]
 
@@ -413,7 +413,7 @@ async def test_build_omits_an_entry_added_while_a_different_engine_was_active(db
     catalog = ExtendedModelCatalog(db)
     await catalog.add("org/a", "x.gguf", proxy_url=None)
 
-    engine_service._cached_engine = "ollama"
+    engine_service._cached_engine = "llamacpp"
     entries = await catalog.build(admin_user)
 
     assert entries == []

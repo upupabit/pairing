@@ -287,20 +287,20 @@ async def test_router_pull_maps_validation_errors_to_400(db):
 
 @pytest.mark.asyncio
 async def test_models_dir_defaults_to_a_stable_diffusion_sibling_of_the_chat_engine_folders(db, monkeypatch):
-    from app.schemas import MatricxonServerConfig, OllamaServerConfig
+    from app.schemas import LlamaCppServerConfig, MatricxonServerConfig
     from app.services import settings_service
 
     monkeypatch.undo()  # this test exercises the real resolver, not the autouse stub
     assert await image_model_service.resolve_models_dir(db) == image_model_service.sdcpp_installer.models_dir()
 
-    await settings_service.set_ollama_server_config(db, OllamaServerConfig(models_path="/data/models/ollama"))
+    await settings_service.set_llamacpp_server_config(db, LlamaCppServerConfig(models_path="/data/models/llamacpp"))
     assert await image_model_service.resolve_models_dir(db) == Path("/data/models/diffusion")
 
     await settings_service.set_matricxon_server_config(db, MatricxonServerConfig(models_path="/mnt/models/matricxon"))
     assert await image_model_service.resolve_models_dir(db) == Path("/mnt/models/diffusion")
 
     await settings_service.set_matricxon_server_config(db, MatricxonServerConfig(models_path="/mnt/custom-dir"))
-    await settings_service.set_ollama_server_config(db, OllamaServerConfig(models_path="/data/other"))
+    await settings_service.set_llamacpp_server_config(db, LlamaCppServerConfig(models_path="/data/other"))
     assert await image_model_service.resolve_models_dir(db) == image_model_service.sdcpp_installer.models_dir()
 
     await image_engine_service.set_sdcpp_config(db, SdCppConfig(models_path="/explicit/place"))

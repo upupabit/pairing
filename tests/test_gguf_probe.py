@@ -1,5 +1,5 @@
 """Tests for services/gguf_probe.py. httpx.AsyncClient is replaced by a fake recording calls and returning canned
-responses (as tests/test_huggingface_client.py, tests/test_ollama_client.py). GGUF byte buffers are built by hand
+responses (as tests/test_huggingface_client.py, tests/test_llamacpp_client.py). GGUF byte buffers are built by hand
 (`_build_gguf` and helpers), not fixture files, matching the module's byte-level scope.
 """
 

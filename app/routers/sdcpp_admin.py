@@ -1,5 +1,5 @@
 """Settings > Image > stable-diffusion.cpp admin: launch config for `sd-server` and start/stop/status
-(app/services/sdcpp_service.py). Same shape as ollama_admin.py.
+(app/services/sdcpp_service.py). Same shape as llamacpp_admin.py.
 """
 
 import json
@@ -110,7 +110,7 @@ async def apply_config(
 @router.post("/internal-refresh", response_model=OkResponse)
 async def internal_refresh(request: Request, db: AsyncSession = Depends(get_db)):
     """Called only by another local instance's server_pool_broadcast.broadcast_refresh; see
-    ollama_admin.internal_refresh."""
+    llamacpp_admin.internal_refresh."""
     if request.client is None or request.client.host not in ("127.0.0.1", "::1"):
         raise HTTPException(status_code=403, detail="Internal endpoint — not reachable externally.")
     sdcpp_pool.refresh_from_config(await image_engine_service.get_sdcpp_config(db))
@@ -119,7 +119,7 @@ async def internal_refresh(request: Request, db: AsyncSession = Depends(get_db))
 
 @router.get("/check-host", response_model=HostHealthCheck)
 async def check_host(host: str, _admin: User = Depends(require_admin)):
-    """See ollama_admin.py; pings `host` directly (sdcpp_pool.check_host)."""
+    """See llamacpp_admin.py; pings `host` directly (sdcpp_pool.check_host)."""
     return HostHealthCheck(host=host, healthy=await sdcpp_pool.check_host(host))
 
 
@@ -147,13 +147,13 @@ async def stop(db: AsyncSession = Depends(get_db), _admin: User = Depends(requir
 @router.get("/install-defaults", response_model=InstallDefaults)
 async def install_defaults(_admin: User = Depends(require_admin)):
     """The repo/version sdcpp_installer uses unless SdCppConfig.install_repo/install_version are overridden (see
-    ollama_admin.py)."""
+    llamacpp_admin.py)."""
     return InstallDefaults(repo=SDCPP_GITHUB_REPO, version=SDCPP_PINNED_VERSION)
 
 
 @router.get("/available-versions", response_model=AvailableVersions)
 async def available_versions(repo: str | None = None, _admin: User = Depends(require_admin)):
-    """See ollama_admin.py's identical endpoint."""
+    """See llamacpp_admin.py's identical endpoint."""
     return AvailableVersions(versions=await github_releases.list_tags(repo or SDCPP_GITHUB_REPO))
 
 

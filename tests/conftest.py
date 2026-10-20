@@ -11,10 +11,14 @@ from app.models import User
 from app.services import (
     conversation_service,
     image_generation_service,
+    llamacpp_admin,
+    llamacpp_models,
+    llamacpp_preset,
+    llamacpp_process,
+    llamacpp_ps_poller,
     matricxon_process,
     matricxon_ps_poller,
     model_catalog_service,
-    ollama_ps_poller,
     reply_cross_instance_service,
     reply_generation_service,
     reply_model_unload_service,
@@ -33,6 +37,21 @@ def _tests_never_resolve_the_real_matricxon_checkout(monkeypatch, tmp_path):
     own project_dir see "not installed".
     """
     monkeypatch.setattr(matricxon_process, "_DEFAULT_PROJECT_DIR", tmp_path / "no-matricxon-checkout")
+
+
+@pytest.fixture(autouse=True)
+def _tests_never_touch_the_real_llamacpp_files(monkeypatch, tmp_path):
+    """The preset, the process tracking file and the fallback models folder all live under the real data and
+    models folders; a test saving a llama.cpp config or the context window would otherwise rewrite them.
+    """
+    monkeypatch.setattr(llamacpp_preset, "PRESET_PATH", tmp_path / "llamacpp" / "models.ini")
+    monkeypatch.setattr(llamacpp_process, "_TRACKING_FILE", tmp_path / "llamacpp.json")
+    monkeypatch.setattr(llamacpp_models, "FALLBACK_MODELS_DIR", tmp_path / "llamacpp-models")
+
+    async def no_reload() -> None:
+        """A llama-server really running on this machine must not be told to reload by a test."""
+
+    monkeypatch.setattr(llamacpp_admin, "_reload_router", no_reload)
 
 
 @pytest.fixture(autouse=True)
@@ -98,8 +117,8 @@ async def db(monkeypatch) -> AsyncSession:
 
     Patched in reply_model_unload_service and reply_cross_instance_service too: `from app.database import
     AsyncSessionLocal` binds a name in *each* module, so patching one never affects another. Same for
-    image_generation_service (its job task), ollama_ps_poller/matricxon_ps_poller, system_metrics_poller and
-    retention_poller.
+    image_generation_service (its job task), llamacpp_admin, llamacpp_ps_poller/matricxon_ps_poller,
+    system_metrics_poller and retention_poller.
     """
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     async with engine.begin() as conn:
@@ -110,7 +129,8 @@ async def db(monkeypatch) -> AsyncSession:
     monkeypatch.setattr(reply_model_unload_service, "AsyncSessionLocal", session_factory)
     monkeypatch.setattr(reply_cross_instance_service, "AsyncSessionLocal", session_factory)
     monkeypatch.setattr(image_generation_service, "AsyncSessionLocal", session_factory)
-    monkeypatch.setattr(ollama_ps_poller, "AsyncSessionLocal", session_factory)
+    monkeypatch.setattr(llamacpp_admin, "AsyncSessionLocal", session_factory)
+    monkeypatch.setattr(llamacpp_ps_poller, "AsyncSessionLocal", session_factory)
     monkeypatch.setattr(matricxon_ps_poller, "AsyncSessionLocal", session_factory)
     monkeypatch.setattr(system_metrics_poller, "AsyncSessionLocal", session_factory)
     monkeypatch.setattr(retention_poller, "AsyncSessionLocal", session_factory)

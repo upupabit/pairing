@@ -51,7 +51,7 @@ async def set_active_engine(
     body: ActiveEngineConfig, db: AsyncSession = Depends(get_db), _admin: User = Depends(require_admin)
 ):
     # A Connector-backed engine (e.g. "runpod") may be registered but not ready (InferenceEngine.is_ready), so
-    # it cannot be activated until configured and enabled on the Connectors page. Ollama/Matricxon are always ready.
+    # it cannot be activated until configured and enabled on the Connectors page. llama.cpp/Matricxon are always ready.
     engine = registry.get(body.active_engine)
     if not await engine.is_ready():
         raise HTTPException(
@@ -72,7 +72,7 @@ async def set_active_engine(
 @router.post("/internal-refresh", response_model=OkResponse)
 async def internal_refresh(request: Request, db: AsyncSession = Depends(get_db)):
     """Called only by another local instance's server_pool_broadcast.broadcast_refresh after an engine switch;
-    see ollama_admin.internal_refresh for the loopback-only guard.
+    see llamacpp_admin.internal_refresh for the loopback-only guard.
     """
     if request.client is None or request.client.host not in ("127.0.0.1", "::1"):
         raise HTTPException(status_code=403, detail="Internal endpoint — not reachable externally.")

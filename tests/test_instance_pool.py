@@ -1,5 +1,5 @@
 """Tests for services/instance_pool.py, the "fewest in-flight, health-aware" selector instance_proxy.py's
-balancer uses across local instances: tests/test_ollama_pool.py's pattern for instance indices. Every test
+balancer uses across local instances: tests/test_llamacpp_pool.py's pattern for instance indices. Every test
 fakes instance_process.read_tracking/is_alive, no real processes.
 """
 
@@ -11,7 +11,7 @@ from app.services import instance_pool, instance_process
 @pytest.fixture
 def three_alive(monkeypatch):
     """Indices 1 and 2 tracked and alive, plus index 0 (the primary, always a candidate), isolated per test with a fresh
-    _pool as test_ollama_pool.py's `hosts` fixture."""
+    _pool as test_llamacpp_pool.py's `hosts` fixture."""
     monkeypatch.setattr(instance_process, "read_tracking", lambda: {1: {"pid": 101}, 2: {"pid": 102}})
     monkeypatch.setattr(instance_process, "is_alive", lambda pid: True)
     monkeypatch.setattr(instance_pool, "_pool", {})

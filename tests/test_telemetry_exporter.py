@@ -30,7 +30,7 @@ async def _build_file_session_factory():
     return engine, async_sessionmaker(engine, expire_on_commit=False)
 
 
-def _make_readable_span(name="ollama.chat", scope="pairing.ollama", success=True, attributes=None):
+def _make_readable_span(name="engine.chat", scope="pairing.llamacpp", success=True, attributes=None):
     """Builds a real ReadableSpan via a throwaway TracerProvider + capturing exporter: the simplest genuine instance
     (real timestamps, instrumentation_scope) without a hand-rolled fake that could drift.
     """
@@ -80,7 +80,7 @@ async def test_export_persists_spans_from_a_real_background_thread(monkeypatch):
             "server.address": "http://x:11434",
             "gen_ai.usage.input_tokens": 12,
             "gen_ai.usage.output_tokens": 34,
-            "ollama.attempt_count": 1,
+            "engine.attempt_count": 1,
         }
     )
 
@@ -92,7 +92,7 @@ async def test_export_persists_spans_from_a_real_background_thread(monkeypatch):
         rows = (await db.execute(select(TelemetryEvent))).scalars().all()
     assert len(rows) == 1
     assert rows[0].kind == "chat"
-    assert rows[0].engine == "ollama"
+    assert rows[0].engine == "llamacpp"
     assert rows[0].model == "llama3:latest"
     assert rows[0].host == "http://x:11434"
     assert rows[0].success is True
@@ -106,7 +106,7 @@ async def test_export_persists_spans_from_a_real_background_thread(monkeypatch):
 async def test_export_persists_matricxon_spans_stamped_with_the_matricxon_engine(monkeypatch):
     """A "pairing.matricxon" scope (matricxon_telemetry.get_tracer) must produce a row with engine="matricxon", not be
     dropped as
-    any scope other than "pairing.ollama" used to be before Matricxon
+    any scope other than "pairing.llamacpp" used to be before Matricxon
     (test_export_ignores_spans_from_a_different_instrumentation_scope
     now checks a real *third*, unrelated scope).
     """
@@ -168,7 +168,7 @@ async def test_export_survives_persist_failure(monkeypatch):
 
 def test_error_span_is_recorded_as_unsuccessful(monkeypatch):
     span = _make_readable_span(success=False)
-    event = telemetry_exporter._span_to_event(span, "ollama")
+    event = telemetry_exporter._span_to_event(span, "llamacpp")
 
     assert event.success is False
     assert event.error_message == "boom"

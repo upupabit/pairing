@@ -1,4 +1,4 @@
-"""Reads the Telemetry page's "currently loaded models" table from the poll history ollama_ps_poller/
+"""Reads the Telemetry page's "currently loaded models" table from the poll history llamacpp_ps_poller/
 matricxon_ps_poller write. Both engines share the ModelSnapshot table (see the model), so every query filters
 by `engine`, one dashboard at a time (as telemetry_service for TelemetryEvent). It avoids a GROUP BY host,
 model_name + MAX(polled_at) window query (version-fragile like a SQL percentile, see telemetry_service):
@@ -14,7 +14,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import ModelSnapshot
 from app.models._base import utcnow
 from app.schemas import LoadedModelSnapshot
-from app.services.ollama_ps_poller import POLL_INTERVAL_SECONDS
+
+# Both pollers' interval.
+POLL_INTERVAL_SECONDS = 30.0
 
 # A few poll intervals of lookback: tolerates one slow or skipped poll without pulling in stale history.
 _LOOKBACK = timedelta(seconds=POLL_INTERVAL_SECONDS * 3)

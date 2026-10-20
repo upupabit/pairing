@@ -20,7 +20,7 @@ def reset_engine():
 def test_only_the_local_engines_pass_tools():
     supports = {engine.name: engine.capabilities.tools for engine in registry.all()}
     assert supports == {
-        "ollama": True,
+        "llamacpp": True,
         "matricxon": True,
         "runpod": False,
         "cloudflare": False,
@@ -51,4 +51,4 @@ async def test_the_tool_loop_does_not_start_on_a_connector_engine(db):
 
 def test_only_the_local_engines_send_images():
     vision = {engine.name for engine in registry.all() if engine.capabilities.vision}
-    assert vision == {"ollama", "matricxon"}
+    assert vision == {"llamacpp", "matricxon"}

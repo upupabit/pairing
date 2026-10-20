@@ -1,6 +1,6 @@
 """Settings > System > Context window: the one `num_ctx` for every chat and channel. It was a per-chat
 slider, which let chats of one model disagree and hurt the prompt cache. Read per reply, so changes apply
-from the next message.
+from the next message. llama.cpp sets it per loaded model, so a change also rewrites its preset (llamacpp_admin).
 """
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,3 +23,7 @@ async def set_num_ctx(db: AsyncSession, num_ctx: int) -> None:
     else:
         row.value = {"num_ctx": num_ctx}
     await db.commit()
+    # Imported here: llamacpp_admin reads this module.
+    from app.services import llamacpp_admin
+
+    await llamacpp_admin.sync_preset()

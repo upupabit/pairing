@@ -1,4 +1,4 @@
-"""Tests for routers/matricxon_admin.py: the coverage and calling convention of tests/test_ollama_admin_router.py
+"""Tests for routers/matricxon_admin.py: the coverage and calling convention of tests/test_llamacpp_admin_router.py
 (router functions called directly, not via TestClient). One difference: _save_and_broadcast refreshes/broadcasts
 the live pool only when Matricxon is the *active* engine (engine_service); Ollama's router has no sibling engine to
 defer to.
@@ -66,7 +66,7 @@ async def test_update_config_persists_without_touching_the_process(db, monkeypat
 async def test_update_config_does_not_refresh_the_pool_when_matricxon_is_not_the_active_engine(db, monkeypatch):
     # Matricxon is the default engine (engine_service.DEFAULT_ENGINE): switch to Ollama first so this exercises "saving
     # Matricxon's config while it isn't live must not touch matricxon_pool or broadcast".
-    await engine_service.set_active_engine(db, "ollama")
+    await engine_service.set_active_engine(db, "llamacpp")
     monkeypatch.setattr(matricxon_pool, "refresh_from_config", lambda _c: pytest.fail("must not refresh"))
     monkeypatch.setattr(server_pool_broadcast, "broadcast_refresh", lambda _p: pytest.fail("must not broadcast"))
 

@@ -1,5 +1,5 @@
 """Tests for services/matricxon_admin.py (the pull/delete service, not the router in app/routers/): the HTTP-wiring
-style of tests/test_ollama_client.py, confirming pull/delete target matricxon_pool's primary host and surface
+style of tests/test_llamacpp_client.py, confirming pull/delete target matricxon_pool's primary host and surface
 real errors as MatricxonError.
 """
 

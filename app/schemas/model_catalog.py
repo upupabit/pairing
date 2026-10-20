@@ -43,9 +43,9 @@ class CatalogEntry(BaseModel):
     context_length: int | None = None
     download_gb: float | None = None
     # Hardware-gating threshold for a not-yet-installed entry (ChatModelCatalogBuilder hardware_ok, routers/settings.py
-    # pull check): app/model_catalog.py's hand-typed figure. For display prefer min_ram_gb_ollama/min_ram_gb_matricxon,
-    # which are computed per engine (Matricxon dequantizes to bf16, so a Ministral-3B Q4_K_M needs ~7.5GB, not ~3GB,
-    # ).
+    # pull check): app/model_catalog.py's hand-typed figure. For display prefer min_ram_gb_llamacpp/
+    # min_ram_gb_matricxon, computed per engine (Matricxon dequantizes to bf16, so a Ministral-3B Q4_K_M needs
+    # ~7.5GB, not ~3GB).
     min_ram_gb: float
     # Every engine's verdict on this model (EngineModelSupport), built once per catalog build by
     # EngineSupportSet.support_for. The min_ram_gb_*/matricxon_supported/... properties read it for old callers;
@@ -57,7 +57,7 @@ class CatalogEntry(BaseModel):
     unavailable_reason: str | None = None
     # Whether the model can see an image attachment (chat_attachment_service, "Default vision model" picker).
     # For a not-yet-installed curated entry it is a hand-annotated estimate; once installed it is read live
-    # from the active engine's "vision" tag (the curated flag mirrors Ollama's projector auto-pairing and can
+    # from the active engine's "vision" tag (the curated flag mirrors llama.cpp's projector auto-pairing and can
     # disagree under Matricxon).
     vision: bool = False
     # System-tab roles this model fills (DefaultModelSettings.chat_roles); non-empty shows "In use".
@@ -79,7 +79,7 @@ class CatalogEntry(BaseModel):
     # stored) or installed models (they get "Uninstall").
     removable: bool = False
     # Whether Matricxon implements this architecture+quantization (../matricxon/app/architectures/registry.py,
-    # .../gguf/dequant/registry.py); Ollama runs every entry. Curated entries are hand-verified. Defaults True as a
+    # .../gguf/dequant/registry.py); llama.cpp runs every entry. Curated entries are hand-verified. Defaults True as a
     # bare fallback; admin-added extended entries (arbitrary repos) are built False (ExtendedModelCatalog.build),
     # since Matricxon fails closed on unknown architectures and a false "supported" badge would mislead.
     # A vision-projector (mmproj) sidecar, pulled with its paired text model, not run as a chat model
@@ -102,8 +102,8 @@ class CatalogEntry(BaseModel):
     # callers/tests; new code should read engine_support.
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def min_ram_gb_ollama(self) -> float | None:
-        return self.engine_support.get("ollama", EngineModelSupport()).min_ram_gb
+    def min_ram_gb_llamacpp(self) -> float | None:
+        return self.engine_support.get("llamacpp", EngineModelSupport()).min_ram_gb
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -154,8 +154,8 @@ class EmbeddingCatalogEntry(BaseModel):
     # See CatalogEntry's computed properties.
     @computed_field  # type: ignore[prop-decorator]
     @property
-    def min_ram_gb_ollama(self) -> float | None:
-        return self.engine_support.get("ollama", EngineModelSupport()).min_ram_gb
+    def min_ram_gb_llamacpp(self) -> float | None:
+        return self.engine_support.get("llamacpp", EngineModelSupport()).min_ram_gb
 
     @computed_field  # type: ignore[prop-decorator]
     @property

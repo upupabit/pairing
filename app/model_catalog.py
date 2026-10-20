@@ -16,7 +16,7 @@ computed live from these against Matricxon's `GET /api/health`
 `vision=True` works on Matricxon when the model's mmproj is pulled there too (narrow support:
 one architecture, single image).
 
-Ollama can run every entry regardless.
+llama.cpp can run every entry regardless.
 """
 
 import json

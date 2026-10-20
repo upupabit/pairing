@@ -1,4 +1,4 @@
-"""Tests for services/env_file.py, the .env upsert helper behind db_config_url.py and ollama_process.py."""
+"""Tests for services/env_file.py, the .env upsert helper behind db_config_url.py and llamacpp_process.py."""
 
 from app.services import env_file
 

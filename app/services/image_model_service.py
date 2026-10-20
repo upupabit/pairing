@@ -1,10 +1,10 @@
 """Diffusion models for the local stable-diffusion.cpp engine. A model found via Settings > Model's Hugging
 Face browser (HuggingFaceCatalogSearch.is_image_repo) downloads into the engine's models folder, never
-Ollama/Matricxon (whose chat loaders reject it), and appears in the engine form's Model dropdown. Only the
+llama.cpp/Matricxon (whose chat loaders reject it), and appears in the engine form's Model dropdown. Only the
 *local* engine has a folder; Remote mode does nothing here.
 
-Where: the engine's "Models folder", else a `diffusion` sibling of the Matricxon/Ollama models folder
-(models/ollama, models/matricxon, models/diffusion), else the engine install's models folder.
+Where: the engine's "Models folder", else a `diffusion` sibling of the Matricxon/llama.cpp models folder
+(models/llamacpp, models/matricxon, models/diffusion), else the engine install's models folder.
 
 Layout: <models dir>/<org>/<repo>/<file>.gguf, so a catalog tag (`hf.co/<org>/<repo>:<file minus.gguf>`)
 maps to a path and back. Loose files dropped in by hand are listed without a tag.
@@ -38,9 +38,9 @@ async def resolve_models_dir(db: AsyncSession) -> Path:
         return Path(config.models_path)
     for owner in (
         await settings_service.get_matricxon_server_config(db),
-        await settings_service.get_ollama_server_config(db),
+        await settings_service.get_llamacpp_server_config(db),
     ):
-        if owner.models_path and Path(owner.models_path).name in ("matricxon", "ollama"):
+        if owner.models_path and Path(owner.models_path).name in ("matricxon", "llamacpp"):
             return Path(owner.models_path).parent / "diffusion"
     return sdcpp_installer.models_dir()
 

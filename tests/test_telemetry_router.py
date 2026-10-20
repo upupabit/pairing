@@ -14,20 +14,20 @@ from app.services.auth_service import require_admin
 
 
 @pytest.mark.asyncio
-async def test_get_ollama_summary_is_reachable_by_an_admin(db, admin_user):
+async def test_get_llamacpp_summary_is_reachable_by_an_admin(db, admin_user):
     db.add(TelemetryEvent(kind="chat", host="http://x:11434", success=True, started_at=utcnow(), duration_ms=1.0))
     await db.commit()
 
-    summary = await telemetry.get_ollama_summary(db=db, _user=admin_user)
+    summary = await telemetry.get_engine_summary(engine="llamacpp", db=db, _user=admin_user)
 
     assert summary.total_requests == 1
 
 
 @pytest.mark.asyncio
-async def test_get_matricxon_summary_is_reachable_by_an_admin_and_stays_isolated_from_ollamas(db, admin_user):
+async def test_get_matricxon_summary_is_reachable_by_an_admin_and_stays_isolated_from_llamacpps(db, admin_user):
     db.add(
         TelemetryEvent(
-            engine="ollama", kind="chat", host="http://x:11434", success=True, started_at=utcnow(), duration_ms=1.0
+            engine="llamacpp", kind="chat", host="http://x:11434", success=True, started_at=utcnow(), duration_ms=1.0
         )
     )
     db.add(

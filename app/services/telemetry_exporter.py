@@ -1,15 +1,15 @@
 """The cross-thread bridge of the Telemetry page's OpenTelemetry export, separate from SDK bootstrap
-(ollama_telemetry/matricxon_telemetry both use this DBSpanExporter unmodified; their spans arrive under scope
-names "pairing.ollama"/"pairing.matricxon", which _persist_spans uses to stamp TelemetryEvent.engine), so the
+(llamacpp_telemetry/matricxon_telemetry both use this DBSpanExporter unmodified; their spans arrive under scope
+names "pairing.llamacpp"/"pairing.matricxon", which _persist_spans uses to stamp TelemetryEvent.engine), so the
 background-thread-to-async-DB hazard is testable alone.
 
 opentelemetry-sdk's BatchSpanProcessor calls a SpanExporter's export from its own worker thread, not the
 asyncio loop, but persisting a span is an async SQLAlchemy write that must run *on* the loop.
-capture_main_loop stashes it (called once from ollama_telemetry.init_ollama_telemetry, inside
+capture_main_loop stashes it (called once from llamacpp_telemetry.init_llamacpp_telemetry, inside
 startup_service.run_startup_tasks on the main loop); DBSpanExporter.export hands each batch off via
 asyncio.run_coroutine_threadsafe(...).result(timeout=...), bounded so a stuck DB can't wedge the SDK's worker.
 Any failure (loop not captured, timeout, DB error) is logged and returned as SpanExportResult.FAILURE, never
-raised: telemetry must not affect the Ollama/Matricxon call it describes.
+raised: telemetry must not affect the llama.cpp/Matricxon call it describes.
 """
 
 import asyncio
@@ -32,8 +32,8 @@ _main_loop: asyncio.AbstractEventLoop | None = None
 
 
 def capture_main_loop() -> None:
-    """Call once from inside the app's running event loop (ollama_telemetry.init_ollama_telemetry): a background thread
-    has no other way back to it."""
+    """Call once from inside the app's running event loop (llamacpp_telemetry.init_llamacpp_telemetry): a background
+    thread has no other way back to it."""
     global _main_loop
     _main_loop = asyncio.get_running_loop()
 
@@ -51,7 +51,7 @@ def _span_to_event(span: ReadableSpan, engine: str) -> TelemetryEvent | None:
     attrs = span.attributes or {}
     return TelemetryEvent(
         engine=engine,
-        # Span names are "<engine>.chat"/"<engine>.embed" (the start_as_current_span calls in ollama_client.py/
+        # Span names are "<engine>.chat"/"<engine>.embed" (the start_as_current_span calls in llamacpp_client.py/
         # matricxon_client.py). Splitting on the first "." rather than removeprefix(f"{engine}.") reads the same today
         # but yields no wrong kind if a span's prefix drifts from `engine`.
         kind=span.name.split(".", 1)[-1],
@@ -61,19 +61,19 @@ def _span_to_event(span: ReadableSpan, engine: str) -> TelemetryEvent | None:
         error_message=span.status.description,
         started_at=datetime.fromtimestamp(span.start_time / 1_000_000_000, tz=UTC),
         duration_ms=(span.end_time - span.start_time) / 1_000_000,
-        total_duration_ms=_ns_to_ms(attrs.get("ollama.total_duration_ns")),
-        load_duration_ms=_ns_to_ms(attrs.get("ollama.load_duration_ns")),
-        prompt_eval_duration_ms=_ns_to_ms(attrs.get("ollama.prompt_eval_duration_ns")),
-        eval_duration_ms=_ns_to_ms(attrs.get("ollama.eval_duration_ns")),
+        total_duration_ms=_ns_to_ms(attrs.get("engine.total_duration_ns")),
+        load_duration_ms=_ns_to_ms(attrs.get("engine.load_duration_ns")),
+        prompt_eval_duration_ms=_ns_to_ms(attrs.get("engine.prompt_eval_duration_ns")),
+        eval_duration_ms=_ns_to_ms(attrs.get("engine.eval_duration_ns")),
         prompt_eval_count=attrs.get("gen_ai.usage.input_tokens"),
         eval_count=attrs.get("gen_ai.usage.output_tokens"),
-        attempt_count=attrs.get("ollama.attempt_count", 1),
+        attempt_count=attrs.get("engine.attempt_count", 1),
     )
 
 
-# Every tracer comes from one of these two scopes (ollama_telemetry.get_tracer / matricxon_telemetry.get_tracer);
+# Every tracer comes from one of these two scopes (llamacpp_telemetry.get_tracer / matricxon_telemetry.get_tracer);
 # a span from any other (e.g. a stray no-op-tracer span from a test that bootstrapped neither) is dropped, not guessed.
-_ENGINE_BY_SCOPE = {"pairing.ollama": "ollama", "pairing.matricxon": "matricxon"}
+_ENGINE_BY_SCOPE = {"pairing.llamacpp": "llamacpp", "pairing.matricxon": "matricxon"}
 
 
 async def _persist_spans(spans: Sequence[ReadableSpan]) -> None:

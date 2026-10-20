@@ -1,9 +1,9 @@
-"""Which engine, Ollama or Matricxon, inference_client dispatches chat/embedding/model-management calls to
+"""Which engine, llama.cpp or Matricxon, inference_client dispatches chat/embedding/model-management calls to
 (Settings > Inference engines' "Active engine" picker, routers/engine_admin.py).
 
-Both are configured, started and stopped independently (ollama_admin/matricxon_admin, their pools); this
+Both are configured, started and stopped independently (llamacpp_admin/matricxon_admin, their pools); this
 module owns only the state choosing which serves traffic. Cached in-process (hot chat path, like
-ollama_pool's host list) write-through: load_cache_from_db at startup (startup_service), then
+llamacpp_pool's host list) write-through: load_cache_from_db at startup (startup_service), then
 current_engine; set_active_engine keeps cache and DB in step.
 """
 
@@ -39,7 +39,7 @@ async def set_active_engine(db: AsyncSession, engine: EngineName) -> None:
 
 async def load_cache_from_db(db: AsyncSession) -> None:
     """Loads the cache from the DB; call at startup (startup_service.run_startup_tasks) and from each instance's
-    internal-refresh handler (routers/engine_admin.py), as in ollama_pool's broadcast refresh.
+    internal-refresh handler (routers/engine_admin.py), as in llamacpp_pool's broadcast refresh.
     """
     global _cached_engine
     _cached_engine = await get_active_engine(db)

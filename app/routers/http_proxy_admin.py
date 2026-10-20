@@ -1,6 +1,6 @@
 """Settings > System > Outbound HTTP proxy: the admin-configured IP:port (optional username/password) for
-internet-facing downloads: Ollama, Matricxon and stable-diffusion.cpp installers (ollama_installer.py, ...) and, in
-local mode, Ollama's model pulls (ollama_process.py _build_env). Unrelated to proxy_admin.py, which
+internet-facing downloads: llama.cpp, Matricxon and stable-diffusion.cpp installers (llamacpp_installer.py, ...) and, in
+local mode, llama-server's own downloads (llamacpp_process.py _start). Unrelated to proxy_admin.py, which
 load-balances incoming requests across local instances ("Local pAIring server mode" in the UI).
 """
 

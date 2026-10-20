@@ -1,6 +1,6 @@
 /* Requests-by-host bar chart for the Stats "Telemetry" view; sibling of telemetry_charts.js (shared setup/axis helpers), split out to stay under CLAUDE.md's 250-line cap. */
 
-/* Renders OllamaTelemetrySummary.by_host as grouped bars (total requests, error slice highlighted); fine for one host (one bar) or many. */
+/* Renders EngineTelemetrySummary.by_host as grouped bars (total requests, error slice highlighted); fine for one host (one bar) or many. */
 function renderHostBarChart(hostStats) {
   const emptyEl = document.getElementById("telemetry-host-empty");
   const svgEl = document.getElementById("telemetry-host-chart");

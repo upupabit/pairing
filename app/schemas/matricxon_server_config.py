@@ -1,6 +1,6 @@
 """Schemas for the Matricxon process-supervision admin (Settings > Inference engines). Supervisor:
 services/matricxon_process.py (runs the sibling checkout's scripts/start.sh|stop.sh, no binary);
-HTTP half: matricxon_pool.py / matricxon_client.py. Mirrors OllamaServerConfig with project_dir
+HTTP half: matricxon_pool.py / matricxon_client.py. Mirrors LlamaCppServerConfig with project_dir
 instead of binary_path (Matricxon is a Python venv launched by a `uvicorn` script).
 """
 
@@ -17,7 +17,7 @@ class MatricxonServerConfig(BaseModel):
 
     mode: ServerMode = "local"
     remote_hosts: list[str] = Field(default_factory=list, max_length=MAX_REMOTE_HOSTS)
-    # Matricxon checkout (with scripts/start.sh): a directory, unlike Ollama's binary_path.
+    # Matricxon checkout (with scripts/start.sh): a directory, unlike llama.cpp's binary_path.
     # matricxon_process._find_project_dir checks it before the sibling "../matricxon". None = auto-detect.
     project_dir: str | None = None
     # Where installed models are stored: MATRICXON_MODELS_DIR for scripts/start.sh and where
@@ -91,14 +91,14 @@ class MatricxonServerConfig(BaseModel):
     admin_secret: str | None = None
     # Nodes that only vote (Matricxon node_kind "voter"): listed with the other nodes but never given chats.
     voter_hosts: list[str] = Field(default_factory=list, max_length=MAX_REMOTE_HOSTS)
-    # Overrides for matricxon_installer.install_stream; kept for parity with Ollama but not functional
+    # Overrides for matricxon_installer.install_stream; kept for parity with llama.cpp but not functional
     # yet (Matricxon isn't published on GitHub).
     install_repo: str | None = None
     install_version: str | None = None
 
     @model_validator(mode="after")
     def _fall_back_to_local_when_remote_has_no_hosts(self) -> "MatricxonServerConfig":
-        """See OllamaServerConfig's validator."""
+        """See LlamaCppServerConfig's validator."""
         if self.mode == "remote" and not self.remote_hosts:
             self.mode = "local"
         return self
@@ -106,7 +106,7 @@ class MatricxonServerConfig(BaseModel):
 
 class MatricxonAutoDetectedPath(BaseModel):
     """What matricxon_process._find_project_dir resolves to with no override; the project_dir placeholder
-    (like OllamaAutoDetectedPath).
+    (like LlamaCppAutoDetectedPath).
     """
 
     path: str | None = None
@@ -115,7 +115,7 @@ class MatricxonAutoDetectedPath(BaseModel):
 
 
 class MatricxonServerStatus(BaseModel):
-    """GET.../status, same shape as OllamaServerStatus. `pid` is read from Matricxon's run/matricxon.pid (written by
+    """GET.../status, same shape as LlamaCppServerStatus. `pid` is read from Matricxon's run/matricxon.pid (written by
     scripts/start.sh)."""
 
     running: bool

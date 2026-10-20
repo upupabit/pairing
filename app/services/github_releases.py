@@ -1,5 +1,5 @@
 """A GitHub repo's tag list for Settings > Inference engines' version picker (shared available-versions
-endpoint in routers/ollama_admin, matricxon_admin, sdcpp_admin). Helps fill the installers' install_repo/
+endpoint in routers/llamacpp_admin, matricxon_admin, sdcpp_admin). Helps fill the installers' install_repo/
 install_version overrides correctly (a typo'd tag otherwise fails several steps into an install).
 
 GitHub's unauthenticated REST API allows 60 requests/hour per IP, easily exhausted, so results are cached
@@ -24,7 +24,7 @@ _cache: dict[str, tuple[float, list[str]]] = {}
 
 
 async def list_tags(repo: str) -> list[str]:
-    """Up to the most recent `_PER_PAGE` tag names for `repo` (e.g. "ollama/ollama"), newest first (GitHub's
+    """Up to the most recent `_PER_PAGE` tag names for `repo` (e.g. "ggml-org/llama.cpp"), newest first (GitHub's
     /tags order). Empty for a blank repo or any failure.
     """
     if not repo:

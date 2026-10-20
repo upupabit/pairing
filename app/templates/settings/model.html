@@ -23,7 +23,7 @@
           </p>
 
           {% if is_admin %}
-          <!-- Admin-only, three steps: search Hugging Face for a repo, pick a repo to see its GGUF files (both read-only; app/services/huggingface_client.py), then Add a file, which re-verifies server-side instead of trusting the earlier round trip (extended_model_catalog_service.add_model). All three use the admin-configured outbound proxy, as the Ollama and stable-diffusion.cpp installers (Admin settings > System), and need internet or that proxy, except Add for a tag already installed here, which skips the network. -->
+          <!-- Admin-only, three steps: search Hugging Face for a repo, pick a repo to see its GGUF files (both read-only; app/services/huggingface_client.py), then Add a file, which re-verifies server-side instead of trusting the earlier round trip (extended_model_catalog_service.add_model). All three use the admin-configured outbound proxy, as the llama.cpp and stable-diffusion.cpp installers (Admin settings > System), and need internet or that proxy, except Add for a tag already installed here, which skips the network. -->
           <div class="rounded-lg bg-slate-900 border border-slate-800 px-4 py-3 space-y-3">
             <label class="block text-xs font-medium text-slate-400">Search Hugging Face</label>
             <div class="flex items-center gap-2">
@@ -57,7 +57,7 @@
       <section class="space-y-4">
         <h2 class="text-sm font-semibold text-slate-200">Installed models</h2>
         {% if admin_page %}
-        <p class="text-xs text-slate-500 -mt-2">Models available for the active inference engine — the one you select on the Inference engines tab becomes the default engine for the UI. Please note that each inference engine has its own separate models repository.</p>
+        <p class="text-xs text-slate-500 -mt-2">Models available for the active inference engine — the one you select on the Inference engines tab becomes the default engine for the UI.</p>
         <!-- Shown by settings_quorum.js while the Matricxon cluster has no quorum (downloads need it). -->
         <p id="model-quorum-warning" class="hidden rounded-lg border border-red-800/60 bg-red-900/20 px-4 py-2 text-xs text-red-200">
           The Matricxon cluster has no quorum (a majority of its voters is not reachable), so model downloads will
@@ -113,7 +113,7 @@
         <div id="rerank-model-catalog" class="grid grid-cols-1 sm:grid-cols-2 gap-2"></div>
       </section>
 
-      <!-- Diffusion models: image models for the Images page, the same list for either chat engine. They install into the stable-diffusion.cpp models folder, never Ollama/Matricxon (app/services/image_model_service.py). Image repos found via "Browse more models" land here. Wired by app/static/js/settings_diffusion_models.js. -->
+      <!-- Diffusion models: image models for the Images page, the same list for either chat engine. They install into the stable-diffusion.cpp models folder, never llama.cpp/Matricxon (app/services/image_model_service.py). Image repos found via "Browse more models" land here. Wired by app/static/js/settings_diffusion_models.js. -->
       <section id="diffusion-models-section" class="space-y-3 border-t border-slate-800 pt-6{% if remote_models %} hidden{% endif %}">
         <h2 class="text-sm font-semibold text-slate-200">Diffusion models</h2>
         <p class="text-xs text-slate-500 -mt-2">Image generation models for the Images Gen page — installed into its own models folder, Search Hugging Face under Browse more models to add more.</p>

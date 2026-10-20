@@ -1,6 +1,6 @@
 """Tests for services/default_model_settings.py, the one place every "which model is the default" read/write goes
 through. list_models is monkeypatched on this module's own binding (not inference_client's origin; module-split
-import-binding gotcha), so no real Ollama/Matricxon call.
+import-binding gotcha), so no real llama.cpp/Matricxon call.
 """
 
 import pytest

@@ -21,7 +21,7 @@ def _reset_engine_cache():
 
 @pytest.mark.asyncio
 async def test_ollama_is_reported_unavailable_without_asking_matricxon(monkeypatch):
-    engine_service._cached_engine = "ollama"
+    engine_service._cached_engine = "llamacpp"
 
     async def fail():
         raise AssertionError("Matricxon must not be queried while Ollama is active")
@@ -30,7 +30,7 @@ async def test_ollama_is_reported_unavailable_without_asking_matricxon(monkeypat
 
     result = await EngineSupportService.get()
 
-    assert result.active_engine == "ollama"
+    assert result.active_engine == "llamacpp"
     assert result.available is False
     assert result.architectures == [] and result.quantizations == []
     assert result.moe_architectures == [] and result.vision_architectures == []
@@ -78,7 +78,7 @@ async def test_unreachable_matricxon_reports_an_error_instead_of_raising(monkeyp
 
 @pytest.mark.asyncio
 async def test_router_returns_the_service_result(monkeypatch, admin_user):
-    engine_service._cached_engine = "ollama"
+    engine_service._cached_engine = "llamacpp"
 
     result = await stats.get_engine_support(_user=admin_user)
 

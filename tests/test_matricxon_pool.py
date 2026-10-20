@@ -1,4 +1,4 @@
-"""Tests for services/matricxon_pool.py, mirroring tests/test_ollama_pool.py (local/remote resolution, wrapper
+"""Tests for services/matricxon_pool.py, mirroring tests/test_llamacpp_pool.py (local/remote resolution, wrapper
 delegation to the live HostPool) against the independent Matricxon pool; shared server_pool.HostPool logic is tested
 there.
 """

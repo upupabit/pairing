@@ -1,5 +1,5 @@
 """Propagates a live engine or image-engine config change (mode switch or remote host edit) to every other local
-instance, the gap instance_db_broadcast fixed for database switches: ollama_pool/sdcpp_pool.refresh_from_config
+instance, the gap instance_db_broadcast fixed for database switches: llamacpp_pool/sdcpp_pool.refresh_from_config
 update only their own process's memory, so with instance_count > 1 every instance except the one that got the
 admin's save keeps routing through a stale host list until restart.
 
@@ -24,7 +24,7 @@ def _other_live_ports() -> list[int]:
 
 async def broadcast_refresh(path: str) -> list[str]:
     """POSTs to every other live instance's internal refresh endpoint at `path` (e.g.
-    "/api/settings/ollama/internal-refresh").
+    "/api/settings/llamacpp/internal-refresh").
     No body: each instance re-reads the config from the shared DB. Best-effort: a failed sibling doesn't undo
     the rest. Returns a description of each failure (empty if all refreshed).
     """

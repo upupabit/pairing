@@ -7,8 +7,8 @@ from pydantic import BaseModel, Field
 
 PinType = Literal["persona", "rules", "skill"]
 
-# Shared by OllamaServerConfig, MatricxonServerConfig and SdCppConfig: "local" = this app owns the process
-# (ollama_process.py/sdcpp_process.py); "remote" = 1-12 external hosts, load-balanced (server_pool.HostPool).
+# Shared by LlamaCppServerConfig, MatricxonServerConfig and SdCppConfig: "local" = this app owns the process
+# (llamacpp_process.py/sdcpp_process.py); "remote" = 1-12 external hosts, load-balanced (server_pool.HostPool).
 ServerMode = Literal["local", "remote"]
 
 # Which backend inference_client dispatches chat/embedding/model-management to. Live state is in
@@ -16,7 +16,7 @@ ServerMode = Literal["local", "remote"]
 # run, or set up via a Connector (RunPod, services.connectors). Kept in sync with engines.registry by
 # tests/test_engine_registry.py.
 EngineName = Literal[
-    "ollama",
+    "llamacpp",
     "matricxon",
     "runpod",
     "cloudflare",
@@ -29,7 +29,7 @@ EngineName = Literal[
 ]
 
 # Single source for "no engine chosen yet", used by ActiveEngineConfig and engine_service.DEFAULT_ENGINE.
-# Matricxon while it is under active development; revisit when Ollama should be the safer default.
+# Matricxon while it is under active development; revisit when llama.cpp should be the safer default.
 # (Two disagreeing copies once routed fresh installs inconsistently,.)
 DEFAULT_ENGINE: EngineName = "matricxon"
 
@@ -65,7 +65,7 @@ class EngineOption(BaseModel):
     display_name: str
     capabilities: EngineCapabilitiesOut
     # Whether the engine can be activated now (InferenceEngine.is_ready); False for an unconfigured Connector
-    # engine (e.g. "runpod"). Always True for Ollama/Matricxon.
+    # engine (e.g. "runpod"). Always True for llama.cpp/Matricxon.
     ready: bool = True
 
 
@@ -73,13 +73,12 @@ class EngineOptionsResponse(BaseModel):
     engines: list[EngineOption]
 
 
-# Cap shared by both schemas' remote_hosts max_length and settings_service.get_ollama_server_config's
-# legacy.env truncation.
+# Cap shared by both schemas' remote_hosts max_length and the remote host lists.
 MAX_REMOTE_HOSTS = 120
 
 
 class InstallDefaults(BaseModel):
-    """The GitHub repo/version an engine installer (ollama/matricxon/sdcpp) uses unless overridden; shown in Settings
+    """The GitHub repo/version an engine installer (llamacpp/matricxon/sdcpp) uses unless overridden; shown in Settings
     > Inference engines next to Install and as placeholders.
     """
 

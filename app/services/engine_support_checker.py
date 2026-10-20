@@ -1,5 +1,5 @@
 """Whether an engine can run a specific model: the generic shape of matricxon_support_checker.MatricxonSupportChecker
-(the only engine with real checkable data). Ollama "runs every catalog entry", so AlwaysSupportedChecker is
+(the only engine with real checkable data). llama.cpp "runs every catalog entry", so AlwaysSupportedChecker is
 the trivial default for any other engine, including future serverless ones.
 
 One checker is built per catalog build (EngineSupportSet.load) and its verdict_for/estimated_ram_gb reused
@@ -15,10 +15,10 @@ from app.schemas import EngineName
 if TYPE_CHECKING:
     from app.schemas.model_catalog import EngineModelSupport
 
-# Ollama's rule-of-thumb per-model RAM multiplier (it exposes no better number); the single copy of a formula
-# once duplicated in model_catalog_service, embedding_model_catalog_service and, as a literal to avoid a
-# circular import, extended_model_catalog_service._min_ram_gb.
-OLLAMA_RAM_ESTIMATE_MULTIPLIER = 1.25
+# A rule-of-thumb per-model RAM multiplier for a GGUF's download size (weights plus context and buffers); the
+# single copy of a formula once duplicated in model_catalog_service, embedding_model_catalog_service and, as a
+# literal to avoid a circular import, extended_model_catalog_service._min_ram_gb.
+GGUF_RAM_ESTIMATE_MULTIPLIER = 1.25
 
 
 @dataclass(frozen=True)
@@ -56,7 +56,7 @@ class EngineSupportChecker(ABC):
         *,
         is_projector: bool = False,
     ) -> SupportVerdict:
-        """Default: everything supported (Ollama runs every entry; no architecture/quantization registry)."""
+        """Default: everything supported (llama.cpp runs every entry; no architecture/quantization registry)."""
         return SupportVerdict(True)
 
     def estimated_ram_gb(
@@ -67,7 +67,7 @@ class EngineSupportChecker(ABC):
         fallback_min_ram_gb: float = 0.0,
     ) -> float | None:
         """This engine's per-model RAM estimate for `tag`, or None if unknown. Default: unknown; subclasses override
-        (Ollama: download_gb * a multiplier; Matricxon: from the installed GGUF's tensor shapes).
+        (llama.cpp: download_gb * a multiplier; Matricxon: from the installed GGUF's tensor shapes).
         """
         return None
 
@@ -80,8 +80,8 @@ class AlwaysSupportedChecker(EngineSupportChecker):
         return cls()
 
 
-class OllamaSupportChecker(AlwaysSupportedChecker):
-    """Still "always supported", but estimates RAM from download size, which Ollama's API can't report."""
+class LlamaCppSupportChecker(AlwaysSupportedChecker):
+    """Still "always supported", but estimates RAM from download size, which llama-server doesn't report."""
 
     def estimated_ram_gb(
         self,
@@ -90,7 +90,7 @@ class OllamaSupportChecker(AlwaysSupportedChecker):
         download_gb: float | None = None,
         fallback_min_ram_gb: float = 0.0,
     ) -> float | None:
-        return round(download_gb * OLLAMA_RAM_ESTIMATE_MULTIPLIER, 1) if download_gb else fallback_min_ram_gb
+        return round(download_gb * GGUF_RAM_ESTIMATE_MULTIPLIER, 1) if download_gb else fallback_min_ram_gb
 
 
 class EngineSupportSet:

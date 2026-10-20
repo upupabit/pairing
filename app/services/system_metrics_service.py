@@ -27,8 +27,8 @@ def _mem_percent(snapshot: SystemMetricSnapshot) -> float:
 
 async def _latest_gpu_stats(db: AsyncSession) -> list[GpuStat]:
     """All GPU rows of one poll share the same polled_at (system_metrics_poller._sample_gpus_sync), so the latest
-    full GPU list is every row at the newest polled_at, not a per-gpu_index dedupe like ollama_snapshot_service
-    (Ollama's loaded-model set isn't sampled in one atomic pass).
+    full GPU list is every row at the newest polled_at, not a per-gpu_index dedupe like model_snapshot_service
+    (an engine's loaded-model set isn't sampled in one atomic pass).
     """
     latest_polled_at = (await db.execute(select(func.max(GpuMetricSnapshot.polled_at)))).scalar_one_or_none()
     if latest_polled_at is None:

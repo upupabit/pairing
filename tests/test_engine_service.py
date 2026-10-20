@@ -21,27 +21,27 @@ async def test_get_active_engine_defaults_when_never_configured(db):
 
 @pytest.mark.asyncio
 async def test_set_active_engine_persists_and_is_read_back(db):
-    await engine_service.set_active_engine(db, "ollama")
-    assert await engine_service.get_active_engine(db) == "ollama"
+    await engine_service.set_active_engine(db, "llamacpp")
+    assert await engine_service.get_active_engine(db) == "llamacpp"
 
 
 @pytest.mark.asyncio
 async def test_set_active_engine_updates_the_in_process_cache_immediately(db):
     assert engine_service.current_engine() == engine_service.DEFAULT_ENGINE
-    await engine_service.set_active_engine(db, "ollama")
-    assert engine_service.current_engine() == "ollama"
+    await engine_service.set_active_engine(db, "llamacpp")
+    assert engine_service.current_engine() == "llamacpp"
 
 
 @pytest.mark.asyncio
 async def test_load_cache_from_db_populates_the_cache_from_a_saved_value(db):
-    await engine_service.set_active_engine(db, "ollama")
+    await engine_service.set_active_engine(db, "llamacpp")
     engine_service._cached_engine = "matricxon"
     await engine_service.load_cache_from_db(db)
-    assert engine_service.current_engine() == "ollama"
+    assert engine_service.current_engine() == "llamacpp"
 
 
 @pytest.mark.asyncio
 async def test_load_cache_from_db_defaults_when_never_configured(db):
-    engine_service._cached_engine = "ollama"
+    engine_service._cached_engine = "llamacpp"
     await engine_service.load_cache_from_db(db)
     assert engine_service.current_engine() == engine_service.DEFAULT_ENGINE

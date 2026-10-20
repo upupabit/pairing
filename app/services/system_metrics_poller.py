@@ -5,7 +5,7 @@ temperature per poll) or `ioreg`'s IOAccelerator as an Apple Silicon fallback (_
 one SystemMetricSnapshot plus zero or more GpuMetricSnapshot rows (one per detected GPU; zero is no error, as in
 app.hardware); read by system_metrics_service for the Stats "System" view.
 
-The second periodic loop (first: ollama_ps_poller, see its docstring for the detached-task/strong-ref
+The second periodic loop (first: llamacpp_ps_poller, see its docstring for the detached-task/strong-ref
 pattern). Primary-gated for the same reason: CPU/RAM/disk/GPU belong to the machine all instances share, so
 polling from each would only duplicate rows.
 """

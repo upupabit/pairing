@@ -1,6 +1,6 @@
 /*
  * Stats page's "Supported architectures" view: the architectures and quantization (dequant) types the active engine can
- * load, from GET /api/stats/engine-support (app.services.engine_support_service). Matricxon-only (Ollama has no such
+ * load, from GET /api/stats/engine-support (app.services.engine_support_service). Matricxon-only (llama-server has no such
  * API), so the sidebar button stays hidden unless /health reports Matricxon (initEngineSupportNav).
  * 
  * Raw names come live from Matricxon's registries; the friendly labels are display-only and unknown names still render
@@ -93,7 +93,7 @@ async function loadEngineSupport() {
     const support = await api("/api/stats/engine-support");
     if (!support.available) {
       contentEl.innerHTML =
-        '<p class="text-sm text-slate-400">Only available on the Matricxon engine — Ollama has no API listing the architectures it supports.</p>';
+        '<p class="text-sm text-slate-400">Only available on the Matricxon engine — llama.cpp has no API listing the architectures it supports.</p>';
     } else if (support.error) {
       throw new Error(support.error);
     } else {

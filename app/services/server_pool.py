@@ -1,5 +1,5 @@
 """Generic "fewest in-flight requests, health-aware" host pool: the selection/cooldown/failover algorithm of
-ollama_pool.py, extracted when another backend needed the same. No engine
+llamacpp_pool.py, extracted when another backend needed the same. No engine
 specifics here; the thin wrappers keep their public names (pick_host/mark_failure/...), so call sites are
 unchanged.
 """
@@ -19,7 +19,7 @@ T = TypeVar("T")
 async def ping_host(host: str, timeout: httpx.Timeout, path: str = "/") -> bool:
     """One-off reachability probe: a plain `GET`, success = 200. Used by HostPool.check_hosts (all configured hosts)
     and admin endpoints checking a candidate URL typed into Settings > Inference engines before saving
-    (ollama_pool.check_host / sdcpp_pool.check_host).
+    (llamacpp_pool.check_host / sdcpp_pool.check_host).
     """
     try:
         async with httpx.AsyncClient(timeout=timeout) as client:
@@ -195,7 +195,7 @@ class HostPool:
     async def check_hosts(self, timeout: httpx.Timeout, path: str = "/") -> dict[str, bool]:
         """Pings every configured host and reports which are reachable: a fresh probe each call that deliberately
         doesn't read or update pick_host's cooldown state. A health poller (routers/health.py via
-        ollama_pool.check_hosts) needs this instance's current reality, not possibly stale routing history.
+        llamacpp_pool.check_hosts) needs this instance's current reality, not possibly stale routing history.
         """
         hosts = self.get_hosts()
         results = await asyncio.gather(*(ping_host(host, timeout, path) for host in hosts))

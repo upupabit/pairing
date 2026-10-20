@@ -175,7 +175,7 @@ async def test_pAIrings_own_requirements_show_on_its_node(db, monkeypatch):
 
 @pytest.mark.asyncio
 async def test_other_engines_have_no_map(db):
-    await engine_service.set_active_engine(db, "ollama")
+    await engine_service.set_active_engine(db, "llamacpp")
     result = await _build(db, [A], {A: _readiness()})
     assert result.supported is False and result.nodes == [] and result.links == []
 

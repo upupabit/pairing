@@ -61,6 +61,7 @@ from app.schemas.image_model import (
     ImageModelRequest,
 )
 from app.schemas.instances import InstancesConfig, InstanceStatus, InstancesUpdate, ProxyMode
+from app.schemas.llamacpp_server_config import LlamaCppAutoDetectedPath, LlamaCppServerConfig, LlamaCppServerStatus
 from app.schemas.matricxon_cache_persistence import (
     MatricxonCachePersistence,
     MatricxonCachePersistenceUpdate,
@@ -106,7 +107,6 @@ from app.schemas.note import (
     NoteSlotUpdate,
     NoteUpdate,
 )
-from app.schemas.ollama_server_config import OllamaAutoDetectedPath, OllamaServerConfig, OllamaServerStatus
 from app.schemas.sdcpp_config import (
     DEFAULT_IMAGE_ENGINE,
     ImageEngineConfig,
@@ -137,11 +137,11 @@ from app.schemas.stats import (
 )
 from app.schemas.system_metrics import GpuHistoryPoint, GpuStat, SystemMetricPoint, SystemMetricsSummary
 from app.schemas.telemetry import (
+    EngineTelemetrySummary,
     HostStats,
     LatencyTimeBucket,
     LoadedModelSnapshot,
     ModelLatencyStats,
-    OllamaTelemetrySummary,
 )
 from app.schemas.user import (
     AccountProfileOut,
@@ -154,6 +154,9 @@ from app.schemas.user import (
 )
 
 __all__ = [
+    "LlamaCppAutoDetectedPath",
+    "LlamaCppServerConfig",
+    "LlamaCppServerStatus",
     "ChannelCreate",
     "ChannelMemberOut",
     "ChannelOut",
@@ -235,9 +238,6 @@ __all__ = [
     "MatricxonServerStatus",
     "MatricxonLiveApplyResult",
     "MatricxonSavePlan",
-    "OllamaAutoDetectedPath",
-    "OllamaServerConfig",
-    "OllamaServerStatus",
     "AddExtendedModelRequest",
     "CatalogEntry",
     "CompanionFile",
@@ -283,7 +283,7 @@ __all__ = [
     "LatencyTimeBucket",
     "LoadedModelSnapshot",
     "ModelLatencyStats",
-    "OllamaTelemetrySummary",
+    "EngineTelemetrySummary",
     "AccountProfileOut",
     "AccountProfileUpdate",
     "ChangePasswordRequest",

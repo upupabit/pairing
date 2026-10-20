@@ -1,5 +1,5 @@
 /*
- * Per-engine (Ollama/Matricxon) telemetry for the Stats "Telemetry" entry (a data-view slot in stats.html/stats.js, so
+ * Per-engine (llama.cpp/Matricxon) telemetry for the Stats "Telemetry" entry (a data-view slot in stats.html/stats.js, so
  * no nav switching here; stats.js's activateStatsView calls loadTelemetry on each activation). Separate from stats.js
  * so the two dashboards' fetch/render logic stay independent. Charts: telemetry_charts.js/telemetry_bar_chart.js.
  * 
@@ -7,9 +7,9 @@
  * so switching #telemetry-source-select re-fetches into the same elements.
  */
 
-// The engine whose history is shown; "ollama" only until the first load resolves the active engine and corrects it
+// The engine whose history is shown; "llamacpp" only until the first load resolves the active engine and corrects it
 // (loadTelemetry).
-let currentTelemetrySource = "ollama";
+let currentTelemetrySource = "llamacpp";
 // Set once, on the first activation (like stats.js's window.workflowDiagramInitialized): later refreshes must not
 // override the engine an admin since picked; only the first "what should this page open on" decision.
 let telemetryDefaultEngineApplied = false;
@@ -66,7 +66,7 @@ function renderLatencyByModel(summary) {
   }
 }
 
-/* "Currently loaded" is a recent /api/ps snapshot (app/services/ollama_ps_poller.py/matricxon_ps_poller.py for the selected engine), not a live push. expires_at is a plain formatted time, not a countdown, to avoid implying more precision than a ~30s poll. */
+/* "Currently loaded" is a recent /api/ps snapshot (app/services/llamacpp_ps_poller.py/matricxon_ps_poller.py for the selected engine), not a live push. expires_at is a plain formatted time, not a countdown, to avoid implying more precision than a ~30s poll. */
 function renderLoadedModels(summary) {
   const el = document.getElementById("telemetry-loaded-models");
   el.innerHTML = '';
@@ -106,7 +106,7 @@ function renderTelemetry(summary) {
   renderHostBarChart(summary.by_host);
 }
 
-/* Resolves the active engine (the /health endpoint settings.js's Model tab uses) and, the first time this view opens, points the dropdown at it, rather than "Ollama" regardless of what's running. Also fills the "you're currently on: X" note, which stays accurate when an admin switches the dropdown to the other engine's history: it always shows what serves live traffic. */
+/* Resolves the active engine (the /health endpoint settings.js's Model tab uses) and, the first time this view opens, points the dropdown at it, rather than a fixed engine regardless of what's running. Also fills the "you're currently on: X" note, which stays accurate when an admin switches the dropdown to the other engine's history: it always shows what serves live traffic. */
 // Each engine's display name (EngineOption in app/schemas/common.py), filled once by populateTelemetryEngineOptionsOnce
 // and read by applyDefaultTelemetryEngineOnce's "Currently on: X" note.
 let telemetryEngineDisplayNames = {};
@@ -118,7 +118,7 @@ async function populateTelemetryEngineOptionsOnce() {
   const { engines } = await api("/api/settings/engine/options");
   for (const { name, display_name: displayName, capabilities } of engines) {
     telemetryEngineDisplayNames[name] = displayName;
-    // Telemetry exists only for local engines (Ollama/Matricxon); a remote/serverless connector engine (e.g. RunPod)
+    // Telemetry exists only for local engines (llama.cpp/Matricxon); a remote/serverless connector engine (e.g. RunPod)
     // has nothing to instrument, so it is never offered.
     if (!capabilities.local_process) continue;
     const option = document.createElement("option");

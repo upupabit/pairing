@@ -1,6 +1,6 @@
 """Periodically prunes the four append-only poller-written tables (telemetry_events, model_snapshots,
-system_metric_snapshots, gpu_metric_snapshots; writers: ollama_ps_poller, system_metrics_poller,
-ollama_telemetry). A prune only at startup bounds growth between restarts; a deployment up for weeks needs
+system_metric_snapshots, gpu_metric_snapshots; writers: llamacpp_ps_poller, system_metrics_poller,
+llamacpp_telemetry). A prune only at startup bounds growth between restarts; a deployment up for weeks needs
 it periodic too, or the tables grow for the whole uptime. Same detached-task/strong-ref-set idiom as the
 two pollers above; primary-gated for the same reason (shared tables).
 
@@ -36,7 +36,7 @@ async def prune_once() -> None:
         deleted_events = (
             await db.execute(delete(TelemetryEvent).where(TelemetryEvent.started_at < telemetry_cutoff))
         ).rowcount
-        deleted_ollama_snapshots = (
+        deleted_model_snapshots = (
             await db.execute(delete(ModelSnapshot).where(ModelSnapshot.polled_at < telemetry_cutoff))
         ).rowcount
         deleted_metric_snapshots = (
@@ -46,12 +46,12 @@ async def prune_once() -> None:
             await db.execute(delete(GpuMetricSnapshot).where(GpuMetricSnapshot.polled_at < metrics_cutoff))
         ).rowcount
         await db.commit()
-    if deleted_events or deleted_ollama_snapshots or deleted_metric_snapshots or deleted_gpu_snapshots:
+    if deleted_events or deleted_model_snapshots or deleted_metric_snapshots or deleted_gpu_snapshots:
         logger.info(
             "Pruned %d old telemetry event(s), %d old ML engine model snapshot(s), %d old system metric snapshot(s), "
             "%d old GPU metric snapshot(s).",
             deleted_events,
-            deleted_ollama_snapshots,
+            deleted_model_snapshots,
             deleted_metric_snapshots,
             deleted_gpu_snapshots,
         )

@@ -1,5 +1,5 @@
 """Tests for routers/engine_admin.py ("Active engine" GET/PUT plus internal-refresh), called directly (see
-tests/test_ollama_admin_router.py for why no TestClient).
+tests/test_llamacpp_admin_router.py for why no TestClient).
 """
 
 import pytest
@@ -41,11 +41,11 @@ async def test_set_active_engine_persists_and_updates_the_cache(db, monkeypatch)
 
     monkeypatch.setattr(server_pool_broadcast, "broadcast_refresh", fake_broadcast)
 
-    result = await engine_admin.set_active_engine(ActiveEngineConfig(active_engine="ollama"), db=db, _admin=None)
+    result = await engine_admin.set_active_engine(ActiveEngineConfig(active_engine="llamacpp"), db=db, _admin=None)
 
-    assert result.active_engine == "ollama"
-    assert engine_service.current_engine() == "ollama"
-    assert await engine_service.get_active_engine(db) == "ollama"
+    assert result.active_engine == "llamacpp"
+    assert engine_service.current_engine() == "llamacpp"
+    assert await engine_service.get_active_engine(db) == "llamacpp"
 
 
 @pytest.mark.asyncio
@@ -60,15 +60,15 @@ async def test_set_active_engine_preserves_each_engines_own_default_independentl
         return []
 
     monkeypatch.setattr(server_pool_broadcast, "broadcast_refresh", fake_broadcast)
-    engine_service._cached_engine = "ollama"
+    engine_service._cached_engine = "llamacpp"
     await settings_service.set_default_model(db, SYSTEM_OWNER_ID, "ollama-tag")
     engine_service._cached_engine = "matricxon"
     await settings_service.set_default_model(db, SYSTEM_OWNER_ID, "matricxon-tag")
 
-    await engine_admin.set_active_engine(ActiveEngineConfig(active_engine="ollama"), db=db, _admin=None)
+    await engine_admin.set_active_engine(ActiveEngineConfig(active_engine="llamacpp"), db=db, _admin=None)
     await engine_admin.set_active_engine(ActiveEngineConfig(active_engine="matricxon"), db=db, _admin=None)
 
-    ollama_row = await db.get(AppSetting, (SYSTEM_OWNER_ID, settings_service.default_model_key("ollama")))
+    ollama_row = await db.get(AppSetting, (SYSTEM_OWNER_ID, settings_service.default_model_key("llamacpp")))
     matricxon_row = await db.get(AppSetting, (SYSTEM_OWNER_ID, settings_service.default_model_key("matricxon")))
     assert ollama_row.value["model"] == "ollama-tag"
     assert matricxon_row.value["model"] == "matricxon-tag"
@@ -99,7 +99,7 @@ async def test_internal_refresh_rejects_a_non_loopback_caller(db):
 @pytest.mark.asyncio
 async def test_internal_refresh_reloads_the_cache_from_the_shared_db(db):
     await engine_service.set_active_engine(db, "matricxon")
-    engine_service._cached_engine = "ollama"
+    engine_service._cached_engine = "llamacpp"
 
     await engine_admin.internal_refresh(_FakeRequest("127.0.0.1"), db=db)
 
@@ -112,7 +112,7 @@ async def test_get_engine_options_reports_runpod_not_ready_until_configured():
     try:
         result = await engine_admin.get_engine_options(_user=None)
         by_name = {option.name: option for option in result.engines}
-        assert by_name["ollama"].ready is True
+        assert by_name["llamacpp"].ready is True
         assert by_name["matricxon"].ready is True
         assert by_name["runpod"].ready is False
     finally:
@@ -161,5 +161,5 @@ async def test_set_active_engine_clears_browse_more_models_only_on_a_real_change
     )
     assert len(await catalog.list()) == 1
 
-    await engine_admin.set_active_engine(ActiveEngineConfig(active_engine="ollama"), db=db, _admin=None)
+    await engine_admin.set_active_engine(ActiveEngineConfig(active_engine="llamacpp"), db=db, _admin=None)
     assert await catalog.list() == []

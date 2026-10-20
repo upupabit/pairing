@@ -54,7 +54,7 @@ mark_message_deleted = reply_cancellation_service.mark_message_deleted
 async def stream_reply(
     db: AsyncSession,
     conversation: Conversation,
-    ollama_messages: list[dict],
+    chat_messages: list[dict],
     source_filenames: list[str],
     *,
     reply_to_message_id: str | None = None,
@@ -87,7 +87,7 @@ async def stream_reply(
     task = _schedule_generation(
         message.id,
         effective_model,
-        ollama_messages,
+        chat_messages,
         conversation.params if params is None else params,
         source_filenames,
         has_image,
@@ -121,7 +121,7 @@ async def stream_reply(
 def _schedule_generation(
     message_id: str,
     model: str,
-    ollama_messages: list[dict],
+    chat_messages: list[dict],
     params: dict,
     source_filenames: list[str],
     has_image: bool,
@@ -131,7 +131,7 @@ def _schedule_generation(
     stream_reply/cancel_generation can cancel it, and spawns reply_cross_instance_service's watchdog beside it
     (needed even with cancel_generation; see that function).
     """
-    task = asyncio.create_task(_run_generation(message_id, model, ollama_messages, params, source_filenames, has_image))
+    task = asyncio.create_task(_run_generation(message_id, model, chat_messages, params, source_filenames, has_image))
     _background_generation_tasks.add(task)
     task.add_done_callback(_background_generation_tasks.discard)
     reply_cancellation_service.register_task(message_id, task)
@@ -145,7 +145,7 @@ def _schedule_generation(
 async def _run_generation(
     message_id: str,
     model: str,
-    ollama_messages: list[dict],
+    chat_messages: list[dict],
     params: dict,
     source_filenames: list[str],
     has_image: bool,
@@ -173,8 +173,8 @@ async def _run_generation(
             try:
                 async with asyncio.timeout(effective_timeout):
                     gen_params = {**(params or {}), "request_id": message_id, "conversation_id": conversation_id}
-                    tools = await tool_loop_service.tool_stream_or_none(db, model, ollama_messages, gen_params)
-                    async for chunk in tools if tools is not None else chat_stream(model, ollama_messages, gen_params):
+                    tools = await tool_loop_service.tool_stream_or_none(db, model, chat_messages, gen_params)
+                    async for chunk in tools if tools is not None else chat_stream(model, chat_messages, gen_params):
                         if isinstance(chunk, dict):  # a finished MCP tool call, not text
                             await tool_event_service.record(db, message, chunk["tool"], conversation_id)
                             continue

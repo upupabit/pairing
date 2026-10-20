@@ -1,4 +1,4 @@
-"""POST /api/settings/delete-model, called directly (see tests/test_ollama_admin_router.py)."""
+"""POST /api/settings/delete-model, called directly (see tests/test_llamacpp_admin_router.py)."""
 
 import pytest
 

@@ -1,5 +1,5 @@
 """Tests for services/runpod_client.py (the RunPod Serverless OpenAI-compatible HTTP calls). httpx is mocked
-by monkeypatching httpx.AsyncClient, not respx, like tests/test_ollama_client.py: the HTTP boundary is the seam.
+by monkeypatching httpx.AsyncClient, not respx, like tests/test_llamacpp_client.py: the HTTP boundary is the seam.
 """
 
 import httpx

@@ -1,6 +1,6 @@
 """Installs Matricxon from GitHub (the "local" auto-install behind Settings > Inference engines' Install), in
 steps (each a "Step X of Y" event). `git clone`s app.config.MATRICXON_DEFAULT_VERSION (Matricxon's main branch,
-its newest code, unlike Ollama's pinned tag) unless the admin chose a tag/branch, then builds a `.venv`
+its newest code, unlike llama.cpp's pinned tag) unless the admin chose a tag/branch, then builds a `.venv`
 (Matricxon's scripts/start.sh hardcodes `.venv/bin/uvicorn`) and `pip install`s requirements.txt (not
 requirements-dev.txt; a service needs no pytest/ruff).
 
@@ -10,14 +10,14 @@ No AVX2 gate: on a Sandy Bridge CPU without AVX2, Matricxon's dependencies are f
 numpy 2.5 wheels dispatch CPU features at runtime (numpy's OpenBLAS is "DYNAMIC_ARCH"), and a POST /api/chat on
 that machine returned 200.
 
-Installs into app.config.EXTERNAL_DIR (admin checkouts kept apart from a dev's files, like Ollama),
+Installs into app.config.EXTERNAL_DIR (admin checkouts kept apart from a dev's files, like llama.cpp),
 then saves the path into MatricxonServerConfig.project_dir. matricxon_process._find_project_dir already
 prefers an explicit project_dir over its sibling-directory default, so no marker file or new detection is
 needed.
 
 A reinstall preserves target_dir's "data" subdirectory (_preserve_data_dir/_restore_data_dir): the
-downloaded models there are pAIring's managed library, not disposable install artifacts. Ollama avoids this
-because its models live in a separate location the installer never touches.
+downloaded models there are pAIring's managed library, not disposable install artifacts. llama.cpp shares
+this folder by default (llamacpp_models.LlamaCppModelsFolder).
 """
 
 import asyncio
@@ -37,7 +37,7 @@ from app.services.pip_progress import PipProgressTracker
 
 logger = logging.getLogger("llama_chat")
 
-# As ollama_installer: every event carries step/total_steps/step_label for the "Step X of Y" panel.
+# As llamacpp_installer: every event carries step/total_steps/step_label for the "Step X of Y" panel.
 _TOTAL_STEPS = 3
 _STEP_CLONE = 1
 _STEP_VENV = 2
@@ -52,7 +52,7 @@ def _preserve_data_dir(target_dir: Path) -> Path | None:
     """Moves target_dir's "data" subdirectory (Matricxon's default models_dir "./data/models", relative to the cwd
     scripts/start.sh sets) to a temp directory and returns it (None if nothing to preserve). Called before
     the reinstall wipes target_dir: without it every downloaded model (several GB, hours of pulling) was
-    destroyed, unlike Ollama (models in BASE_DIR/models, see ollama_process._build_env's OLLAMA_MODELS).
+    destroyed. llama.cpp shares this folder (llamacpp_models.LlamaCppModelsFolder), so it matters for both.
     """
     data_dir = target_dir / "data"
     if not data_dir.is_dir():
@@ -116,7 +116,7 @@ def _proxied_env(proxy_url: str | None) -> dict[str, str] | None:
 async def install_stream(
     repo: str | None = None, version: str | None = None, proxy_url: str | None = None
 ) -> AsyncIterator[dict]:
-    """Yields progress events like ollama_installer ({"status":...}, then {"done": True,...}
+    """Yields progress events like llamacpp_installer ({"status":...}, then {"done": True,...}
     or {"error":...}), relayed by routers/matricxon_admin.py. Cleans up a partial clone on failure.
 
     `repo`/`version` (MatricxonServerConfig.install_repo/install_version) override MATRICXON_GITHUB_REPO/

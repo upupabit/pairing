@@ -88,7 +88,7 @@ class MatricxonSupportChecker(EngineSupportChecker):
     ) -> float | None:
         """Matricxon's per-tag RAM estimate; None if the tag isn't confirmed installed (an un-pulled tag's need can't be
         computed without its GGUF tensor shapes, never guessed). `download_gb`/`fallback_min_ram_gb` are part of the
-        EngineSupportChecker signature (OllamaSupportChecker uses them) and ignored here.
+        EngineSupportChecker signature (LlamaCppSupportChecker uses them) and ignored here.
         """
         if tag is None:
             return None

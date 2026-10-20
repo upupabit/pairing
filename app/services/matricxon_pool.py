@@ -1,10 +1,10 @@
-"""Routes chat/embedding/model-management across Matricxon host(s): the analogue of ollama_pool.py, its own
-module (not a wrapper of ollama_pool's state) so Matricxon traffic never shares host list, cooldown or
-failure history with Ollama; they're unrelated backends configured independently (engine_service says
+"""Routes chat/embedding/model-management across Matricxon host(s): the analogue of llamacpp_pool.py, its own
+module (not a wrapper of llamacpp_pool's state) so Matricxon traffic never shares host list, cooldown or
+failure history with llama.cpp; they're unrelated backends configured independently (engine_service says
 which serves traffic). Both wrap server_pool.HostPool, as sdcpp_pool.py does.
 
 "local" mode resolves to LOCAL_MATRICXON_HOST alone (the process matricxon_process.py manages); "remote"
-to the admin's remote_hosts. Cached via refresh_from_config, not re-read per request (see ollama_pool.py).
+to the admin's remote_hosts. Cached via refresh_from_config, not re-read per request (see llamacpp_pool.py).
 """
 
 import asyncio
@@ -16,7 +16,7 @@ from app.services import matricxon_http
 from app.services.cluster_routing import NodeLoads, WarmUp
 from app.services.server_pool import HostPool, RouteInfo, ping_host
 
-# Matches../matricxon/app/config.py's default (MATRICXON_PORT=8420). Like ollama_pool.LOCAL_OLLAMA_HOST it is
+# Matches../matricxon/app/config.py's default (MATRICXON_PORT=8420). Like llamacpp_pool.LOCAL_LLAMACPP_HOST it is
 # a fixed fact (matricxon_process passes no host/port override to scripts/start.sh), not admin-editable.
 LOCAL_MATRICXON_HOST = "http://localhost:8420"
 

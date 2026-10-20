@@ -1,13 +1,13 @@
 /*
  * Content for the Stats "Visual chat workflow" diagram: a hand-laid-out node graph of what the chat pipeline does end
  * to end, checked against the source (app/routers/chat.py and app/services/: chat_service, chat_history_service,
- * reply_generation_service, inference_client, ollama_client, ollama_pool, matricxon_client, matricxon_pool,
+ * reply_generation_service, inference_client, llamacpp_client, llamacpp_pool, matricxon_client, matricxon_pool,
  * model_catalog_service, reply_broadcast_service, document_retrieval, reply_model_unload_service,
  * reply_cross_instance_service, title_service, chat_attachment_service, tool_loop_service). Separate from
  * workflow_diagram.js (rendering) so the text can be edited on its own.
  * 
  * Node: {id, label, category, x, y, w, h, detail: {server, title, location, body}}. `detail.server` is the process
- * running the step: "Browser" (chat.js), "pAIring" (this backend) or "ML engine" (the model-serving process, Ollama or
+ * running the step: "Browser" (chat.js), "pAIring" (this backend) or "ML engine" (the model-serving process, llama.cpp or
  * Matricxon per Admin settings > Inference engines; see inference_client/engine_service). It shows as a badge in the
  * detail panel.
  * 
@@ -130,7 +130,7 @@ const WORKFLOW_NODES = [
       server: APP_NAME,
       title: "Assembling what the model actually sees",
       location: "app/services/chat_prompt_service.py — build_system_prompt",
-      body: "Layers the system prompt in order: (1) any pinned persona/rules/skill notes, (2) RAG retrieval (see the branch below), (3) any ad-hoc text-attachment content folded in last. The result plus the trimmed history becomes ollama_messages. If the message has an image attachment, its vision-model override is also applied here (see the Attachments branch) before handing off to generation.",
+      body: "Layers the system prompt in order: (1) any pinned persona/rules/skill notes, (2) RAG retrieval (see the branch below), (3) any ad-hoc text-attachment content folded in last. The result plus the trimmed history becomes chat_messages. If the message has an image attachment, its vision-model override is also applied here (see the Attachments branch) before handing off to generation.",
     },
   },
   {
@@ -175,7 +175,7 @@ const WORKFLOW_NODES = [
       server: APP_NAME,
       title: "Resolving the active engine and calling it",
       location: "app/services/inference_client.py — chat_stream",
-      body: "This is the step that actually hands the conversation off to the AI language model for inference. Reads engine_service.current_engine() — an admin-configurable choice, Admin settings > Inference engines' \"Active engine\" picker — and dispatches to that engine's own client unchanged: ollama_client.chat_stream (host failover via ollama_pool — local mode: the one Ollama process this app manages itself; remote mode: the admin's configured host list) or matricxon_client.chat_stream (same failover shape via matricxon_pool; in a Matricxon cluster the node is chosen in order: the one holding this chat in RAM, then one with the model already loaded (up to one extra request in flight), else the least busy; when every node with the model is busy, an idle one loads it in the background, cluster_routing.py). Either engine's own error type is normalized into one InferenceError here, so nothing downstream needs to know which engine actually served the request. If the model is a \"thinking\" model, raw reasoning tokens are stripped before anything is yielded upward (Ollama's own ollama_client only — Matricxon implements no thinking-capable architecture yet).",
+      body: "This is the step that actually hands the conversation off to the AI language model for inference. Reads engine_service.current_engine() — an admin-configurable choice, Admin settings > Inference engines' \"Active engine\" picker — and dispatches to that engine's own client unchanged: llamacpp_client.chat_stream (host failover via llamacpp_pool — local mode: the one llama-server router this app manages itself, which loads each model from the shared GGUF folder on demand; remote mode: the admin's configured host list) or matricxon_client.chat_stream (same failover shape via matricxon_pool; in a Matricxon cluster the node is chosen in order: the one holding this chat in RAM, then one with the model already loaded (up to one extra request in flight), else the least busy; when every node with the model is busy, an idle one loads it in the background, cluster_routing.py). Either engine's own error type is normalized into one InferenceError here, so nothing downstream needs to know which engine actually served the request. A \"thinking\" model's reasoning arrives from llama-server in its own field (reasoning_content) and is left out, so only the answer is yielded upward (Matricxon's replies carry no separate reasoning).",
     },
   },
   {
@@ -190,7 +190,7 @@ const WORKFLOW_NODES = [
       server: "ML engine",
       title: "Where the actual inference happens",
       location: "The active engine's own process/host, not this app's own code",
-      body: "Runs the real AI/machine learning model (loading its trained weights into RAM/VRAM as needed) and streams its response back as NDJSON — one JSON object per line, each carrying the next piece of generated text, not the SSE format the browser eventually receives (that translation happens back in inference_client.chat_stream). This is also where an image attachment's base64 bytes are processed by a vision-capable model (when the active engine supports vision), or an embedding request for RAG is run through a separate embedding model (see the RAG branch's own dedicated ML engine step).",
+      body: "Runs the real AI/machine learning model (loading its trained weights into RAM/VRAM as needed) and streams its response back: llama-server as OpenAI-style SSE chunks (text, tool-call fragments, final timings), Matricxon as NDJSON (one JSON object per line). Either way it is the engine's own format, not the SSE the browser eventually receives (that translation happens back in inference_client.chat_stream). This is also where an image attachment's base64 bytes are processed by a vision-capable model (when the active engine supports vision), or an embedding request for RAG is run through a separate embedding model (see the RAG branch's own dedicated ML engine step).",
     },
   },
   {
@@ -520,7 +520,7 @@ const WORKFLOW_NODES = [
       server: APP_NAME,
       title: "The tool loop — when a chat has Tools turned on",
       location: "app/services/tool_loop_service.py — tool_stream_or_none, ToolLoop.run (called from _run_generation)",
-      body: "Only used when the conversation's Tools switch is on, at least one enabled MCP server offers tools, and the model can use them (Matricxon reports a \"tools\" capability; Ollama is tried and falls back to a plain chat if it refuses). Instead of one chat_stream call it runs rounds: the tool definitions go to the model with the messages; if the model answers with tool_calls (read from the stream into a ToolCallSink — Matricxon parses them out of the model's text per chat-template format), each call runs on its MCP server and the result goes back as a \"tool\" message for the next round. After the admin-set max rounds (Admin settings > System, default 5, shared by every MCP server) the model is asked to answer without tools. Tool definitions are sent shortened (long descriptions clipped) on every round. Every finished call is stored on the message (Message.tool_events) and published to viewers live, so the reply shows a \"Used N tool calls\" block.",
+      body: "Only used when the conversation's Tools switch is on, at least one enabled MCP server offers tools, and the model can use them (llama.cpp and Matricxon report a \"tools\" capability; a remote llama-server reports none, so it is tried and falls back to a plain chat if it refuses). Instead of one chat_stream call it runs rounds: the tool definitions go to the model with the messages; if the model answers with tool_calls (read from the stream into a ToolCallSink — Matricxon parses them out of the model's text per chat-template format), each call runs on its MCP server and the result goes back as a \"tool\" message for the next round. After the admin-set max rounds (Admin settings > System, default 5, shared by every MCP server) the model is asked to answer without tools. Tool definitions are sent shortened (long descriptions clipped) on every round. Every finished call is stored on the message (Message.tool_events) and published to viewers live, so the reply shows a \"Used N tool calls\" block.",
     },
   },
   {
@@ -552,7 +552,7 @@ const WORKFLOW_NODES = [
       server: APP_NAME,
       title: "MCP stage 1 — is this a tool reply?",
       location: "app/services/tool_loop_service.py — tool_stream_or_none",
-      body: "Runs for every reply but stops at the first failed check, so a chat with Tools off costs nothing: (1) the conversation's Tools switch (params.use_tools) — no database read when off; (2) the admin's global MCP switch (one AppSetting read); (3) the tool catalog has at least one tool; (4) the model can use tools (engine capability list, cached 60s; Ollama has none, so it is tried and falls back to a plain chat if refused). Any failed check means a plain chat_stream, exactly as without MCP.",
+      body: "Runs for every reply but stops at the first failed check, so a chat with Tools off costs nothing: (1) the conversation's Tools switch (params.use_tools) — no database read when off; (2) the admin's global MCP switch (one AppSetting read); (3) the tool catalog has at least one tool; (4) the model can use tools (engine capability list, cached 60s; a remote llama-server has none, so it is tried and falls back to a plain chat if refused). Any failed check means a plain chat_stream, exactly as without MCP.",
     },
   },
   {

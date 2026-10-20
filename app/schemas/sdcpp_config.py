@@ -25,7 +25,7 @@ class SdCppConfig(BaseModel):
     binary_path: str | None = None
     model_path: str | None = None  # .gguf/.safetensors/.ckpt loaded at launch
     extra_args: str | None = None
-    # Where image models are stored; None = auto (a `diffusion` sibling of the Matricxon/Ollama models folder).
+    # Where image models are stored; None = auto (a `diffusion` sibling of the Matricxon/llama.cpp models folder).
     models_path: str | None = None
     # Root of saved images (<root>/<user id>/<job id>.png), either mode; None = IMAGES_DIR.
     images_path: str | None = None
@@ -37,7 +37,7 @@ class SdCppConfig(BaseModel):
 
     @model_validator(mode="after")
     def _fall_back_to_local_when_remote_has_no_hosts(self) -> "SdCppConfig":
-        """Like OllamaServerConfig's validator: "remote" with no hosts is never useful, and the local UI has no Save
+        """Like LlamaCppServerConfig's validator: "remote" with no hosts is never useful, and the local UI has no Save
         button while nothing is installed, so this is the way back."""
         if self.mode == "remote" and not self.remote_hosts:
             self.mode = "local"

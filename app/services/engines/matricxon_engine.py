@@ -1,5 +1,5 @@
 """MatricxonEngine: InferenceEngine adapter over matricxon_client/matricxon_admin/matricxon_pool. Forwards by
-module reference, looked up per call, like OllamaEngine.
+module reference, looked up per call, like LlamaCppEngine.
 """
 
 from collections.abc import AsyncGenerator

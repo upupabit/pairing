@@ -1,5 +1,5 @@
 """Tests for services/huggingface_client.py. httpx.AsyncClient is replaced by a fake that records the call and returns a
-canned response (as tests/test_ollama_client.py)."""
+canned response (as tests/test_llamacpp_client.py)."""
 
 import httpx
 import pytest

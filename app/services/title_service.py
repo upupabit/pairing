@@ -71,7 +71,7 @@ _LATIN_LETTER_RE = re.compile(r"[A-Za-z]")
 # "Smart" mode's budget for the model's title call. A "thinking" model reasons before its answer, and
 # num_predict counts reasoning tokens: a small model can spend its *whole* budget (on slow hardware a minute
 # or more) on a one-line title and never write one. chat_stream (under chat_once) already strips raw reasoning
-# for models the engine reports thinking-capable (ollama_client's _strip_inline_thinking; needed for
+# for models the engine reports thinking-capable (llamacpp_client's _strip_inline_thinking; needed for
 # dicta-il/dictalm-3.0-1.7b-thinking), but that doesn't help if reasoning doesn't *finish* in budget: only a
 # truncated fragment remains, which _TITLE_MAX_WORDS catches. Generous to make that rare: it runs *after*
 # "done" is yielded (chat_service.build_reply_stream), off the critical path.

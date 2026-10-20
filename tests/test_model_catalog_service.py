@@ -91,7 +91,7 @@ async def test_installed_embedding_models_filters_by_capability(monkeypatch):
 
 # resolve_installed_model
 # Covers an admin switching the active engine (engine_service) leaving every conversation's `model` at a tag
-# the new engine may not know (Ollama and Matricxon have separate catalogs). Only caller:
+# the new engine may not know (llama.cpp and Matricxon have separate catalogs). Only caller:
 # chat_service.build_reply_stream.
 
 _CHAT_TAG = "some-chat-model"

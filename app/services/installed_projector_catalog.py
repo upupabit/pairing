@@ -41,8 +41,8 @@ class InstalledProjectorCatalog:
         support_set: EngineSupportSet,
     ) -> list[CatalogEntry]:
         """Installed tags reporting a "clip" (vision-projector) architecture and no chat capability.
-        `installed_models` is the caller's list_models result (no extra call). Ollama shows none: it bundles a
-        same-repo mmproj into the main model's manifest, so nothing matches (no Ollama-specific code).
+        `installed_models` is the caller's list_models result (no extra call). llama.cpp and Matricxon share one store,
+        so a projector pulled under either shows here.
         """
         entries = []
         for model in installed_models:

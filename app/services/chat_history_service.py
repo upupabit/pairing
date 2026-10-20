@@ -68,7 +68,7 @@ def _newest_that_fit(messages: list[Message], budget_chars: int) -> list[Message
 def _merge_consecutive_same_role(messages: list[Message]) -> list[dict]:
     """Folds runs of same-role messages into one turn. A channel can hold several "user" messages in a row
     (ask_ai=False; the AI replies only when asked), which strict chat templates (Mistral/Ministral, used by
-    Ollama and Matricxon) reject: "conversation roles must alternate" (seen in Ollama's logs). Personal chats
+    llama.cpp and Matricxon) reject: "conversation roles must alternate" (seen in Ollama's logs). Personal chats
     already alternate; paying the cost unconditionally is simpler. Single messages are unchanged; runs of 2+
     are joined with each line prefixed by the sender's display name (Message.sender_display_name).
     Assistant/system messages stay plain.

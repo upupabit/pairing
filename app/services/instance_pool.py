@@ -1,6 +1,6 @@
 """Routes an incoming HTTP request across this machine's local pAIring instances (instance_service.py) when
 "proxy mode" (Settings > System) is "local": a "fewest in-flight, health-aware" selector, a port of
-ollama_pool.py to instance indices. instance_proxy.py forwards using pick_instance.
+llamacpp_pool.py to instance indices. instance_proxy.py forwards using pick_instance.
 
 Primary-only: a sibling may be a *target* but never chooses. The candidate set changes live with the
 instance count, so candidates are recomputed per call.
@@ -14,7 +14,7 @@ from contextlib import asynccontextmanager
 from app.services import instance_process
 from app.services.settings_service import DEFAULT_PROXY_MODE
 
-# Same cooldown as ollama_pool.py: long enough not to retry a still-broken instance at once, short enough
+# Same cooldown as llamacpp_pool.py: long enough not to retry a still-broken instance at once, short enough
 # that a recovered one isn't idle for minutes.
 _COOLDOWN_SECONDS = 30.0
 
@@ -46,11 +46,11 @@ def _candidate_indices() -> set[int]:
 
 
 def pick_instance(exclude: frozenset[int] = frozenset()) -> int:
-    """The healthy candidate with the fewest in-flight requests (like ollama_pool.pick_host; if all are excluded
+    """The healthy candidate with the fewest in-flight requests (like llamacpp_pool.pick_host; if all are excluded
     or cooling down, the least-recently-failed). Difference: ties break *randomly*. App traffic is mostly fast
-    sequential requests with 0 in flight everywhere, and plain min (ollama_pool) always picked index 0
-    (100% of 20 live requests hit the primary), so nothing balanced under light load. Ollama's long, varied
-    requests don't have this problem, so ollama_pool is unchanged.
+    sequential requests with 0 in flight everywhere, and plain min (llamacpp_pool) always picked index 0
+    (100% of 20 live requests hit the primary), so nothing balanced under light load. Engine requests are
+    long and varied and don't have this problem, so llamacpp_pool is unchanged.
     """
     now = time.monotonic()
     candidates = _candidate_indices()
@@ -74,7 +74,7 @@ def mark_recovered(index: int) -> None:
 @asynccontextmanager
 async def track_request(index: int) -> AsyncGenerator[None, None]:
     """Brackets one request's lifetime against `index`'s in-flight count, held for the caller's whole block (a
-    proxied chat SSE stream's full duration). Same contract as ollama_pool.track_request.
+    proxied chat SSE stream's full duration). Same contract as llamacpp_pool.track_request.
     """
     state = _state(index)
     state.in_flight += 1

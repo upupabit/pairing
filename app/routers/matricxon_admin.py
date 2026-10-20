@@ -1,5 +1,5 @@
 """Settings > Inference engines > Matricxon admin: local-mode params (max_loaded_models) or remote host list,
-and start/stop/status of the local process via its scripts. Same shape as ollama_admin.py, except
+and start/stop/status of the local process via its scripts. Same shape as llamacpp_admin.py, except
 Matricxon is a sibling checkout plus scripts, not a binary (matricxon_process.py).
 
 Not to be confused with app/services/matricxon_admin.py (model pull/delete).
@@ -55,7 +55,7 @@ async def _save_and_broadcast(db: AsyncSession, body: MatricxonServerConfig) -> 
     """Persists `body`, writes Matricxon's.env (matricxon_process.write_env_file, so it applies however the
     process starts) and, only if Matricxon is the active engine, refreshes this instance's matricxon_pool and
     best-effort the other local instances. An inactive engine's config is saved but has no live effect until
-    switched to (engine_admin.py); ollama_admin does it unconditionally.
+    switched to (engine_admin.py); llamacpp_admin does it unconditionally.
     """
     previous = await settings_service.get_matricxon_server_config(db)
     # Nodes added on the Cluster page are not part of this form; saving must not wipe them (it once did).
@@ -102,7 +102,7 @@ async def update_config(
     body: MatricxonServerConfig, db: AsyncSession = Depends(get_db), _admin: User = Depends(require_admin)
 ):
     """Persists the config; does not restart a running local Matricxon (POST /apply does), as
-    ollama_admin.update_config."""
+    llamacpp_admin.update_config."""
     _require_checkout(body)
     await _save_and_broadcast(db, body)
     return _without_secret(body)
@@ -162,7 +162,7 @@ async def apply_live(
 @router.post("/internal-refresh", response_model=OkResponse)
 async def internal_refresh(request: Request, db: AsyncSession = Depends(get_db)):
     """Called only by another local instance's server_pool_broadcast.broadcast_refresh; see
-    ollama_admin.internal_refresh."""
+    llamacpp_admin.internal_refresh."""
     if request.client is None or request.client.host not in ("127.0.0.1", "::1"):
         raise HTTPException(status_code=403, detail="Internal endpoint — not reachable externally.")
     matricxon_pool.refresh_from_config(await settings_service.get_matricxon_server_config(db))
@@ -205,13 +205,13 @@ async def install_defaults(_admin: User = Depends(require_admin)):
 
 @router.get("/available-versions", response_model=AvailableVersions)
 async def available_versions(repo: str | None = None, _admin: User = Depends(require_admin)):
-    """See ollama_admin.py's identical endpoint."""
+    """See llamacpp_admin.py's identical endpoint."""
     return AvailableVersions(versions=await github_releases.list_tags(repo or MATRICXON_GITHUB_REPO))
 
 
 @router.post("/install")
 async def install(db: AsyncSession = Depends(get_db), _admin: User = Depends(require_admin)):
-    """Same SSE shape as ollama_admin's install; matricxon_installer always yields a single {"error":...} today."""
+    """Same SSE shape as llamacpp_admin's install; matricxon_installer always yields a single {"error":...} today."""
     config = await settings_service.get_matricxon_server_config(db)
     proxy_config = await http_proxy_service.get_http_proxy_config(db)
 

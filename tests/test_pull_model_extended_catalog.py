@@ -1,6 +1,6 @@
 """Test that routers/settings.py's pull_model accepts an extended-catalog tag, not just a static
 app/model_catalog.py one, called directly, not via TestClient/ASGI (see tests/test_instance_proxy_http.py). The SSE
-download is covered by ollama_admin's tests; this checks only the entry-lookup gate deciding whether pull_model
+download is covered by llamacpp_admin's tests; this checks only the entry-lookup gate deciding whether pull_model
 proceeds.
 """
 

@@ -119,12 +119,12 @@ async def build_reply_stream(
     # Always sent, even when "": an explicit empty system message tells the engine there is no preamble,
     # whereas omitting it makes some chat-template layers (e.g. Matricxon's VicunaPromptBuilder) substitute their own
     # default.
-    ollama_messages = [{"role": "system", "content": system_prompt}] + history
+    chat_messages = [{"role": "system", "content": system_prompt}] + history
 
     # None (stream_reply falls back to conversation.model) unless `attachments` has an image, then the
     # default vision model for this reply only (apply_image_attachment). Also the has_image signal below.
     reply_model = (
-        await chat_attachment_service.apply_image_attachment(db, attachments, ollama_messages) if attachments else None
+        await chat_attachment_service.apply_image_attachment(db, attachments, chat_messages) if attachments else None
     )
     if reply_model is None:
         # get_default_vision_model only returns installed models, so only conversation.model needs checking
@@ -140,7 +140,7 @@ async def build_reply_stream(
     async for event in reply_generation_service.stream_reply(
         db,
         conversation,
-        ollama_messages,
+        chat_messages,
         source_filenames,
         reply_to_message_id=user_message.id,
         cancel_on_disconnect=is_personal,

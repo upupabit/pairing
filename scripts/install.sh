@@ -183,12 +183,15 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-step "6. Checking for Ollama (not installed by this script)"
+step "6. Checking for llama.cpp's llama-server (not installed by this script)"
 # ---------------------------------------------------------------------------
-OLLAMA_FOUND=false
-if command -v ollama > /dev/null 2>&1; then
-    success "Found: $(ollama --version 2>&1 | head -1)"
-    OLLAMA_FOUND=true
+LLAMACPP_FOUND=false
+if command -v llama-server > /dev/null 2>&1; then
+    success "Found: $(llama-server --version 2>&1 | grep -m1 version)"
+    LLAMACPP_FOUND=true
+elif [ -x "external/llama.cpp/llama-server" ]; then
+    success "Found: pAIring's managed install in external/llama.cpp"
+    LLAMACPP_FOUND=true
 fi
 
 # ---------------------------------------------------------------------------
@@ -252,7 +255,7 @@ if [ "$OS_NAME" = "Linux" ]; then
         info "  (the one-click prebuilt download works without them)"
     fi
 fi
-if [ "$OLLAMA_FOUND" = false ]; then
+if [ "$LLAMACPP_FOUND" = false ]; then
     echo
-    warn "Remember: Ollama still isn't installed — pAIring will start and you then can download and install it from pAIring UI, on macOS you will have to install it yourself later on"
+    warn "Remember: llama.cpp isn't installed yet — pAIring will start and you can install it from the pAIring UI (Settings > Inference engines). On macOS, install llama.cpp yourself and enter its llama-server path there."
 fi

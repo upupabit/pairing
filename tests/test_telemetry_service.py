@@ -1,8 +1,8 @@
 """Tests for services/telemetry_service.py: the by-host/by-model group_by counts are plain SQL (as
 tests/test_stats_service.py), but latency bucketing and p95 are hand-rolled Python (SQL isn't portable enough;
-see the module), so they get exact-value coverage. Every _event defaults to engine="ollama"
+see the module), so they get exact-value coverage. Every _event defaults to engine="llamacpp"
 (TelemetryEvent's column default, app/models/telemetry.py) and every test asks get_engine_telemetry_summary for
-"ollama"; test_a_matricxon_events_never_leak_into_ollamas_summary is the one exercising the engine filter.
+"llamacpp"; test_a_matricxon_events_never_leak_into_ollamas_summary is the one exercising the engine filter.
 """
 
 from datetime import timedelta
@@ -29,7 +29,7 @@ def _event(**kwargs) -> TelemetryEvent:
 
 @pytest.mark.asyncio
 async def test_summary_on_an_empty_database(db):
-    summary = await telemetry_service.get_engine_telemetry_summary(db, "ollama")
+    summary = await telemetry_service.get_engine_telemetry_summary(db, "llamacpp")
 
     assert summary.total_requests == 0
     assert summary.error_count == 0
@@ -52,7 +52,7 @@ async def test_total_and_error_counts_include_every_event_regardless_of_age(db):
     )
     await db.commit()
 
-    summary = await telemetry_service.get_engine_telemetry_summary(db, "ollama")
+    summary = await telemetry_service.get_engine_telemetry_summary(db, "llamacpp")
 
     assert summary.total_requests == 3
     assert summary.error_count == 1
@@ -69,7 +69,7 @@ async def test_by_model_and_by_host_group_correctly(db):
     )
     await db.commit()
 
-    summary = await telemetry_service.get_engine_telemetry_summary(db, "ollama")
+    summary = await telemetry_service.get_engine_telemetry_summary(db, "llamacpp")
 
     by_model = {c.key: c.count for c in summary.by_model}
     assert by_model == {"llama3:latest": 2, "moondream:1.8b": 1}
@@ -83,7 +83,7 @@ async def test_events_without_a_model_are_excluded_from_by_model(db):
     db.add(_event(model=None))
     await db.commit()
 
-    summary = await telemetry_service.get_engine_telemetry_summary(db, "ollama")
+    summary = await telemetry_service.get_engine_telemetry_summary(db, "llamacpp")
 
     assert summary.by_model == []
     assert summary.total_requests == 1
@@ -99,7 +99,7 @@ async def test_latency_by_model_computes_avg_and_bounded_p95(db):
     )
     await db.commit()
 
-    summary = await telemetry_service.get_engine_telemetry_summary(db, "ollama")
+    summary = await telemetry_service.get_engine_telemetry_summary(db, "llamacpp")
 
     (stat,) = summary.latency_by_model
     assert stat.model == "llama3:latest"
@@ -115,7 +115,7 @@ async def test_failed_events_are_excluded_from_latency_stats(db):
     db.add(_event(model="llama3:latest", success=False, error_message="boom", duration_ms=9999.0))
     await db.commit()
 
-    summary = await telemetry_service.get_engine_telemetry_summary(db, "ollama")
+    summary = await telemetry_service.get_engine_telemetry_summary(db, "llamacpp")
 
     assert summary.latency_by_model == []
     assert summary.latency_time_series == []
@@ -127,7 +127,7 @@ async def test_events_outside_the_lookback_window_are_excluded_from_latency_stat
     db.add(_event(model="llama3:latest", started_at=old, duration_ms=100.0))
     await db.commit()
 
-    summary = await telemetry_service.get_engine_telemetry_summary(db, "ollama")
+    summary = await telemetry_service.get_engine_telemetry_summary(db, "llamacpp")
 
     assert summary.latency_by_model == []
     # But it still counts toward the plain totals/by_model breakdown, which have no lookback window.
@@ -147,7 +147,7 @@ async def test_latency_time_series_buckets_by_hour(db):
     )
     await db.commit()
 
-    summary = await telemetry_service.get_engine_telemetry_summary(db, "ollama")
+    summary = await telemetry_service.get_engine_telemetry_summary(db, "llamacpp")
 
     assert len(summary.latency_time_series) == 2
     first, second = summary.latency_time_series
@@ -164,13 +164,13 @@ async def test_a_matricxon_events_never_leak_into_ollamas_summary(db):
     """
     db.add_all(
         [
-            _event(model="shared-name:latest", host="http://shared:1", engine="ollama"),
+            _event(model="shared-name:latest", host="http://shared:1", engine="llamacpp"),
             _event(model="shared-name:latest", host="http://shared:1", engine="matricxon", success=False),
         ]
     )
     await db.commit()
 
-    ollama_summary = await telemetry_service.get_engine_telemetry_summary(db, "ollama")
+    ollama_summary = await telemetry_service.get_engine_telemetry_summary(db, "llamacpp")
     matricxon_summary = await telemetry_service.get_engine_telemetry_summary(db, "matricxon")
 
     assert ollama_summary.total_requests == 1

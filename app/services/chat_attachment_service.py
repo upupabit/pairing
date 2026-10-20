@@ -111,7 +111,7 @@ def extract_attachment_text(path: Path) -> str:
 
 def fold_text_attachments_into_prompt(system_prompt: str, attachments: list[AttachmentInfo]) -> str:
     """Folds each `type="text"` attachment's content into the system prompt as its own section (images are
-    handled by apply_image_attachment). Called by chat_service.build_reply_stream before ollama_messages is built.
+    handled by apply_image_attachment). Called by chat_service.build_reply_stream before chat_messages is built.
     """
     for attachment in attachments:
         if attachment.type == "text":
@@ -122,10 +122,10 @@ def fold_text_attachments_into_prompt(system_prompt: str, attachments: list[Atta
 
 
 async def apply_image_attachment(
-    db: AsyncSession, attachments: list[AttachmentInfo], ollama_messages: list[dict]
+    db: AsyncSession, attachments: list[AttachmentInfo], chat_messages: list[dict]
 ) -> str | None:
     """Finds the at-most-one image among `attachments` and attaches its base64 bytes to the last entry of
-    `ollama_messages` (the user's new turn) as the engine's per-message "images" field (ollama_client.chat_stream
+    `chat_messages` (the user's new turn) as the engine's per-message "images" field (llamacpp_client.chat_stream
     passes messages through). Returns the default vision model for this reply only, or None if no image or none
     installed (model_catalog_service.get_default_vision_model; the conversation's own model is untouched).
     """
@@ -135,5 +135,5 @@ async def apply_image_attachment(
     vision_model = await model_catalog_service.get_default_vision_model(db)
     if vision_model:
         image_b64 = base64.b64encode(image.path.read_bytes()).decode("ascii")
-        ollama_messages[-1] = {**ollama_messages[-1], "images": [image_b64]}
+        chat_messages[-1] = {**chat_messages[-1], "images": [image_b64]}
     return vision_model

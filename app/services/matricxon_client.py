@@ -1,18 +1,16 @@
-"""Thin async wrapper around Matricxon's local HTTP API, the analogue of ollama_client.py and deliberately
+"""Thin async wrapper around Matricxon's local HTTP API, the analogue of llamacpp_client.py and deliberately
 separate: the backends are unrelated processes configured independently (engine_service), and separate
 plumbing keeps their failure/cooldown state and error types from leaking. Matricxon's API is Ollama-shaped
 (../matricxon/app/main.py calls it "an Ollama-API-compatible inference server"), matched here against its
 router/schema code (tags_router.py, chat_router.py, embeddings_router.py), not Ollama's docs.
 
-Deliberate gaps versus ollama_client.py:
-  - No "thinking" stripping (ollama_thinking): Matricxon implements only mistral3/bert/nomic-bert today
-    (../matricxon/app/architectures/registry.py), none thinking-capable. So chat_stream also skips
-    ollama_client.chat_stream's nested _content_stream, which only lets that check pick a generator.
+Differences from llamacpp_client.py (an OpenAI-style API):
+  - No reasoning to filter: Matricxon's replies carry no separate thinking text.
   - Embeddings use Matricxon's singular `/api/embeddings` (not Ollama's `/api/embed`); same shapes otherwise
     (../matricxon/app/schemas/embeddings.py).
 
-OpenTelemetry spans (attribute shaping: matricxon_telemetry, kept out of this file like ollama_telemetry)
-mirror ollama_client.py's chat_stream/embed spans field for field: its done-line payload uses the same
+OpenTelemetry spans (attribute shaping: matricxon_telemetry, kept out of this file like llamacpp_telemetry)
+mirror llamacpp_client.py's chat_stream/embed spans field for field: its done-line payload uses the same
 prompt_eval_count/eval_count/load_duration/eval_duration/total_duration names (checked
 against../matricxon/app/routers/chat_router.py).
 """
@@ -35,7 +33,7 @@ _CHAT_TIMEOUT = httpx.Timeout(None, connect=5.0)
 
 
 class MatricxonError(Exception):
-    """Raised when Matricxon is unreachable or errors; like ollama_client.OllamaError, a separate type (no shared
+    """Raised when Matricxon is unreachable or errors; like llamacpp_client.LlamaCppError, a separate type (no shared
     base) so one engine's errors can't be caught as the other's. inference_client normalizes both into InferenceError.
     """
 
@@ -84,7 +82,7 @@ async def get_capabilities() -> dict:
 
 async def embed(text: str, model: str) -> list[float]:
     """Embeds `text` via POST /api/embeddings (singular) with `model` (the admin's default, resolved by callers via
-    model_catalog_service.get_default_embedding_model). No cold-start retry (see ollama_client.embed): Matricxon's
+    model_catalog_service.get_default_embedding_model). No cold-start retry (see llamacpp_client.embed): Matricxon's
     ModelManager loads the model inside the request (../matricxon/app/routers/embeddings_router.py), so there's no
     "dispatched before ready" race, and one span attempt_count always.
     """
@@ -94,7 +92,7 @@ async def embed(text: str, model: str) -> list[float]:
     ) as span:
         span.set_attribute("gen_ai.request.model", model)
         span.set_attribute("server.address", host)
-        span.set_attribute("ollama.attempt_count", 1)
+        span.set_attribute("engine.attempt_count", 1)
         async with matricxon_pool.track_request(host):
             async with matricxon_http.client(timeout=_REQUEST_TIMEOUT) as client:
                 try:
@@ -126,7 +124,7 @@ def _error_detail_from_body(body: bytes, status_code: int) -> str:
 
 
 async def chat_stream(model: str, messages: list[dict], params: dict) -> AsyncGenerator[str, None]:
-    """Streams a chat completion as text chunks; see ollama_client.chat_stream for the shared contract (`messages`
+    """Streams a chat completion as text chunks; see llamacpp_client.chat_stream for the shared contract (`messages`
     role/content dicts in). Matches../matricxon/app/schemas/chat.py's ChatOptions field for field.
     """
     options = {
@@ -152,7 +150,7 @@ async def chat_stream(model: str, messages: list[dict], params: dict) -> AsyncGe
 
     # Filled by _raw_content_chunks_from (overwritten each attempt, as stream_with_failover may call it more than once)
     # and
-    # read when the stream ends, to attach telemetry to the span. See ollama_client.chat_stream's call_state: the span
+    # read when the stream ends, to attach telemetry to the span. See llamacpp_client.chat_stream's call_state: the span
     # wraps the whole failover loop, so plain locals won't do.
     call_state: dict = {"attempts": 0}
     # Cluster: a chat's processed state lives in RAM on one node. Send it there, or, when it must go elsewhere
@@ -199,7 +197,7 @@ async def chat_stream(model: str, messages: list[dict], params: dict) -> AsyncGe
                     if chunk:
                         yield chunk
 
-    # record_exception/set_status_on_exception off (as ollama_client.chat_stream): their defaults mark the span
+    # record_exception/set_status_on_exception off (as llamacpp_client.chat_stream): their defaults mark the span
     # ERROR on any exception, including the normal asyncio.CancelledError from "stop". Status is set explicitly below.
     with matricxon_telemetry.get_tracer().start_as_current_span(
         "matricxon.chat", kind=SpanKind.CLIENT, record_exception=False, set_status_on_exception=False
@@ -222,7 +220,7 @@ async def chat_stream(model: str, messages: list[dict], params: dict) -> AsyncGe
 
 
 async def chat_once(model: str, messages: list[dict], params: dict | None = None) -> str:
-    """Non-streaming helper for one-off internal calls (e.g. title generation); see ollama_client.chat_once."""
+    """Non-streaming helper for one-off internal calls (e.g. title generation); see llamacpp_client.chat_once."""
     params = params or {
         "temperature": 0.3,
         "top_p": 0.9,
@@ -241,7 +239,7 @@ async def chat_once(model: str, messages: list[dict], params: dict | None = None
 async def stop_model(model: str, request_id: str | None = None) -> None:
     """Stops a reply: an empty `keep_alive: 0` call (../matricxon/app/schemas/chat.py ChatRequest.is_unload_call).
     With `request_id` (as sent by chat_stream) only that reply is cancelled and the model stays loaded; without
-    it, the old "unload now" (the wire shape ollama_client.stop_model sends). Sent to every configured host; see that
+    it, the old "unload now" (the wire shape llamacpp_client.stop_model sends). Sent to every configured host; see that
     function.
     """
     body: dict = {"model": model, "messages": [], "keep_alive": 0}

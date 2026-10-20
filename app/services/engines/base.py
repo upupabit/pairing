@@ -1,14 +1,13 @@
-"""The interface every inference engine (Ollama, Matricxon, later a serverless GPU provider; buffer.md
-"Future features > Serverless GPU providers") implements, so inference_client and generic call sites
-(routers/health.py, engine_support_service) never hardcode a two-way choice. A third engine is one adapter
-registered in engines.registry.
+"""The interface every inference engine (llama.cpp, Matricxon, the connector providers) implements, so
+inference_client and generic call sites (routers/health.py, engine_support_service) never hardcode a choice.
+Another engine is one adapter registered in engines.registry.
 
 An ABC, not a Protocol: some operations (embeddings, pull/delete, stop_model) don't apply to every engine.
 An ABC lets them default to EngineCapabilityError (or a no-op for stop_model, always best-effort cleanup)
 instead of forcing every adapter to implement everything, and a broken adapter fails at import
 (registry builds engines eagerly), not on the first request.
 
-Each adapter forwards to its ollama_client/matricxon_client module by module reference, looked up on each
+Each adapter forwards to its llamacpp_client/matricxon_client module by module reference, looked up on each
 call, never bound at construction: tests (tests/test_inference_client.py etc.) monkeypatch those modules' functions.
 """
 
@@ -41,7 +40,7 @@ class EngineCapabilities:
     model_management: bool
     # Whether stop_model does more than a no-op.
     stop_model: bool
-    # Whether this app manages a local process for the engine (ollama_process.py/matricxon_process.py and admin
+    # Whether this app manages a local process for the engine (llamacpp_process.py/matricxon_process.py and admin
     # routers); False for remote-only/serverless engines (no local/remote mode, install or start/stop).
     local_process: bool
     # Whether calls go through server_pool.HostPool (hosts, failover, cooldown); False for a single fixed
@@ -70,7 +69,7 @@ class InferenceEngine(ABC):
     capabilities: ClassVar[EngineCapabilities]
     # Every exception type the engine's client can raise; inference_client wraps the union across engines
     # (registry.EngineRegistry.all_error_types) into its engine-agnostic InferenceError. Never a shared base
-    # class across engines (see ollama_client.OllamaError), so catching one engine's error can't catch another's.
+    # class across engines (see llamacpp_errors.LlamaCppError), so catching one engine's error can't catch another's.
     error_types: ClassVar[tuple[type[Exception], ...]]
     support_checker: ClassVar[type[EngineSupportChecker]] = AlwaysSupportedChecker
 
@@ -97,8 +96,8 @@ class InferenceEngine(ABC):
     async def stop_model(  # noqa: B027 - deliberate no-op default, not abstract
         self, model: str, request_id: str | None = None
     ) -> None:
-        """Best-effort cleanup, a no-op by default as every caller already treats it (see ollama_client.stop_model:
-        "cleanup fan-out", never load-bearing)."""
+        """Best-effort cleanup, a no-op by default as every caller already treats it (see llamacpp_client.stop_model:
+        best-effort cleanup, never load-bearing)."""
 
     def pull_model_stream(self, tag: str) -> AsyncGenerator[dict, None]:
         raise EngineCapabilityError(f"{self.display_name} does not support pulling models through this app.")
@@ -124,13 +123,13 @@ class InferenceEngine(ABC):
     async def is_ready(self) -> bool:
         """Whether the engine can be activated now. Distinct from EngineCapabilities: a Connector-backed engine
         (services.connectors) isn't ready until an admin saved valid config and enabled it (RunPodEngine overrides).
-        Default True: Ollama/Matricxon need no secret to be selected.
+        Default True: llama.cpp/Matricxon need no secret to be selected.
         """
         return True
 
     async def test_connection(self, config: dict[str, str]) -> tuple[bool, str]:
         """Validates a candidate Connector config by trying the real service; called by the Connectors page's "Test
         connection" (routers/connectors.py) before the engine may become ready (see is_ready). Default: no real
-        test (Ollama/Matricxon aren't Connector-backed).
+        test (llama.cpp/Matricxon aren't Connector-backed).
         """
         return True, "No connectivity test defined for this engine."

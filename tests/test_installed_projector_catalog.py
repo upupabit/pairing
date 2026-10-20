@@ -8,7 +8,7 @@ _PROJECTOR_TAG = (
     "hf.co/concedo/llama-joycaption-beta-one-hf-llava-mmproj-gguf:llama-joycaption-beta-one-llava-mmproj-model-f16"
 )
 
-_NO_SUPPORT = EngineSupportSet({"ollama": AlwaysSupportedChecker(), "matricxon": MatricxonSupportChecker.unloaded()})
+_NO_SUPPORT = EngineSupportSet({"llamacpp": AlwaysSupportedChecker(), "matricxon": MatricxonSupportChecker.unloaded()})
 
 
 def test_display_name_strips_the_hf_co_prefix_the_file_suffix_and_the_gguf_noise():
@@ -99,7 +99,7 @@ def test_entries_reads_matricxons_own_real_ram_estimate():
     installed_models = [{"name": _PROJECTOR_TAG, "size": 1_000_000, "details": {"family": "clip"}}]
     support_set = EngineSupportSet(
         {
-            "ollama": AlwaysSupportedChecker(),
+            "llamacpp": AlwaysSupportedChecker(),
             "matricxon": MatricxonSupportChecker(None, {_PROJECTOR_TAG: {"estimated_ram_gb": 1.04}}),
         }
     )

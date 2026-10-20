@@ -1,4 +1,4 @@
-"""Shapes for GET /api/telemetry/ollama/summary, the Telemetry dashboard (telemetry_service.py, telemetry.js)."""
+"""Shapes for GET /api/telemetry/{engine}/summary, the Telemetry dashboard (telemetry_service.py, telemetry.js)."""
 
 from datetime import datetime
 
@@ -37,7 +37,7 @@ class LoadedModelSnapshot(BaseModel):
     polled_at: datetime
 
 
-class OllamaTelemetrySummary(BaseModel):
+class EngineTelemetrySummary(BaseModel):
     total_requests: int
     error_count: int
     by_model: list[CountByKey]

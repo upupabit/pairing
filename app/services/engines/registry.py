@@ -10,9 +10,9 @@ from app.services.engines.cohere_engine import CohereEngine
 from app.services.engines.digitalocean_engine import DigitalOceanEngine
 from app.services.engines.gemini_engine import GeminiEngine
 from app.services.engines.groq_engine import GroqEngine
+from app.services.engines.llamacpp_engine import LlamaCppEngine
 from app.services.engines.matricxon_engine import MatricxonEngine
 from app.services.engines.nvidia_engine import NvidiaEngine
-from app.services.engines.ollama_engine import OllamaEngine
 from app.services.engines.openrouter_engine import OpenRouterEngine
 from app.services.engines.runpod_engine import RunPodEngine
 
@@ -46,7 +46,7 @@ class EngineRegistry:
 
     def all_error_types(self) -> tuple[type[Exception], ...]:
         """The union of every engine's error types plus EngineCapabilityError (from base.py's "unsupported" stubs);
-        inference_client catches it, replacing `except (OllamaError, MatricxonError)`.
+        inference_client catches it, so callers never list engines' errors by hand.
         """
         types: set[type[Exception]] = {EngineCapabilityError}
         for engine in self._by_name.values():
@@ -56,7 +56,7 @@ class EngineRegistry:
 
 registry = EngineRegistry(
     [
-        OllamaEngine(),
+        LlamaCppEngine(),
         MatricxonEngine(),
         RunPodEngine(),
         CloudflareEngine(),

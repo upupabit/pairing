@@ -26,7 +26,7 @@ function telemetryDrawAxes(g, xScale, yScale, innerHeight, xTickFormat) {
   g.append("g").call(d3.axisLeft(yScale).ticks(5)).attr("color", ThemeColors.get("--color-slate-500")).attr("font-size", "10px");
 }
 
-/* Renders the "avg latency per hour bucket" line chart from OllamaTelemetrySummary.latency_time_series; bucket_start is a plain "YYYY-MM-DDTHH:00:00" string (computed in Python, not SQL: see telemetry_service.py). */
+/* Renders the "avg latency per hour bucket" line chart from EngineTelemetrySummary.latency_time_series; bucket_start is a plain "YYYY-MM-DDTHH:00:00" string (computed in Python, not SQL: see telemetry_service.py). */
 function renderLatencyLineChart(buckets) {
   const emptyEl = document.getElementById("telemetry-latency-empty");
   const svgEl = document.getElementById("telemetry-latency-chart");

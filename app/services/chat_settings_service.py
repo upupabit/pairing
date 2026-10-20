@@ -25,7 +25,7 @@ _VALID_CHANNEL_DELIVERY_MODES = {"cheap", "real"}
 DEFAULT_CHANNEL_DELIVERY_MODE = "cheap"
 
 # Wall-clock limit for a text-only reply before it is marked failed: a backstop against hung or very slow
-# models (ollama_client's httpx client has no competing timeout for chat). 0 = no timeout, for slow hardware
+# models (llamacpp_client's httpx client has no competing timeout for chat). 0 = no timeout, for slow hardware
 # that needs minutes per reply. Default 300s: generous for CPU-only, short enough to catch a stuck request.
 DEFAULT_REPLY_TIMEOUT_SECONDS = 300
 _MAX_REPLY_TIMEOUT_SECONDS = 3600

@@ -1,7 +1,7 @@
-"""Model administration against Matricxon's primary host (like ollama_admin.py; see its docstring): pull and
+"""Model administration against Matricxon's primary host (like llamacpp_admin.py; see its docstring): pull and
 delete for admin-only model management. Matricxon's /api/pull and /api/delete use Ollama's wire shape
 (../matricxon/app/routers/pull_router.py|delete_router.py;../matricxon/app/pull/tag.py resolves the same
-`hf.co/<repo>:<file>` tags as model_catalog.py). Separate from ollama_admin.py as in matricxon_client.py.
+`hf.co/<repo>:<file>` tags as model_catalog.py). Separate from llamacpp_admin.py as in matricxon_client.py.
 
 `pull_model_stream` branches on local vs remote: locally, MatricxonDirectPuller downloads straight from
 Hugging Face instead of proxying the (often multi-GB) download through Matricxon's `/api/pull`, reported
@@ -46,7 +46,7 @@ def _is_local() -> bool:
 
 async def pull_model_stream(tag: str):
     """Downloads a model into Matricxon, yielding progress in the same NDJSON shape as
-    ollama_admin.pull_model_stream (forwarded as SSE by routers/settings.py). See the module docstring for local vs
+    llamacpp_admin.pull_model_stream (forwarded as SSE by routers/settings.py). See the module docstring for local vs
     remote.
     """
     if _is_local():
@@ -72,7 +72,7 @@ async def pull_model_stream(tag: str):
 
 async def delete_model(tag: str) -> None:
     """Removes a model Matricxon has; the inverse of pull_model_stream (same DELETE-with-JSON-body as
-    ollama_admin.delete_model)."""
+    llamacpp_admin.delete_model)."""
     host = await _model_host()
     async with matricxon_http.client(timeout=_REQUEST_TIMEOUT) as client:
         try:

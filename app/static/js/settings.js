@@ -109,7 +109,7 @@ let modelsAvailable = true;
 let modelTabLoading = false;
 // The active engine (app.services.engine_service), read from /health (public) rather than admin-only GET
 // /api/settings/engine, since the Model tab's catalog and badges are visible to every user. Used only to decide whether
-// the "Not supported" badge applies; hidden when Ollama (which runs every catalog entry) is active.
+// the "Not supported" badge applies; hidden when llama.cpp (which runs every catalog entry) is active.
 let currentActiveEngine = null;
 
 // Every engine app.services.engines.registry knows (see EngineOption). Static for the page's life, so fetched once and
@@ -185,7 +185,7 @@ function formatSize(gb) {
   return gb ? `${gb} GB` : "—";
 }
 
-/* Real per-engine RAM figure (CatalogEntry.engine_support/EngineModelSupport), not the flat hand-typed min_ram_gb alone: engines' requirements for one file differ (Matricxon dequantizes to bf16 first; Ollama doesn't). Shows the active engine's number, falling back to the static estimate when it hasn't reported one (e.g. Matricxon, not installed there; never a figure borrowed from another engine, see EngineModelSupport.min_ram_gb). */
+/* Real per-engine RAM figure (CatalogEntry.engine_support/EngineModelSupport), not the flat hand-typed min_ram_gb alone: engines' requirements for one file differ (Matricxon dequantizes to bf16 first; llama.cpp doesn't). Shows the active engine's number, falling back to the static estimate when it hasn't reported one (e.g. Matricxon, not installed there; never a figure borrowed from another engine, see EngineModelSupport.min_ram_gb). */
 function formatRam(entry) {
   const ram = entry.engine_support?.[currentActiveEngine]?.min_ram_gb ?? entry.min_ram_gb;
   return ram ? `${ram}GB RAM` : null; // 0 = unknown (e.g. a connector model), not "needs no RAM"
@@ -385,7 +385,7 @@ function renderModelRow(entry, pairing = null, compact = false) {
   const visionBadge = entry.vision || entry.is_projector
     ? ` <span class="inline-flex items-center rounded-full bg-[rgb(var(--color-brand-500)/0.15)] border border-[rgb(var(--color-brand-500)/0.4)] px-1.5 py-0.5 text-[10px] font-medium text-brand-500 align-middle">${visionBadgeText}</span>`
     : "";
-  // Shown for the active engine (see the "Active engine" picker above Inference engines). Most engines (e.g. Ollama) run
+  // Shown for the active engine (see the "Active engine" picker above Inference engines). Most engines (e.g. llama.cpp) run
   // every catalog entry, so it would be noise for them. Also skipped for a vision projector (entry.is_projector): "Not
   // supported" would read as "this engine can't run it" for a file never meant as a chat model; its vision badge
   // (visionBadge) says what it is. See CatalogEntry.engine_support/EngineModelSupport.
@@ -504,7 +504,7 @@ function renderModelRow(entry, pairing = null, compact = false) {
   if (entry.removable) {
     const removeBtn = document.createElement("button");
     removeBtn.type = "button";
-    removeBtn.title = "Remove from this list — doesn't affect Ollama, since it was never installed";
+    removeBtn.title = "Remove from this list — doesn't affect the engine, since it was never installed";
     removeBtn.className =
       "rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-400 hover:border-red-500 hover:text-red-400 transition-colors";
     removeBtn.textContent = "Remove";
@@ -775,7 +775,7 @@ function renderHfSearchResults(results) {
   hfSearchResultsEl.classList.remove("hidden");
 }
 
-// Ollama's library models default to Q4_K_M, the widely agreed balance of quality and size, so a file matching it
+// Ollama's library models defaulted to Q4_K_M, the widely agreed balance of quality and size, so a file matching it
 // (case-insensitively; HF filenames vary) gets a "Recommended" badge and sorts first, rather than leaving every quant
 // looking arbitrary to someone who doesn't know Q4_K_M/Q8_0/IQ2_XS.
 function isRecommendedQuantFile(filename) {
@@ -788,7 +788,7 @@ function renderHfRepoFiles(repo) {
   const metaParts = [repo.parameter_size, formatContextLength(repo.context_length) && `${formatContextLength(repo.context_length)} ctx`, repo.license]
     .filter(Boolean);
   if (repo.is_image) metaParts.unshift("Image model — added under Diffusion models (installs into the stable-diffusion.cpp engine)");
-  if (repo.gated) metaParts.push("gated — may need a Hugging Face token Ollama doesn't have, could fail to pull");
+  if (repo.gated) metaParts.push("gated — may need a Hugging Face token pAIring doesn't send, could fail to pull");
   const header = document.createElement("div");
   header.innerHTML =
     `<span class="block truncate text-sm font-medium text-slate-100">${escapeHtml(repo.repo_id)}</span>` +
@@ -1513,7 +1513,7 @@ async function loadTarget(targetId) {
   ragTopKValueEl.textContent = ragTopKInput.value;
 
   // No model picker on this tab (see the Model tab's initModelTab); the catalog is read only for the "no models
-  // installed" banner below. A failed fetch (Ollama unreachable) counts as nothing usable.
+  // installed" banner below. A failed fetch (engine unreachable) counts as nothing usable.
   let modelsAvailableHere = false;
   try {
     const catalog = await loadCatalog();
@@ -1664,7 +1664,7 @@ function activateTab(name) {
 
 // Extracted from the click handler so the per-tab data load also runs when a reload restores a saved tab
 // (SETTINGS_TAB_STORAGE_KEY); otherwise a reload lands on the default "Model" tab and discards where the admin was
-// (seen: reloading right after starting Ollama on Inference engines left it blank until re-clicked, as its data loads
+// (seen: reloading right after starting llama.cpp on Inference engines left it blank until re-clicked, as its data loads
 // only on that tab's click).
 function loadTabData(name) {
   if (name === "model") {
@@ -1952,13 +1952,13 @@ if (httpProxySaveBtn) {
   });
 }
 
-// Inference engines: Ollama, Matricxon and stable-diffusion.cpp (admin only)
+// Inference engines: llama.cpp, Matricxon and stable-diffusion.cpp (admin only)
 //
-// The sections share one DOM shape (settings.html's [data-server="ollama"|"matricxon"|"sdcpp"]): a mode select, a
+// The sections share one DOM shape (settings.html's [data-server="llamacpp"|"matricxon"|"sdcpp"]): a mode select, a
 // "local" div (install/start/stop + tunable parameters) and a "remote" div (host rows), so one generic controller
 // drives them all. installServer is where their local-mode "Install" buttons differ (what happens after each install).
 
-const EXTERNAL_SERVERS = ["ollama", "matricxon", "sdcpp"];
+const EXTERNAL_SERVERS = ["llamacpp", "matricxon", "sdcpp"];
 const MAX_REMOTE_HOSTS = 120;
 
 function serverSectionEl(server) {
@@ -1969,7 +1969,7 @@ const HOST_CHECK_STATUS_IDLE_CLASS = "shrink-0 text-xs text-slate-500 w-24 text-
 
 // Only for this row's placeholder/title example: each server's usual default port and display name.
 const REMOTE_HOST_EXAMPLE = {
-  ollama: { port: "11434", name: "Ollama" },
+  llamacpp: { port: "8080", name: "llama-server" },
   matricxon: { port: "8420", name: "Matricxon" },
   sdcpp: { port: "8189", name: "stable-diffusion.cpp" },
 };
@@ -1977,7 +1977,7 @@ const REMOTE_HOST_EXAMPLE = {
 function addRemoteHostRow(section, value = "") {
   const listEl = section.querySelector('[data-field="remote-hosts-list"]');
   if (listEl.children.length >= MAX_REMOTE_HOSTS) return;
-  const example = REMOTE_HOST_EXAMPLE[section.dataset.server] || REMOTE_HOST_EXAMPLE.ollama;
+  const example = REMOTE_HOST_EXAMPLE[section.dataset.server] || REMOTE_HOST_EXAMPLE.llamacpp;
   const row = document.createElement("div");
   row.className = "flex items-center gap-2";
   const input = document.createElement("input");
@@ -1989,7 +1989,7 @@ function addRemoteHostRow(section, value = "") {
     "flex-1 rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500";
 
   // Reachability check for this row's URL: a real ping (check-host endpoint in
-  // app/routers/ollama_admin.py|matricxon_admin.py|sdcpp_admin.py), not limited to saved hosts, so an admin can verify a remote
+  // app/routers/llamacpp_admin.py|matricxon_admin.py|sdcpp_admin.py), not limited to saved hosts, so an admin can verify a remote
   // candidate before Save. Cleared on edit, since a stale "✓ healthy" beside a changed URL would mislead.
   const statusEl = document.createElement("span");
   statusEl.className = HOST_CHECK_STATUS_IDLE_CLASS;
@@ -2057,7 +2057,7 @@ const lastServerStatus = {};
 /*
  * Local mode with nothing installed shows only the install flow (no local parameter fields, Start/Stop or Save):
  * half-filled params for a server that doesn't exist are more confusing than useful. Both servers have a manual
- * override link for an admin pointing at their own Ollama install (see "manual-path-entry" actions below).
+ * override link for an admin pointing at their own llama.cpp install (see "manual-path-entry" actions below).
  * Remote mode shows the full form but never Start/Stop, since this app doesn't supervise a process it doesn't own.
  * 
  * install-controls (Install/Reinstall button + version override) stay visible either way; hiding them once installed
@@ -2143,7 +2143,7 @@ function collectServerConfig(server, section) {
   const base = {
     mode: section.querySelector('[data-field="mode"]').value,
     remote_hosts: collectRemoteHosts(section),
-    // Empty means "use the built-in pinned default" (as OllamaServerConfig in app.schemas.ollama_server_config).
+    // Empty means "use the built-in pinned default" (as LlamaCppServerConfig in app.schemas.llamacpp_server_config).
     install_repo: section.querySelector('[data-field="install_repo"]')?.value.trim() || null,
     install_version: section.querySelector('[data-field="install_version"]')?.value.trim() || null,
   };
@@ -2157,15 +2157,18 @@ function collectServerConfig(server, section) {
   // saved local path is kept so switching back to local still finds the models.
   const keptModelsPath = () => section.querySelector('[data-field="models_path"]').dataset.loadedValue || null;
   const keptCachePath = () => section.querySelector('[data-field="prompt_cache_path"]')?.dataset.loadedValue || null;
-  if (server === "ollama") {
+  if (server === "llamacpp") {
+    const text = (field) => section.querySelector(`[data-field="${field}"]`).value.trim() || null;
     return {
       ...base,
-      binary_path: isRemote ? kept("binary_path") : section.querySelector('[data-field="binary_path"]').value.trim() || null,
-      models_path: isRemote ? keptModelsPath() : section.querySelector('[data-field="models_path"]').value.trim() || null,
+      install_variant: text("install_variant"),
+      binary_path: isRemote ? kept("binary_path") : text("binary_path"),
+      models_path: isRemote ? keptModelsPath() : text("models_path"),
       num_parallel: isRemote ? kept("num_parallel") : intFieldOrNull(section, "num_parallel"),
-      keep_alive: isRemote ? kept("keep_alive") : section.querySelector('[data-field="keep_alive"]').value.trim() || null,
+      idle_unload_seconds: isRemote ? kept("idle_unload_seconds") : intFieldOrNull(section, "idle_unload_seconds"),
       max_loaded_models: isRemote ? kept("max_loaded_models") : intFieldOrNull(section, "max_loaded_models"),
-      context_length: isRemote ? kept("context_length") : intFieldOrNull(section, "context_length"),
+      gpu_layers: isRemote ? kept("gpu_layers") : intFieldOrNull(section, "gpu_layers"),
+      extra_args: isRemote ? kept("extra_args") : text("extra_args"),
     };
   }
   if (server === "matricxon") {
@@ -2268,25 +2271,24 @@ async function loadServerSection(server) {
   section.loadedConfig = config;
   renderInstallSource(section, config, installDefaults);
 
-  if (server === "ollama") {
+  if (server === "llamacpp") {
     const binaryPathInput = section.querySelector('[data-field="binary_path"]');
     binaryPathInput.value = config.binary_path ?? "";
     // Shows what a blank value resolves to (PATH, then the usual fixed locations), a real current value rather than
-    // "auto-detected from PATH".
-    const autoDetected = await api("/api/settings/ollama/auto-detected-path");
-    binaryPathInput.placeholder = autoDetected.path || "/var/lib/Ollama";
+    // "auto-detected from PATH"; the models folder placeholder is the shared Matricxon folder.
+    const autoDetected = await api("/api/settings/llamacpp/auto-detected-path");
+    binaryPathInput.placeholder = autoDetected.path || "/usr/local/bin/llama-server";
     const modelsPathInput = section.querySelector('[data-field="models_path"]');
     modelsPathInput.value = config.models_path ?? "";
     modelsPathInput.dataset.loadedValue = config.models_path ?? "";
     modelsPathInput.placeholder = autoDetected.models_path;
-    section.querySelector('[data-field="num_parallel"]').value = config.num_parallel ?? "";
-    section.querySelector('[data-field="keep_alive"]').value = config.keep_alive ?? "";
-    section.querySelector('[data-field="max_loaded_models"]').value = config.max_loaded_models ?? "";
-    section.querySelector('[data-field="context_length"]').value = config.context_length ?? "";
+    for (const field of ["num_parallel", "idle_unload_seconds", "max_loaded_models", "gpu_layers", "extra_args", "install_variant"]) {
+      section.querySelector(`[data-field="${field}"]`).value = config[field] ?? "";
+    }
   } else if (server === "matricxon") {
     const projectDirInput = section.querySelector('[data-field="project_dir"]');
     projectDirInput.value = config.project_dir ?? "";
-    // Same "show what blank resolves to" idea as Ollama's binary_path: here, the sibling checkout
+    // Same "show what blank resolves to" idea as llama.cpp's binary_path: here, the sibling checkout
     // app.services.matricxon_process._find_project_dir falls back to.
     const autoDetected = await api("/api/settings/matricxon/auto-detected-path");
     projectDirInput.placeholder = autoDetected.path || "/var/lib/matricxon";
@@ -2335,7 +2337,7 @@ async function loadServerSection(server) {
   renderServerStatus(section, await api(`/api/settings/${server}/status`));
 }
 
-/* Grays out "Install from GitHub" with an explanation on any OS the auto-installer can't run on (app.hardware.local_install_supported: Ollama's pinned release asset and this app's deployment assume Linux), so the admin doesn't wait minutes for a doomed attempt. the installers' install_stream enforce the same check server-side; this is a courtesy. */
+/* Grays out "Install from GitHub" with an explanation on any OS the auto-installer can't run on (app.hardware.local_install_supported: llama.cpp's pinned release asset and this app's deployment assume Linux), so the admin doesn't wait minutes for a doomed attempt. the installers' install_stream enforce the same check server-side; this is a courtesy. */
 function applyLocalInstallSupport(server, section, supported) {
   if (!section) return;
   const installBtn = section.querySelector('[data-action="install"]');
@@ -2353,9 +2355,9 @@ function applyLocalInstallSupport(server, section, supported) {
   }
 }
 
-// Ollama and Matricxon are mutually exclusive chat backends (see the "Active engine" picker); stable-diffusion.cpp
+// llama.cpp and Matricxon are mutually exclusive chat backends (see the "Active engine" picker); stable-diffusion.cpp
 // (image generation) is separate and always visible.
-const ENGINE_SERVERS = ["ollama", "matricxon"];
+const ENGINE_SERVERS = ["llamacpp", "matricxon"];
 
 /* Shows only the selected engine's configuration section, hiding the other so an admin doesn't edit the form of a backend that isn't live. Re-run on load and on the select's "change" event. */
 function applyActiveEngineVisibility() {
@@ -2389,7 +2391,7 @@ async function loadActiveEngineIntoEditor() {
     engineOptionsList(),
   ]);
   selectEl.innerHTML = "";
-  // Only a ready engine (EngineOption.ready, app/schemas/common.py) can be picked: Ollama/Matricxon always are; a
+  // Only a ready engine (EngineOption.ready, app/schemas/common.py) can be picked: llama.cpp/Matricxon always are; a
   // connector-backed engine (e.g. "runpod") only after an admin configures, enables and tests it on the Connectors
   // page. The active engine is always shown, even if it became not-ready (e.g. its connector was disabled), so the
   // picker reflects reality.
@@ -2408,7 +2410,7 @@ async function loadActiveEngineIntoEditor() {
   applyActiveEngineSwitchNote();
 }
 
-/* Shown the moment the selection differs from the saved one (not after Save, to inform the decision) and hidden again if changed back: the storage note for Ollama and Matricxon (separate model storage), the connector note for a cloud connector (its own models only). */
+/* Shown the moment the selection differs from the saved one (not after Save, to inform the decision) and hidden again if changed back: the storage note for llama.cpp and Matricxon (separate model storage), the connector note for a cloud connector (its own models only). */
 async function applyActiveEngineSwitchNote() {
   const selectEl = document.getElementById("active-engine-select");
   const localNoteEl = document.getElementById("active-engine-switch-note");
@@ -2448,7 +2450,7 @@ if (activeEngineSaveBtn) {
       await api("/api/settings/engine", { method: "PUT", body: JSON.stringify({ active_engine: selectEl.value }) });
       // A full reload, not a refetch: the Model tab's catalog (currentCatalog) and other model fetches (installed
       // vision/embedding models, RAG availability,...) cache for the page load and go stale on an engine switch. Same
-      // reload-instead-of-invalidating pattern as the Ollama/Matricxon Start button below. Stays on Inference engines so
+      // reload-instead-of-invalidating pattern as the llama.cpp/Matricxon Start button below. Stays on Inference engines so
       // the admin can keep configuring the new engine.
       try {
         sessionStorage.setItem(SETTINGS_TAB_STORAGE_KEY, "external-servers");
@@ -2484,10 +2486,10 @@ async function loadAvailableVersions(server, section) {
   }
 }
 
-/* Switching Ollama/Matricxon between local and remote changes which models exist (a remote server has its own storage, managed via its API), so every model cache on this page is stale: reload as for the active-engine switch and return to Inference engines. Returns true if it reloaded. */
+/* Switching llama.cpp/Matricxon between local and remote changes which models exist (a remote server has its own storage, managed via its API), so every model cache on this page is stale: reload as for the active-engine switch and return to Inference engines. Returns true if it reloaded. */
 function reloadIfModeChanged(section, body, force = false) {
   const server = section.dataset.server;
-  if (!["ollama", "matricxon"].includes(server) || (!force && body.mode === section.dataset.loadedMode)) return false;
+  if (!["llamacpp", "matricxon"].includes(server) || (!force && body.mode === section.dataset.loadedMode)) return false;
   try {
     sessionStorage.setItem(SETTINGS_TAB_STORAGE_KEY, "external-servers");
   } catch (_err) {
@@ -2506,7 +2508,7 @@ for (const server of EXTERNAL_SERVERS) {
   });
   section.querySelector('[data-action="add-host"]').addEventListener("click", () => addRemoteHostRow(section));
 
-  // Both servers (settings.html): an admin pointing at their own Ollama or Matricxon install, not one this app's installer
+  // Both servers (settings.html): an admin pointing at their own llama.cpp or Matricxon install, not one this app's installer
   // manages.
   const manualPathBtn = section.querySelector('[data-action="manual-path-entry"]');
   if (manualPathBtn) {
@@ -2564,6 +2566,8 @@ for (const server of EXTERNAL_SERVERS) {
     resetSourceBtn.addEventListener("click", () => {
       section.querySelector('[data-field="install_repo"]').value = "";
       section.querySelector('[data-field="install_version"]').value = "";
+      const variantInput = section.querySelector('[data-field="install_variant"]');
+      if (variantInput) variantInput.value = "";
       saveSourceBtn.click();
     });
   }
@@ -2571,14 +2575,14 @@ for (const server of EXTERNAL_SERVERS) {
   section.querySelector('[data-action="save"]').addEventListener("click", async () => {
     const statusEl = section.querySelector('[data-field="status"]');
     const body = collectServerConfig(server, section);
-    // Seen: clearing this field silently drops the override, so Matricxon/Ollama falls back to its default
+    // Seen: clearing this field silently drops the override, so Matricxon/llama.cpp falls back to its default
     // models directory on its next restart and models visible only at the custom path vanish with no warning at save
     // time. Destructive enough to ask first (like the duplicate-install confirm in pullModel and the "this restarts the
     // engine" confirm below).
     const modelsPathInput = section.querySelector('[data-field="models_path"]');
     if (modelsPathInput?.dataset.loadedValue && !body.models_path) {
       const confirmed = confirm(
-        `Clearing the models directory override means ${server === "ollama" ? "Ollama" : "Matricxon"} will fall ` +
+        `Clearing the models directory override means ${server === "llamacpp" ? "llama.cpp" : "Matricxon"} will fall ` +
           `back to its own default location on its next restart — models currently at "${modelsPathInput.dataset.loadedValue}" ` +
           "will stop showing up as installed (they aren't deleted, just no longer where it's looking). Continue?",
       );
@@ -2589,10 +2593,9 @@ for (const server of EXTERNAL_SERVERS) {
     let failed = false;
     let failedPrefix = "Failed to save";
     try {
-      // Local-mode parameters of Ollama (and Matricxon, see app.services.matricxon_process.apply_local_config) can't
-      // apply live: both read their env-based config at process start, so saving restarts a running one. Confirm first,
-      // as the old "Ollama concurrency" save button did.
-      const restartableEngines = { ollama: "Ollama", matricxon: "Matricxon", sdcpp: "stable-diffusion.cpp" };
+      // Local-mode parameters of llama.cpp (and Matricxon, see app.services.matricxon_process.apply_local_config) can't
+      // apply live: both read their config at process start, so saving restarts a running one. Confirm first.
+      const restartableEngines = { llamacpp: "llama.cpp", matricxon: "Matricxon", sdcpp: "stable-diffusion.cpp" };
       const engineLabel = restartableEngines[server];
       const localStatus =
         engineLabel && body.mode === "local" ? await api(`/api/settings/${server}/status`) : null;
@@ -2696,11 +2699,11 @@ for (const server of EXTERNAL_SERVERS) {
         const result = await api(`/api/settings/${server}/${action}`, { method: "POST" });
         renderServerStatus(section, result);
         statusEl.textContent = "Done.";
-        // Ollama (or Matricxon) coming up can newly make models available for "Model & behavior", which loads the
+        // llama.cpp (or Matricxon) coming up can newly make models available for "Model & behavior", which loads the
         // catalog once at page load and would keep saying "System is not configured for models yet". A full reload is
         // the simplest reliable fix for an infrequent admin action, saved so it returns to Inference engines (otherwise
         // the status line went blank until re-clicked, which read as stuck).
-        if ((server === "ollama" || server === "matricxon") && (action === "stop" || result.running)) {
+        if ((server === "llamacpp" || server === "matricxon") && (action === "stop" || result.running)) {
           try {
             sessionStorage.setItem(SETTINGS_TAB_STORAGE_KEY, "external-servers");
           } catch (_err) {
@@ -2731,7 +2734,7 @@ for (const server of EXTERNAL_SERVERS) {
     const status = lastServerStatus[server];
     const wasRunning = !!status?.running;
     if (wasRunning) {
-      const engineLabel = { ollama: "Ollama", matricxon: "Matricxon", sdcpp: "stable-diffusion.cpp" }[server] || server;
+      const engineLabel = { llamacpp: "llama.cpp", matricxon: "Matricxon", sdcpp: "stable-diffusion.cpp" }[server] || server;
       const buildNote = buildOverride === "source" ? " Building from source can take 10-30 minutes, and it stays stopped meanwhile." : "";
       if (!confirm(`${engineLabel} is currently running — reinstalling stops it first.${buildNote} Continue?`)) return;
       button.disabled = true;
@@ -2745,7 +2748,7 @@ for (const server of EXTERNAL_SERVERS) {
       button.disabled = false;
     }
     // Restart afterward only if this click stopped it: a first-time install leaves it stopped on purpose, matching
-    // Ollama's separate first Start click.
+    // llama.cpp's separate first Start click.
     await installServer(server, section, wasRunning, buildOverride);
   }
   installBtn?.addEventListener("click", () => startInstall(installBtn));
@@ -2753,9 +2756,9 @@ for (const server of EXTERNAL_SERVERS) {
 }
 
 /*
- * Downloads/installs an engine from GitHub (app.services.ollama_installer/matricxon_installer/sdcpp_installer), streaming
+ * Downloads/installs an engine from GitHub (app.services.llamacpp_installer/matricxon_installer/sdcpp_installer), streaming
  * progress over SSE as pullModel reads a model pull (fetch + reader, not EventSource, since it is a POST). It can
- * take many minutes (Ollama's release is multi-GB; Matricxon's pip install pulls torch), so every installer event
+ * take many minutes (a GPU build of llama.cpp is hundreds of MB; Matricxon's pip install pulls torch), so every installer event
  * (step/total_steps/step_label, byte progress, raw git/pip lines) is shown live: a step label, a progress bar
  * (determinate once byte counts are known) and a scrolling log of raw status lines. The mode <select> is disabled
  * meanwhile so switching mid-install can't desync the UI from the server.
@@ -2910,16 +2913,16 @@ async function installServer(server, section, restartAfter = false, buildOverrid
     percentEl.textContent = "100%";
     setInstallBarIndeterminate(barEl, false);
     barEl.value = 100;
-    // Ollama's managed binary is in ollama_process._FALLBACK_BIN_PATHS, so a first install with no override is
-    // auto-detected. The gap this closes: an explicit binary_path override (_find_binary checks it first and
+    // llama.cpp's managed binary is in llamacpp_process._FALLBACK_BIN_PATHS, so a first install with no override is
+    // auto-detected. The gap this closes: an explicit binary_path override (find_binary checks it first and
     // exclusively if valid) would make every Reinstall install a binary that is never used, since the stale override
     // keeps winning (seen: "looks ok" after reinstall because the OLD binary still started). Saving the installed path,
     // like Matricxon below, makes a reinstall take effect.
-    if (server === "ollama" && doneEvent) {
+    if (server === "llamacpp" && doneEvent) {
       section.querySelector('[data-field="binary_path"]').value = doneEvent.binary_path;
-      await api("/api/settings/ollama/config", {
+      await api("/api/settings/llamacpp/config", {
         method: "PUT",
-        body: JSON.stringify(collectServerConfig("ollama", section)),
+        body: JSON.stringify(collectServerConfig("llamacpp", section)),
       });
     }
     // stable-diffusion.cpp: save the installed sd-server path so Start works. The model file is the
@@ -2952,7 +2955,7 @@ async function installServer(server, section, restartAfter = false, buildOverrid
         appendLog(`Installed, but could not start it back up: ${err.message}`);
       }
     }
-    // A full reload of this section, not a status re-fetch: Ollama's "auto-detected" binary_path placeholder
+    // A full reload of this section, not a status re-fetch: llama.cpp's "auto-detected" binary_path placeholder
     // (loadServerSection) reflects the new binary only once re-fetched, and a restartAfter start shows as "Running"
     // without a manual refresh.
     await loadServerSection(server);
@@ -4157,7 +4160,7 @@ if (addChannelBtn) {
 // Boot
 
 (async function init() {
-  // Each step runs independently: a failure in one (e.g. Ollama unreachable breaking populateConversationSelect's
+  // Each step runs independently: a failure in one (e.g. the engine unreachable breaking populateConversationSelect's
   // model-catalog fetch) must not stop the unrelated steps after it, as a sequential await chain would.
   const steps = hasUserTabs
     ? [initModelTab, populateConversationSelect, loadRagAvailability, loadEmbeddingCatalog, loadKnowledgeSummary, loadDocumentLists]

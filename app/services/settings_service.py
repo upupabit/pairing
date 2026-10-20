@@ -1,5 +1,5 @@
 """Per-user and system-wide settings: default model, default generation params, admin RAG upload limits,
-local-instances/proxy-mode knobs and the Ollama and Matricxon server configs. Reply-generation
+local-instances/proxy-mode knobs and the llama.cpp and Matricxon server configs. Reply-generation
 settings (title mode, channel delivery, reply timeout) are in chat_settings_service.py (file-size rule); the
 UI theme in theme_service.py; the model catalog in model_catalog_service.py; accounts in user_service.py.
 This file is the plain key/value half of the Settings page.
@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import DEFAULT_GENERATION_PARAMS, DEFAULT_MODEL
 from app.models import SYSTEM_OWNER_ID, AppSetting, User
-from app.schemas import MatricxonServerConfig, OllamaServerConfig, RagLimits
+from app.schemas import LlamaCppServerConfig, MatricxonServerConfig, RagLimits
 from app.services import engine_service, secret_crypto
 
 DEFAULTS_KEY = "default_generation_params"
@@ -17,7 +17,7 @@ DEFAULT_MODEL_KEY = "default_model"
 RAG_LIMITS_KEY = "rag_limits"
 INSTANCE_COUNT_KEY = "instance_count"
 PROXY_MODE_KEY = "proxy_mode"
-OLLAMA_SERVER_CONFIG_KEY = "ollama_server_config"
+LLAMACPP_SERVER_CONFIG_KEY = "llamacpp_server_config"
 MATRICXON_SERVER_CONFIG_KEY = "matricxon_server_config"
 
 # Defaults before an admin saves anything on the System tab: 5MB per file, 1GB (1024MB) per user.
@@ -35,7 +35,7 @@ DEFAULT_PROXY_MODE = "local"
 
 def default_model_key(engine: str) -> str:
     """The AppSetting key for one engine's remembered default model. Per engine, not shared, so switching between
-    Ollama and Matricxon (engine_service) never wipes or contaminates the other's pick. With one shared key an
+    llama.cpp and Matricxon (engine_service) never wipes or contaminates the other's pick. With one shared key an
     admin's default vanished on every switch: the old engine_switch_service wiped it so it could
     never name a tag the *other* engine lacks. Per-engine keys avoid that: each stays valid within its own installed
     set.
@@ -151,28 +151,26 @@ async def set_proxy_mode(db: AsyncSession, mode: str) -> None:
     await db.commit()
 
 
-async def get_ollama_server_config(db: AsyncSession) -> OllamaServerConfig:
-    """How to run Ollama (read by ollama_process/ollama_pool and the Settings page). System-wide, admin-set, with
-    no .env fallback: the only source of truth from a fresh install on.
-    """
-    row = await db.get(AppSetting, (SYSTEM_OWNER_ID, OLLAMA_SERVER_CONFIG_KEY))
+async def get_llamacpp_server_config(db: AsyncSession) -> LlamaCppServerConfig:
+    """How to run llama.cpp (read by llamacpp_process/llamacpp_pool and the Settings page). System-wide, admin-set."""
+    row = await db.get(AppSetting, (SYSTEM_OWNER_ID, LLAMACPP_SERVER_CONFIG_KEY))
     if row:
-        return OllamaServerConfig(**row.value)
-    return OllamaServerConfig()
+        return LlamaCppServerConfig(**row.value)
+    return LlamaCppServerConfig()
 
 
-async def set_ollama_server_config(db: AsyncSession, config: OllamaServerConfig) -> None:
-    row = await db.get(AppSetting, (SYSTEM_OWNER_ID, OLLAMA_SERVER_CONFIG_KEY))
+async def set_llamacpp_server_config(db: AsyncSession, config: LlamaCppServerConfig) -> None:
+    row = await db.get(AppSetting, (SYSTEM_OWNER_ID, LLAMACPP_SERVER_CONFIG_KEY))
     value = config.model_dump()
     if row is None:
-        db.add(AppSetting(owner_id=SYSTEM_OWNER_ID, key=OLLAMA_SERVER_CONFIG_KEY, value=value))
+        db.add(AppSetting(owner_id=SYSTEM_OWNER_ID, key=LLAMACPP_SERVER_CONFIG_KEY, value=value))
     else:
         row.value = value
     await db.commit()
 
 
 async def get_matricxon_server_config(db: AsyncSession) -> MatricxonServerConfig:
-    """How to run Matricxon (matricxon_process/matricxon_pool); same shape as get_ollama_server_config."""
+    """How to run Matricxon (matricxon_process/matricxon_pool); same shape as get_llamacpp_server_config."""
     row = await db.get(AppSetting, (SYSTEM_OWNER_ID, MATRICXON_SERVER_CONFIG_KEY))
     if row:
         value = dict(row.value)

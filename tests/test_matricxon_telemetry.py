@@ -1,5 +1,5 @@
-"""Tests for services/matricxon_telemetry.py, the twin of tests/test_ollama_telemetry.py, with the same "never touch the
-global OTel registry" guarantee (see ollama_telemetry)."""
+"""Tests for services/matricxon_telemetry.py, the twin of tests/test_llamacpp_telemetry.py, with the same "never
+touch the global OTel registry" guarantee (see llamacpp_telemetry)."""
 
 import asyncio
 

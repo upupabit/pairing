@@ -1,5 +1,5 @@
 """Tests for routers/sdcpp_admin.py and image_engine_admin.py, called directly (see
-tests/test_ollama_admin_router.py); start/stop logic is in test_sdcpp_service.py.
+tests/test_llamacpp_admin_router.py); start/stop logic is in test_sdcpp_service.py.
 """
 
 import pytest

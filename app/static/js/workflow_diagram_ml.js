@@ -8,7 +8,7 @@
  * Laid out in rows inside the diagram's width (x 30–1300; six 176px columns, 38px apart, right edge 1276) as a snake,
  * each row ending where the next begins, so new stages add height, never a horizontal scrollbar. Written from
  * Matricxon's pipeline (app/runtime/chat_engine.py, app/architectures/*, app/runtime/sampler.py,
- * app/runtime/tokenizer.py); Ollama (llama.cpp) runs the same stages in C++ with its own cache and scheduler details,
+ * app/runtime/tokenizer.py); llama.cpp runs the same stages in C++ with its own cache and scheduler details,
  * noted in each body where they differ. All of it runs in the ML engine's process, not this app.
  */
 
@@ -66,7 +66,7 @@ const WORKFLOW_ML_NODES = [
   mlNode(
     "ml_load", "Model get_or_load\n(GGUF file → memory)", 0, ML_ROW.r1,
     "Getting the model into memory",
-    "Matricxon: app/models/manager.py — get_or_load · Ollama: its model scheduler",
+    "Matricxon: app/models/manager.py — get_or_load · llama.cpp: llama-server's router (one child process per loaded model)",
     "The first request for a model tag finds its GGUF file, checks it fits in free RAM, picks float32 or bf16 for the parts that stay unquantized, and memory-maps the file. Weights are unpacked lazily on the first forward pass; later requests reuse the loaded model until it is unloaded or evicted. This is the cold-start delay on a model's first message."
   ),
   mlNode(

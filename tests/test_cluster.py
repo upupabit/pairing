@@ -110,8 +110,8 @@ async def test_turning_off_clears_the_role(db, matricxon_engine, monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_ollama_engine_is_not_supported_and_asks_no_host(db):
-    await engine_service.set_active_engine(db, "ollama")
+async def test_llamacpp_engine_is_not_supported_and_asks_no_host(db):
+    await engine_service.set_active_engine(db, "llamacpp")
 
     def handler(request: httpx.Request) -> httpx.Response:
         raise AssertionError("no host should be asked")

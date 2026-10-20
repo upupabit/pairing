@@ -1,5 +1,5 @@
 """The "local instances" admin (Settings > System): an admin picks how many local app processes (1-8) run,
-sharing this machine's DB/models/knowledge, with no manual steps (modeled on ollama_pool.py; see
+sharing this machine's DB/models/knowledge, with no manual steps (modeled on llamacpp_pool.py; see
 ROADMAP.md "Concurrency: running multiple Ollama instances"). Process primitives: instance_process.py
 (split for the file-size rule); this file is the async orchestration: locking and the three entry points
 used by app/main.py and routers/instances_admin.py.

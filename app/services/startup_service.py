@@ -16,13 +16,13 @@ from app.services import (
     image_engine_service,
     instance_pool,
     instance_service,
+    llamacpp_pool,
+    llamacpp_ps_poller,
+    llamacpp_telemetry,
     matricxon_pool,
     matricxon_process,
     matricxon_ps_poller,
     matricxon_telemetry,
-    ollama_pool,
-    ollama_ps_poller,
-    ollama_telemetry,
     retention_poller,
     sdcpp_pool,
     settings_service,
@@ -87,9 +87,9 @@ async def run_startup_tasks() -> None:
 
         # Primes the engine and image-engine host pools (Settings > Inference engines) from what's saved. Unlike the
         # instance-count/proxy-mode priming below, this runs on *every* instance: each routes its own chat/image
-        # requests through these pools (ollama_pool/sdcpp_pool) and needs its cache warm before the connectivity check
+        # requests through these pools (llamacpp_pool/sdcpp_pool) and needs its cache warm before the connectivity check
         # after this block.
-        ollama_pool.refresh_from_config(await settings_service.get_ollama_server_config(db))
+        llamacpp_pool.refresh_from_config(await settings_service.get_llamacpp_server_config(db))
         sdcpp_pool.refresh_from_config(await image_engine_service.get_sdcpp_config(db))
         matricxon_config = await settings_service.get_matricxon_server_config(db)
         matricxon_pool.refresh_from_config(matricxon_config)
@@ -101,11 +101,10 @@ async def run_startup_tasks() -> None:
         await connector_config_cache.load_cache_from_db(db)
 
         # Every instance, not just the primary, like the pool refresh: each instruments its own outbound
-        # Ollama/Matricxon
-        # calls (ollama_client/matricxon_client) and needs its own OpenTelemetry SDK, one per engine (see
-        # matricxon_telemetry for the separate TracerProvider). Must precede the reachability check below, which
-        # returns early on a cold start without the engine and would skip this permanently.
-        ollama_telemetry.init_ollama_telemetry()
+        # llama.cpp/Matricxon calls (llamacpp_client/matricxon_client) and needs its own OpenTelemetry SDK, one per
+        # engine (see matricxon_telemetry for the separate TracerProvider). Must precede the reachability check
+        # below, which returns early on a cold start without the engine and would skip this permanently.
+        llamacpp_telemetry.init_llamacpp_telemetry()
         matricxon_telemetry.init_matricxon_telemetry()
 
         # Local-instances supervisor (Settings > System): primary only, so a spawned sibling never spawns siblings
@@ -123,14 +122,14 @@ async def run_startup_tasks() -> None:
             # a restart is when the directory is most likely resolvable.
             matricxon_process.write_env_file(matricxon_config)
 
-            # Loaded-model state (GET /api/ps) of Ollama/Matricxon, this machine's CPU/RAM/disk, and the retention sweep
+            # Loaded-model state of llama.cpp/Matricxon, this machine's CPU/RAM/disk, and the retention sweep
             # that bounds all of these (plus telemetry_events) are host-level, not per-instance: starting them on every
             # instance would duplicate work (like the supervisor above). They must also run before the reachability
             # check
-            # below (same early-return reason as init_ollama_telemetry); each tolerates Ollama/Matricxon/syscalls
+            # below (same early-return reason as init_llamacpp_telemetry); each tolerates llama.cpp/Matricxon/syscalls
             # being
             # unavailable via its own per-iteration try/except.
-            ollama_ps_poller.start_ollama_ps_poller()
+            llamacpp_ps_poller.start_llamacpp_ps_poller()
             matricxon_ps_poller.start_matricxon_ps_poller()
             system_metrics_poller.start_system_metrics_poller()
             retention_poller.start_retention_poller()
@@ -189,9 +188,9 @@ async def run_startup_tasks() -> None:
 async def run_shutdown_tasks() -> None:
     """Cleans up siblings this primary spawned (matters most on plain scripts/stop.sh: no cgroup, unlike a
     systemd stop/reboot; see instance_service.py). Also flushes telemetry spans still queued in either engine's
-    OTel SDK before exit (on a worker thread; see ollama_telemetry.shutdown_ollama_telemetry).
+    OTel SDK before exit (on a worker thread; see llamacpp_telemetry.shutdown_llamacpp_telemetry).
     """
     if IS_PRIMARY:
         await instance_service.terminate_all_siblings()
-    await ollama_telemetry.shutdown_ollama_telemetry()
+    await llamacpp_telemetry.shutdown_llamacpp_telemetry()
     await matricxon_telemetry.shutdown_matricxon_telemetry()

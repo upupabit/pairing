@@ -13,9 +13,12 @@ class ToolCallSink:
         self.calls: list[dict[str, Any]] = []
 
     def add_from_chunk(self, data: dict[str, Any]) -> None:
-        """Takes one parsed NDJSON line of an Ollama/Matricxon chat stream."""
-        for call in (data.get("message") or {}).get("tool_calls") or []:
-            self.calls.append(call)
+        """Takes one parsed NDJSON line of a Matricxon chat stream."""
+        self.add_calls((data.get("message") or {}).get("tool_calls") or [])
+
+    def add_calls(self, calls: list[dict[str, Any]]) -> None:
+        """Whole calls, e.g. joined from an OpenAI-style stream (llamacpp_messages.ToolCallCollector)."""
+        self.calls.extend(calls)
 
     def take(self) -> list[dict[str, Any]]:
         calls, self.calls = self.calls, []

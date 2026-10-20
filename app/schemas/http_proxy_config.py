@@ -1,6 +1,6 @@
 """Schemas for Settings > System > Outbound HTTP proxy (services/http_proxy_service.py,
 routers/http_proxy_admin.py). Outbound only: internet-facing downloads (the engine installers,
-Ollama pulls in local mode); unrelated to instances.ProxyMode, which load-balances incoming requests.
+llama-server downloads in local mode); unrelated to instances.ProxyMode, which load-balances incoming requests.
 """
 
 from urllib.parse import quote

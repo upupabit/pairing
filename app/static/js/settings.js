@@ -176,6 +176,18 @@ function inUseBadge(title = "") {
   return ` <span class="inline-flex items-center rounded-full bg-[rgb(var(--color-brand-500)/0.15)] border border-[rgb(var(--color-brand-500)/0.4)] px-1.5 py-0.5 text-[10px] font-medium text-brand-500 align-middle"${titleAttr}>In use</span>`;
 }
 
+// Small quantization tag (e.g. "Q4_K_M") on a model card's top-right edge (CatalogEntry.quantization); null when the
+// tag names none (e.g. a cloud connector's model). The card must be `relative`.
+function quantBadge(entry) {
+  if (!entry.quantization) return null;
+  const badge = document.createElement("span");
+  badge.className =
+    "absolute -top-[5px] right-[18px] rounded border border-slate-700 bg-slate-950 px-1 text-[10px] font-mono leading-4 text-slate-300";
+  badge.title = "Quantization: how this model file's weights are compressed";
+  badge.textContent = entry.quantization;
+  return badge;
+}
+
 function formatContextLength(length) {
   if (!length) return null;
   return length >= 1000 ? `${Math.round(length / 1000)}K` : `${length}`;
@@ -358,6 +370,8 @@ function renderModelRow(entry, pairing = null, compact = false) {
   // Looked up after a fresh add/pull (addBtn's click handler) to scroll to the affected row instead of wherever hiding
   // the search UI left the scroll.
   if (entry.tag) row.dataset.tag = entry.tag;
+  const quant = quantBadge(entry);
+  if (quant) row.appendChild(quant);
 
   const top = document.createElement("div");
   top.className = compact

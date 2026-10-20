@@ -5,6 +5,7 @@ Split from schemas/settings.py for the file-size cap.
 
 from pydantic import BaseModel, Field, computed_field
 
+from app.quant_label import QuantLabel
 from app.schemas.common import EngineName
 from app.schemas.settings import HardwareSummary
 
@@ -96,6 +97,12 @@ class CatalogEntry(BaseModel):
     is_image: bool = False
     # Image models only: extra files needed beside the weights, and whether each is on disk.
     companions: list[CompanionFile] = Field(default_factory=list)
+
+    # The file's quantization (e.g. "Q4_K_M"), read from its tag; None when the tag names none. Shown as a badge.
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def quantization(self) -> str | None:
+        return QuantLabel.from_tag(self.tag)
 
     # Backward-compatible views onto engine_support
     # Computed, not settable: producers build engine_support (EngineSupportSet.support_for). Kept for old

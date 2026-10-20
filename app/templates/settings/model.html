@@ -1,6 +1,6 @@
 {# Settings > Models tab (both pages). #}
     <!-- Model tab: picks the default model new chats start with. An existing conversation's model changes from that chat's model badge (chat.html/chat.js), so this tab needs no target picker (unlike Behavior below) and no save bar: selecting a model saves at once (settings.js saveModelSelection). Split out of the former combined "Model & behavior" tab, so Behavior's save-bar no longer needs its blockedByModels check. -->
-    <div id="tab-model" class="mx-auto max-w-3xl px-4 py-8 space-y-8">
+    <div id="tab-model" class="mx-auto max-w-[55.2rem] px-4 py-8 space-y-8">
       {% if not admin_page %}
       <p class="text-xs text-warning-400 bg-slate-900 border border-warning-500/50 rounded-lg px-3 py-2">
         Updates here affect your own settings and will not affect other users.

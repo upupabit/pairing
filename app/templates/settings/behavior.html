@@ -1,6 +1,6 @@
 {# Settings > Behavior tab (/settings only). #}
     <!-- Behavior tab: generation parameters per target (a conversation, or "Defaults for new chats"). Unlike Model above, saving for an existing conversation changes its behavior at once (read fresh on the next reply), while saving "Defaults for new chats" affects only chats created afterward (settings.js loadTarget's per-target hint). Shares its save-bar with Knowledge below (both edit the same currentParams). -->
-    <div id="tab-behavior" class="hidden mx-auto max-w-3xl px-4 py-8 space-y-10">
+    <div id="tab-behavior" class="hidden mx-auto max-w-[55.2rem] px-4 py-8 space-y-10">
 
       <!-- Which conversation these params apply to. The "no models installed" banner sits inside this first section, not as a sibling above: a hidden sibling still gives the next one space-y's top margin, pushing this tab's title lower than the others. Same banner as the Model tab's #model-unavailable (settings.js loadTarget). -->
       <section>

@@ -1,6 +1,8 @@
 """Admin settings: the Knowledge base reranker."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, computed_field
+
+from app.quant_label import QuantLabel
 
 
 class RerankModelSetting(BaseModel):
@@ -28,6 +30,12 @@ class RerankCatalogEntry(BaseModel):
     installed: bool
     # The reranker Knowledge base retrieval uses now.
     in_use: bool
+
+    # The file's quantization (e.g. "Q8_0"), read from its tag; shown as a badge.
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def quantization(self) -> str | None:
+        return QuantLabel.from_tag(self.tag)
 
 
 class RerankModelCatalogResponse(BaseModel):

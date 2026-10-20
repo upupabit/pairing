@@ -9,13 +9,12 @@ tests/conftest.py's fixture), and reshaping them would ripple widely. HiddenMode
 used only here and in routers/settings.py, are classes.
 """
 
-import re
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app import hardware
 from app.model_catalog import CATALOG
 from app.models import SYSTEM_OWNER_ID, AppSetting, User
+from app.quant_label import QuantLabel
 from app.schemas import CatalogEntry, ModelCatalogResponse
 from app.services import settings_service
 from app.services.default_model_settings import DefaultModelSettings
@@ -25,14 +24,12 @@ from app.services.extended_model_catalog_enrichment import HuggingFaceModelProbe
 from app.services.inference_client import list_models
 from app.services.installed_projector_catalog import InstalledProjectorCatalog
 
+
 # Matches the quant token at the end of a tag suffix ("Q3_K_M" from "...:Llama-3.2-3B-Instruct-Q3_K_M", "Q8_0"
 # from "...:Q8_0"), a parameter_size display fallback (_auto_discovered_entry). Not
 # extended_model_catalog_enrichment.HuggingFaceModelProbe.guess_quantizations_from_filename: that collapses
 # "Q3_K_M"/"Q3_K_S"/"Q3_K_L" to the coarse "Q3_K" for Matricxon matching; this wants the exact token, more
 # informative than "?" though it answers a different question.
-_QUANT_TOKEN_RE = re.compile(r"(?:IQ\d_[A-Z]+|Q\d(?:_\d)?(?:_K)?(?:_[SML])?|BF16|F16|FP16|F32|FP32)$", re.IGNORECASE)
-
-
 async def installed_chat_models() -> list[str]:
     """Tags of pulled models that can hold a conversation (the "completion" filter ChatModelCatalogBuilder uses)."""
     installed = await list_models()
@@ -228,16 +225,6 @@ class ChatModelCatalogBuilder:
             return value
         return None
 
-    @staticmethod
-    def _quant_from_tag(tag: str) -> str | None:
-        """Best-effort exact quantization label from the tag suffix (see _QUANT_TOKEN_RE; alongside, not instead of,
-        the coarser Matricxon-compatibility guess). None if no recognizable token (e.g. a plain Ollama-library tag),
-        so callers fall through like _clean_engine_reported.
-        """
-        suffix = tag.rsplit(":", 1)[-1] if ":" in tag else tag
-        match = _QUANT_TOKEN_RE.search(suffix)
-        return match.group(0).upper() if match else None
-
     def _catalog_entry(
         self, entry, installed_by_tag: dict, hidden_tags: set[str], capacity_gb: float, support_set: EngineSupportSet
     ):
@@ -326,7 +313,7 @@ class ChatModelCatalogBuilder:
             parameter_size = (
                 (extended_entry or {}).get("parameter_size")
                 or self._clean_engine_reported(details.get("parameter_size"))
-                or self._quant_from_tag(name)
+                or QuantLabel.from_tag(name)
                 or "?"
             )
         # Bug: this assumed "installed while Matricxon is active" meant "proven to run there".

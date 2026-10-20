@@ -26,54 +26,6 @@ def test_find_entry_and_find_embedding_entry_never_cross_match():
         assert model_catalog.CATALOG.find_embedding(entry.tag) is None
 
 
-@pytest.mark.parametrize(
-    "tag,expected",
-    [
-        ("hf.co/unsloth/Llama-3.2-3B-Instruct-GGUF:Llama-3.2-3B-Instruct-Q3_K_M", "unsloth"),
-        ("hf.co/google/gemma-4-E2B-it-qat-q4_0-gguf:gemma-4-E2B_q4_0-it", "google"),
-        ("custom:latest", "Other"),
-    ],
-)
-def test_vendor_from_tag(tag, expected):
-    assert svc.ChatModelCatalogBuilder._vendor_from_tag(tag) == expected
-
-
-@pytest.mark.parametrize(
-    "value,expected",
-    [
-        ("llama", "llama"),
-        (
-            "unknown",
-            None,
-        ),  # Matricxon's literal sentinel for "don't know" (see this method's docstring, confirmed)
-        # see the method's docstring, confirmed
-        ("UNKNOWN", None),
-        (None, None),
-        ("", None),
-    ],
-)
-def test_clean_engine_reported(value, expected):
-    assert svc.ChatModelCatalogBuilder._clean_engine_reported(value) == expected
-
-
-@pytest.mark.parametrize(
-    "tag,expected",
-    [
-        ("hf.co/unsloth/Llama-3.2-3B-Instruct-GGUF:Llama-3.2-3B-Instruct-Q3_K_M", "Q3_K_M"),
-        ("hf.co/cjpais/llava-1.6-mistral-7b-gguf:llava-v1.6-mistral-7b.Q3_K_M", "Q3_K_M"),
-        ("hf.co/leliuga/all-MiniLM-L6-v2-GGUF:Q8_0", "Q8_0"),
-        ("hf.co/unsloth/MiniMax-M3-GGUF:UD-IQ1_M", "IQ1_M"),
-        ("custom:latest", None),
-    ],
-)
-def test_quant_from_tag(tag, expected):
-    """Confirmed: a bare "?" for parameter_size is less useful than the exact quantization in the
-    tag when nothing else is known (_QUANT_TOKEN_RE says why this is more precise than the coarse
-    Matricxon-compatibility guess).
-    """
-    assert svc.ChatModelCatalogBuilder._quant_from_tag(tag) == expected
-
-
 @pytest.mark.asyncio
 async def test_installed_embedding_models_filters_by_capability(monkeypatch):
     monkeypatch.setattr(

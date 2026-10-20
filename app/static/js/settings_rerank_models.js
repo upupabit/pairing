@@ -29,14 +29,16 @@ class RerankModelCatalog {
 
   render(catalog) {
     this.list.replaceChildren();
-    this.showNote(catalog.engine_supports ? "" : "Reranking works with Matricxon; the active engine can't rerank.");
+    this.showNote(catalog.engine_supports ? "" : "Reranking works with Matricxon and llama.cpp; the active engine can't rerank.");
     if (!catalog.engine_supports) return;
     for (const entry of catalog.entries) this.list.appendChild(this.row(entry));
   }
 
   row(entry) {
     const row = document.createElement("div");
-    row.className = "rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm flex flex-col justify-between gap-1.5";
+    row.className = "relative rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-sm flex flex-col justify-between gap-1.5";
+    const quant = quantBadge(entry);
+    if (quant) row.appendChild(quant);
     const inUse = entry.in_use ? inUseBadge() : "";
     const meta = [entry.vendor, entry.download_gb ? formatSize(entry.download_gb) : null].filter(Boolean).join(" · ");
     const label = document.createElement("div");

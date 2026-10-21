@@ -11,6 +11,7 @@ from app.models import Chunk, Document
 from app.services import model_catalog_service
 from app.services.document_rerank import ChunkReranker
 from app.services.inference_client import embed
+from app.services.live_workflow_bus import live_workflow
 
 
 def _bytes_to_vector(data: bytes) -> np.ndarray:
@@ -31,6 +32,11 @@ async def retrieve_context(
     owner-scoped path), to build the prompt (build_augmented_system_prompt) and show sources. Empty list if
     nothing exists in scope.
     """
+    async with live_workflow.stage("rag_retrieve"):
+        return await _retrieve(db, query, user_id, top_k)
+
+
+async def _retrieve(db: AsyncSession, query: str, user_id: str | None, top_k: int) -> list[dict]:
     scope = (
         Document.owner_id.is_(None)
         if user_id is None
@@ -46,9 +52,11 @@ async def retrieve_context(
         # failure.
         return []
 
-    query_vector = np.asarray(await embed(query, embedding_model), dtype=np.float32)
+    async with live_workflow.stage("rag_embed", "rag_embed_ml_engine"):
+        query_vector = np.asarray(await embed(query, embedding_model), dtype=np.float32)
     query_norm = np.linalg.norm(query_vector) or 1.0
 
+    live_workflow.enter("rag_rank")
     scored = []
     for chunk in chunks:
         # Only vectors from the current model compare: another model's (recorded, or of another size when
@@ -66,6 +74,7 @@ async def retrieve_context(
         scored.append((similarity, chunk))
 
     scored.sort(key=lambda pair: pair[0], reverse=True)
+    live_workflow.exit("rag_rank")
     # A reranker, if set, picks the best top_k from a wider similarity shortlist.
     candidates = [chunk for _similarity, chunk in scored[: max(top_k, RAG_RERANK_CANDIDATES)]]
     best = await ChunkReranker(db).order(query, candidates, top_k)

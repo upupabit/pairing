@@ -53,6 +53,7 @@ from app.routers import (
     theme,
     update_admin,
     users,
+    workflow_live,
 )
 from app.services import startup_service
 from app.services.instance_proxy import InstanceProxyMiddleware
@@ -153,6 +154,7 @@ app.include_router(mcp_admin.enabled_router)
 app.include_router(mcp_admin.limits_router)
 app.include_router(mcp_tools.router)
 app.include_router(stats.router)
+app.include_router(workflow_live.router)
 app.include_router(telemetry.router)
 app.include_router(system_metrics.router)
 app.include_router(theme.router)

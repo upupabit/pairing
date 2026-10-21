@@ -10,6 +10,7 @@ from app.services import chat_attachment_service
 from app.services.chat_attachment_service import AttachmentInfo
 from app.services.document_retrieval import build_augmented_system_prompt, retrieve_context
 from app.services.inference_client import InferenceError
+from app.services.live_workflow_bus import live_workflow
 from app.services.note_service import build_pinned_system_prompt, resolve_conversation_notes
 
 
@@ -34,6 +35,7 @@ async def build_system_prompt(
     chat_attachment_service.apply_image_attachment).
     Channels pass user_id=None to retrieve_context so only the global knowledge base is searched.
     """
+    live_workflow.enter("chat_prompt_service")
     system_prompt = ""
     notes_by_type = await resolve_conversation_notes(db, conversation, user.id)
     if any(notes_by_type.values()):
@@ -48,6 +50,7 @@ async def build_system_prompt(
         retrieved = []
     if retrieved:
         turn_context = build_augmented_system_prompt("", retrieved).strip()
+        live_workflow.pulse("rag_augment")
         # De-duplicated in first-seen (best-match-first) order: a document may give several chunks but is listed once
         # under "Sources".
         seen = set()
@@ -59,6 +62,7 @@ async def build_system_prompt(
     if attachments:
         turn_context = chat_attachment_service.fold_text_attachments_into_prompt(turn_context, attachments).strip()
 
+    live_workflow.exit("chat_prompt_service")
     return system_prompt, turn_context, source_filenames
 
 

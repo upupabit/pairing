@@ -28,6 +28,7 @@ def test_only_the_local_engines_pass_tools():
         "openrouter": False,
         "gemini": False,
         "groq": False,
+        "xai": False,
         "nvidia": False,
         "cohere": False,
         "azure": False,

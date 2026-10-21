@@ -29,6 +29,7 @@ EngineName = Literal[
     "azure",
     "vertex",
     "bedrock",
+    "xai",
 ]
 
 # Single source for "no engine chosen yet", used by ActiveEngineConfig and engine_service.DEFAULT_ENGINE.

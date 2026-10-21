@@ -76,12 +76,12 @@ function showWorkflowDetail(node) {
 }
 
 /* The diagram's content bounds from the node positions; the <svg> is sized to exactly this (plus a margin), so the container's scrollbars appear where content overflows instead of the SVG stretching to the available space. */
-function workflowCanvasBounds() {
+function workflowCanvasBounds(nodes = WORKFLOW_NODES) {
   const margin = 40;
-  const minX = Math.min(...WORKFLOW_NODES.map((n) => n.x));
-  const minY = Math.min(...WORKFLOW_NODES.map((n) => n.y));
-  const maxX = Math.max(...WORKFLOW_NODES.map((n) => n.x + n.w));
-  const maxY = Math.max(...WORKFLOW_NODES.map((n) => n.y + n.h));
+  const minX = Math.min(...nodes.map((n) => n.x));
+  const minY = Math.min(...nodes.map((n) => n.y));
+  const maxX = Math.max(...nodes.map((n) => n.x + n.w));
+  const maxY = Math.max(...nodes.map((n) => n.y + n.h));
   return {
     width: maxX - minX + margin * 2,
     height: maxY - minY + margin * 2,
@@ -92,16 +92,9 @@ function workflowCanvasBounds() {
 
 function initWorkflowDiagram() {
   const svg = d3.select("#workflow-svg");
-  const bounds = workflowCanvasBounds();
-  const { width, offsetX } = bounds;
-  // Width first: the legend is measured inside the canvas, which takes the svg's width.
-  svg.attr("width", width).attr("height", bounds.height);
-  // The legend sits in the top-right corner; the diagram moves down only as far as needed to keep it clear.
+  // Size and position: WorkflowFocus (workflow_diagram_focus.js), which can fold the app steps away.
   const legend = new WorkflowLegend(document.getElementById("workflow-legend"));
   legend.render();
-  const shift = legend.place(WORKFLOW_NODES, offsetX, bounds.offsetY);
-  const offsetY = bounds.offsetY + shift;
-  svg.attr("height", bounds.height + shift);
 
   svg
     .append("defs")
@@ -117,13 +110,7 @@ function initWorkflowDiagram() {
     .attr("d", "M0,0 L10,5 L0,10 Z")
     .attr("fill", ThemeColors.get("--color-slate-500"));
 
-  const root = svg.append("g").attr("class", "wf-root").attr("transform", `translate(${offsetX},${offsetY})`);
-  // The legend's height depends on the font; once web fonts have loaded, measure again and move the diagram to match.
-  document.fonts?.ready.then(() => {
-    const settled = legend.place(WORKFLOW_NODES, offsetX, bounds.offsetY);
-    root.attr("transform", `translate(${offsetX},${bounds.offsetY + settled})`);
-    svg.attr("height", bounds.height + settled);
-  });
+  const root = svg.append("g").attr("class", "wf-root");
 
   const nodesById = new Map(WORKFLOW_NODES.map((n) => [n.id, n]));
 
@@ -210,6 +197,7 @@ function initWorkflowDiagram() {
     .selectAll("text")
     .data(typeof WORKFLOW_ANNOTATIONS === "undefined" ? [] : WORKFLOW_ANNOTATIONS)
     .join("text")
+    .attr("class", "wf-annotation")
     .attr("x", (d) => d.x)
     .attr("y", (d) => d.y)
     .attr("fill", (d) => WORKFLOW_CATEGORY_COLORS[d.group])
@@ -242,4 +230,6 @@ function initWorkflowDiagram() {
     document.getElementById("workflow-detail-panel").classList.add("hidden");
     d3.selectAll(".wf-node rect").attr("stroke-width", 1.5);
   });
+
+  window.workflowFocus = new WorkflowFocus(svg, root);
 }

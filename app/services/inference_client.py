@@ -14,6 +14,7 @@ from collections.abc import AsyncGenerator
 
 from app.services.engines.base import EngineCapabilities
 from app.services.engines.registry import registry
+from app.services.live_workflow_bus import live_workflow
 
 
 class InferenceError(Exception):
@@ -56,8 +57,9 @@ async def rerank(query: str, documents: list[str], model: str) -> list[float]:
 
 async def chat_stream(model: str, messages: list[dict], params: dict) -> AsyncGenerator[str, None]:
     try:
-        async for chunk in registry.active().chat_stream(model, messages, params):
-            yield chunk
+        async with live_workflow.stage("inference_client_stream", "ml_engine_server"):
+            async for chunk in registry.active().chat_stream(model, messages, params):
+                yield chunk
     except registry.all_error_types() as exc:
         raise InferenceError(str(exc)) from exc
 

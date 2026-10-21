@@ -145,7 +145,7 @@ It is also important not to expose more models to users than the system RAM/VRAM
 
 **Connectors**
 - Extend the system with connectors, which add support for more inference engines, such as cloud services that offer GPU and serverless ML. pAIring is intended to run privately or locally without external services and providers (except for downloading models or outer MCP tools), but this is a much appreciated optional extra.
-- Currently supported connectors are Cloudflare Workers AI, DigitalOcean Serverless Inference, OpenRouter, Google Gemini, Groq, NVIDIA NIM, Cohere, Azure OpenAI, Google Vertex AI, Amazon Bedrock and RunPod Serverless; more connectors will be added soon. All but Azure, Vertex AI, Bedrock and RunPod can be tried for free.
+- Currently supported connectors are Cloudflare Workers AI, DigitalOcean Serverless Inference, OpenRouter, Google Gemini, Groq, xAI Grok, NVIDIA NIM, Cohere, Azure OpenAI, Google Vertex AI, Amazon Bedrock and RunPod Serverless; more connectors will be added soon. All but xAI, Azure, Vertex AI, Bedrock and RunPod can be tried for free.
 - Setting one up takes an API key and a **Test connection**; then it is one pick away in the **Active engine** list.
 
 | Connector | Models | Free use | Knowledge base |
@@ -155,6 +155,7 @@ It is also important not to expose more models to users than the system RAM/VRAM
 | OpenRouter | Hundreds from many providers | Free models | Yes |
 | Google Gemini | Gemini and Gemma | Free tier | Yes |
 | Groq | Fast open models | Free tier | No |
+| xAI Grok | The Grok models | No, billed per use | No |
 | NVIDIA NIM | 100+: Llama, Nemotron, DeepSeek, Qwen | Free developer credits | Yes |
 | Cohere | Command and Embed | Trial key | Yes |
 | Azure OpenAI | Your own deployments: GPT, DeepSeek, Grok, Llama and more | No, billed to your Azure subscription | Yes |
@@ -211,7 +212,7 @@ Setup, limits and privacy notes for each: [pAIring connectors](https://upupabit.
     <th width="50%">System resource monitor</th>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/stats-workflow.png" alt="Workflow diagram" width="100%"></td>
+    <td><img src="docs/screenshots/stats-workflow-live.gif" alt="Live chat workflow" width="100%"></td>
     <td><img src="docs/screenshots/stats-system.png" alt="System dashboard" width="100%"></td>
   </tr>
   <tr>

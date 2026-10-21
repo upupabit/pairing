@@ -341,7 +341,7 @@ function bubbleFor(role, senderLabel, avatarUrl, initials, senderId) {
 
   const bubble = document.createElement("div");
   bubble.className =
-    "markdown-body max-w-[75ch] rounded-2xl px-4 py-2.5 text-sm leading-relaxed " +
+    "markdown-body max-w-[min(75ch,100%)] rounded-2xl px-4 py-2.5 text-sm leading-relaxed " +
     (role === "user"
       ? "bg-brand-600 text-white rounded-br-sm"
       : "bg-slate-800 text-slate-100 rounded-bl-sm");

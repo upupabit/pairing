@@ -18,6 +18,7 @@ from app.services.engines.nvidia_engine import NvidiaEngine
 from app.services.engines.openrouter_engine import OpenRouterEngine
 from app.services.engines.runpod_engine import RunPodEngine
 from app.services.engines.vertex_engine import VertexEngine
+from app.services.engines.xai_engine import XaiEngine
 
 
 class EngineRegistry:
@@ -67,6 +68,7 @@ registry = EngineRegistry(
         OpenRouterEngine(),
         GeminiEngine(),
         GroqEngine(),
+        XaiEngine(),
         NvidiaEngine(),
         CohereEngine(),
         AzureEngine(),

@@ -16,6 +16,7 @@ from app.services import inference_client, mcp_settings_service
 from app.services.chat_tool_set import ChatTool, ChatToolSet
 from app.services.engines.registry import registry
 from app.services.inference_client import InferenceError
+from app.services.live_workflow_bus import live_workflow
 from app.services.mcp_client import McpError
 from app.services.mcp_tool_catalog import ExposedTool, McpToolCatalog
 from app.services.tool_call_sink import ToolCallSink
@@ -66,6 +67,7 @@ class ToolLoop:
             messages.append({"role": "assistant", "content": text, "tool_calls": calls})
             for call in calls:
                 event = await self._execute(call)
+                live_workflow.pulse("mcp_record")
                 yield {"tool": event}
                 messages.append(
                     {
@@ -91,7 +93,8 @@ class ToolLoop:
         if tool is None:
             return {**event, "result": f"Unknown tool: {name}", "is_error": True}
         try:
-            result = await tool.call(arguments)
+            async with live_workflow.stage("mcp_tool_loop", "mcp_server_call"):
+                result = await tool.call(arguments)
         except McpError as exc:
             return {**event, "result": f"Tool call failed: {exc}", "is_error": True}
         return {**event, "result": self._clip.fit(result.text), "is_error": result.is_error}
@@ -135,6 +138,7 @@ async def tool_stream_or_none(
     if not tools or not await _model_can_use_tools(model):
         return None
     limits = await mcp_settings_service.get_limits(db)
+    live_workflow.pulse("mcp_gate")
     return ToolLoop(tools, limits.rounds, limits.result_chars).run(model, messages, params)
 
 

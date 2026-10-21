@@ -21,6 +21,7 @@ from app.services import (
     title_service,
 )
 from app.services.chat_attachment_service import AttachmentInfo
+from app.services.live_workflow_bus import live_workflow
 
 
 async def build_reply_stream(
@@ -98,6 +99,11 @@ async def build_reply_stream(
         yield done_event
         return
 
+    # Stats live workflow (Matricxon only): this reply's stages from here on.
+    live_workflow.begin(conversation.model)
+    live_workflow.pulse("chat_js_send")
+    live_workflow.enter("chat_js_stream", "chat_router_stream", "chat_service_build")
+
     # History = conversation_service.visible_messages (excludes admin-deleted) plus user_message explicitly:
     # with expire_on_commit=False (app/database.py) the loaded `conversation.messages` isn't refreshed, and
     # db.add alone doesn't update it, so otherwise history would miss the current question.
@@ -134,6 +140,7 @@ async def build_reply_stream(
             conversation.model = resolved_model
             await db.commit()
 
+    live_workflow.exit("chat_service_build")
     # Channels always finish generating (other members may rely on it); a personal chat has one viewer, so
     # leaving stops generation (cancel_on_disconnect=True). Both leave a clean status="error" record
     # (reply_generation_service.stream_reply).

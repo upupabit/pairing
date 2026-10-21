@@ -67,12 +67,20 @@
           <!-- Centered when the diagram is narrower than the view (mx-auto + w-max); scrolls normally when wider. -->
           <div class="relative mx-auto w-max">
             <svg id="workflow-svg" class="block"></svg>
-            <!-- Legend: which border color is which app layer (workflow_diagram_legend.js), in the empty top-right corner
-            beside the first nodes, scrolling with the diagram. -->
-            <div id="workflow-legend"
-              class="absolute z-10 grid grid-cols-2 gap-x-6 rounded-lg border border-slate-800 bg-slate-900/90 backdrop-blur px-3 py-2.5 text-xs">
-            </div>
           </div>
+        </div>
+        <!-- Legend: which border color is which app layer (workflow_diagram_legend.js). Floats over the top-right corner
+        like the live status box, so it never moves the diagram; starts as a one-line chip. -->
+        <div id="workflow-legend"
+          class="absolute top-3 right-3 z-10 grid grid-cols-2 gap-x-6 max-w-[29rem] max-h-[calc(100%-1.5rem)] overflow-y-auto rounded-lg border border-slate-800 bg-slate-900/90 backdrop-blur px-3 py-2.5 text-xs">
+        </div>
+        <!-- Folds the app steps above the ML engine into one node, or shows them (workflow_diagram_focus.js). -->
+        <button id="workflow-focus-toggle" type="button" aria-expanded="false"
+          class="absolute top-3 left-1/2 -translate-x-1/2 z-10 rounded-lg border border-slate-800 bg-slate-900/90 backdrop-blur px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800">
+        </button>
+        <!-- Live status (workflow_diagram_live.js): running replies while the engine is Matricxon. Click a row to scroll to its step. -->
+        <div id="workflow-live-strip"
+          class="absolute top-3 left-3 z-10 w-96 max-w-[calc(100%-1.5rem)] rounded-lg border border-slate-800 bg-slate-900/90 backdrop-blur px-3 py-2.5 text-xs">
         </div>
         <!-- Detail panel: plain DOM (not D3), opened by clicking a node (workflow_diagram.js showDetail). -->
         <aside id="workflow-detail-panel"
@@ -218,7 +226,11 @@
 <script src="/static/js/workflow_diagram_ml_embed.js?v={{ static_version }}"></script>
 <script src="/static/js/workflow_diagram_learn.js?v={{ static_version }}"></script>
 <script src="/static/js/workflow_diagram_legend.js?v={{ static_version }}"></script>
+<script src="/static/js/workflow_diagram_focus.js?v={{ static_version }}"></script>
 <script src="/static/js/workflow_diagram.js?v={{ static_version }}"></script>
+<script src="/static/js/workflow_diagram_live_map.js?v={{ static_version }}"></script>
+<script src="/static/js/workflow_diagram_live_state.js?v={{ static_version }}"></script>
+<script src="/static/js/workflow_diagram_live.js?v={{ static_version }}"></script>
 <script src="/static/js/telemetry_charts.js?v={{ static_version }}"></script>
 <script src="/static/js/telemetry_bar_chart.js?v={{ static_version }}"></script>
 <script src="/static/js/telemetry.js?v={{ static_version }}"></script>

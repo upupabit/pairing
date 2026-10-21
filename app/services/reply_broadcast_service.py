@@ -24,6 +24,8 @@ delivery (chat_settings_service.get_channel_delivery_mode) is thus reliable only
 import asyncio
 from dataclasses import dataclass, field
 
+from app.services.live_workflow_bus import live_workflow
+
 # Bounded so a lagging subscriber can't grow without limit: a full queue drops that one event (see publish)
 # rather than block others or generation. Rare and harmless: the DB is authoritative and both the poller and
 # the /subscribe client do a final reconcile fetch when a stream ends (chat.js).
@@ -91,6 +93,7 @@ def publish_chunk(conversation_id: str, chunk: str) -> None:
     if topic is None or topic.state is None:
         return
     topic.state.content += chunk
+    live_workflow.pulse("broadcast_publish")
     # "message_id" on every event: a /subscribe connection (any channel member but the sender) relays the hub's raw
     # events unmodified, so without it chat.js's handleReplyLiveEvent had nothing to key a bubble on and dropped
     # every chunk (a shipped bug). stream_reply's relay (the sender's tab) also stamps it: harmless, same value.
@@ -111,6 +114,7 @@ def publish_done(conversation_id: str, sources: list[str] | None) -> None:
         return
     topic.state.status = "complete"
     topic.state.sources = sources
+    live_workflow.pulse("stream_done")
     _publish(conversation_id, {"done": True, "sources": sources, "message_id": topic.state.message_id})
 
 

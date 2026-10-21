@@ -10,6 +10,7 @@ from app.models import Chunk
 from app.services.default_model_settings import DefaultModelSettings
 from app.services.engines.registry import registry
 from app.services.inference_client import InferenceError, rerank
+from app.services.live_workflow_bus import live_workflow
 
 logger = logging.getLogger("llama_chat")
 
@@ -26,7 +27,8 @@ class ChunkReranker:
         if model is None:
             return chunks[:top_k]
         try:
-            scores = await rerank(query, [chunk.text for chunk in chunks], model)
+            async with live_workflow.stage("rag_rerank", "rag_rerank_ml_engine"):
+                scores = await rerank(query, [chunk.text for chunk in chunks], model)
         except InferenceError as exc:
             logger.warning("Reranking failed, keeping similarity order: %s", exc)
             return chunks[:top_k]

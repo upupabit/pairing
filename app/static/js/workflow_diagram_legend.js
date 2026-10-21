@@ -1,16 +1,21 @@
-/* The Stats "Visual chat workflow" legend (border color per app layer), split from workflow_diagram.js. It sits inside
-the scrolling canvas, in the empty top-right corner beside the first nodes, as two columns: the app layers, then the
-stages inside the ML engine. A new WORKFLOW_CATEGORY_COLORS/LABELS entry is picked up automatically. Clicking an item
-highlights that layer's nodes (and the arrows touching them) and fades the rest; clicking it again shows all. */
+/* The Stats "Visual chat workflow" legend (border color per app layer), split from workflow_diagram.js. It floats over
+the view's top-right corner (stats.html), as two columns: the app layers, then the stages inside the ML engine. A new WORKFLOW_CATEGORY_COLORS/LABELS entry is picked up automatically. Clicking an item
+highlights that layer's nodes (and the arrows touching them) and fades the rest; clicking it again shows all. Hide/Show
+collapses it to one line, like the live status box (workflow_diagram_live.js). */
 
 class WorkflowLegend {
-  static GAP = 80; // space between the legend and the nearest node
   static FADED = 0.15; // opacity of nodes/arrows outside the picked layer
 
   constructor(el) {
     this.el = el;
     this.active = null;
+    this.collapsed = true; // starts as a one-line "Legend · Show" chip
     this.el.addEventListener("click", (event) => {
+      if (event.target.closest("[data-toggle]")) {
+        this.collapsed = !this.collapsed;
+        this.render();
+        return;
+      }
       const item = event.target.closest("[data-category]");
       if (item) this.toggle(item.dataset.category);
     });
@@ -39,16 +44,27 @@ class WorkflowLegend {
   }
 
   render() {
+    const toggle = `<button type="button" data-toggle class="ml-auto text-slate-500 hover:text-slate-300">${this.collapsed ? "Show" : "Hide"}</button>`;
+    if (this.collapsed) {
+      this.el.innerHTML = `<div class="col-span-2 flex items-center gap-4">
+        <span class="text-xs font-semibold uppercase tracking-wide text-slate-400">Legend</span>${toggle}</div>`;
+      return;
+    }
     const categories = Object.keys(WORKFLOW_CATEGORY_COLORS);
     const firstMl = categories.findIndex((c) => c.startsWith("ml_"));
     const app = firstMl === -1 ? categories : categories.slice(0, firstMl);
     const ml = firstMl === -1 ? [] : categories.slice(firstMl);
     this.el.innerHTML =
+      `<div class="col-span-2 flex -mb-1">${toggle}</div>` +
       this.column("Legend", app) +
       (ml.length ? this.column("Inside the ML engine", ml) : "") +
       `<p class="col-span-2 mt-2 border-t border-slate-800 pt-1.5 text-[11px] text-slate-500">
         Click an item to show only its nodes.
       </p>`;
+    for (const item of this.el.querySelectorAll("[data-category]")) {
+      item.style.opacity = !this.active || item.dataset.category === this.active ? "" : "0.4";
+      item.setAttribute("aria-pressed", String(item.dataset.category === this.active));
+    }
   }
 
   column(title, categories) {
@@ -67,25 +83,5 @@ class WorkflowLegend {
     return `<div class="space-y-1 min-w-0">
       <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-0.5">${escapeHtml(title)}</p>${items}
     </div>`;
-  }
-
-  /* In the top-right corner of the canvas, right of the top node, right-aligned with the diagram (canvas
-  coordinates: node position + offset, see workflowCanvasBounds). Returns how far the diagram must move down so no
-  node under the legend is covered (0 when it fits); call after render, while the view is visible, so its size is
-  measurable. */
-  place(nodes, offsetX, offsetY) {
-    const top = nodes.reduce((a, b) => (b.y < a.y ? b : a));
-    const start = offsetX + top.x + top.w + WorkflowLegend.GAP;
-    const end = offsetX + Math.max(...nodes.map((n) => n.x + n.w));
-    this.el.style.maxWidth = `${Math.max(end - start, 0)}px`;
-    this.el.style.left = `${start}px`;
-    const width = this.el.offsetWidth;
-    const left = end - width;
-    this.el.style.left = `${left}px`;
-    this.el.style.top = `${offsetY + top.y}px`;
-    const below = nodes.filter((n) => offsetX + n.x < left + width && offsetX + n.x + n.w > left);
-    if (!below.length) return 0;
-    const firstBelow = offsetY + Math.min(...below.map((n) => n.y));
-    return Math.max(offsetY + top.y + this.el.offsetHeight + WorkflowLegend.GAP - firstBelow, 0);
   }
 }

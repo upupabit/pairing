@@ -31,6 +31,7 @@ from app.services import (
     tool_loop_service,
 )
 from app.services.inference_client import InferenceError, chat_stream, stop_model
+from app.services.live_workflow_bus import live_workflow
 
 logger = logging.getLogger("llama_chat")
 
@@ -83,6 +84,8 @@ async def stream_reply(
     await db.refresh(message)
 
     reply_broadcast_service.start_topic(conversation.id, message.id)
+    live_workflow.pulse("reply_gen_service")
+    live_workflow.bind_request(message.id)
     effective_model = model or conversation.model
     task = _schedule_generation(
         message.id,
@@ -109,6 +112,7 @@ async def stream_reply(
                     return
                 continue
             yield {**event, "message_id": message.id}
+            live_workflow.pulse("relay_back")
             if event.get("done") or event.get("error") or event.get("deleted"):
                 finished = True
                 return
@@ -131,7 +135,8 @@ def _schedule_generation(
     stream_reply/cancel_generation can cancel it, and spawns reply_cross_instance_service's watchdog beside it
     (needed even with cancel_generation; see that function).
     """
-    task = asyncio.create_task(_run_generation(message_id, model, chat_messages, params, source_filenames, has_image))
+    work = _run_generation(message_id, model, chat_messages, params, source_filenames, has_image)
+    task = asyncio.create_task(live_workflow.track(work, "run_generation_task"))
     _background_generation_tasks.add(task)
     task.add_done_callback(_background_generation_tasks.discard)
     reply_cancellation_service.register_task(message_id, task)

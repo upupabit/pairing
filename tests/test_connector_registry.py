@@ -10,6 +10,7 @@ def test_the_offered_connectors():
         "openrouter",
         "gemini",
         "groq",
+        "xai",
         "nvidia",
         "cohere",
         "azure",

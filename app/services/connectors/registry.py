@@ -14,6 +14,7 @@ from app.services.connectors.nvidia_connector import NVIDIA_CONNECTOR
 from app.services.connectors.openrouter_connector import OPENROUTER_CONNECTOR
 from app.services.connectors.runpod_connector import RUNPOD_CONNECTOR
 from app.services.connectors.vertex_connector import VERTEX_CONNECTOR
+from app.services.connectors.xai_connector import XAI_CONNECTOR
 
 CONNECTORS: list[ConnectorDefinition] = [
     CLOUDFLARE_CONNECTOR,
@@ -21,6 +22,7 @@ CONNECTORS: list[ConnectorDefinition] = [
     OPENROUTER_CONNECTOR,
     GEMINI_CONNECTOR,
     GROQ_CONNECTOR,
+    XAI_CONNECTOR,
     NVIDIA_CONNECTOR,
     COHERE_CONNECTOR,
     AZURE_CONNECTOR,

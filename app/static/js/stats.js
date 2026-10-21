@@ -24,6 +24,18 @@ const STATS_VIEW_REFRESH = {
 
 let _activeStatsView = "overview";
 let _statsRefreshTimer = null;
+// Live overlay of the workflow diagram (workflow_diagram_live.js): connected only while that view is shown.
+let _workflowLive = null;
+
+function _syncWorkflowLive() {
+  const watching = _activeStatsView === "workflow" && !document.hidden && window.workflowDiagramInitialized;
+  if (watching) {
+    _workflowLive ??= new WorkflowLiveView();
+    _workflowLive.start();
+  } else {
+    _workflowLive?.stop();
+  }
+}
 
 function _stopStatsAutoRefresh() {
   if (_statsRefreshTimer !== null) {
@@ -40,6 +52,7 @@ function _startStatsAutoRefresh(name) {
 }
 
 document.addEventListener("visibilitychange", () => {
+  _syncWorkflowLive();
   if (document.hidden) {
     _stopStatsAutoRefresh();
   } else {
@@ -68,6 +81,7 @@ function activateStatsView(name) {
     window.workflowDiagramInitialized = true;
     initWorkflowDiagram();
   }
+  _syncWorkflowLive();
   // Every other view fetches fresh data on every activation, so a revisit doesn't show data from before you left.
   STATS_VIEW_REFRESH[name]?.fn();
   _startStatsAutoRefresh(name);

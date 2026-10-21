@@ -154,7 +154,23 @@
     <!-- Model picker, opened from the model badge above, to switch an existing conversation to another installed model mid-chat (chat.js openModelPicker/closeModelPicker/switchModel). Affects only this conversation going forward; past replies keep the model that generated them. -->
     <div id="model-picker" class="hidden absolute right-4 top-14 z-20 w-96 max-w-[calc(100%-2rem)]
                                   rounded-lg border border-slate-700 bg-slate-900 p-2 shadow-lg space-y-1">
+      <!-- Shown when the chat already has messages (chat.js openModelPicker): a new model re-reads the whole chat. -->
+      <p id="model-picker-warning" class="hidden rounded-md border border-red-500/40 bg-red-500/10 px-2 py-1.5 text-xs font-medium leading-snug text-red-400">
+        This chat already has messages. A different model has to read the whole conversation again before its first
+        reply, since saved progress belongs to the model that made it. On a long chat this can take minutes, depending
+        on your system.
+      </p>
       <div id="model-picker-list" class="max-h-64 overflow-y-auto space-y-0.5"></div>
+      <!-- Confirm step for a chat with messages (chat.js askToSwitchModel). -->
+      <div id="model-picker-confirm" class="hidden space-y-2 border-t border-slate-800 px-2 pt-2">
+        <p class="text-xs text-slate-300">Switch this chat to <span id="model-picker-confirm-model" class="break-all font-mono"></span>?</p>
+        <div class="flex gap-2">
+          <button id="model-picker-confirm-btn" type="button"
+            class="rounded-md bg-brand-600 px-3 py-1 text-xs font-medium text-white hover:bg-brand-500">Switch model</button>
+          <button id="model-picker-cancel-btn" type="button"
+            class="rounded-md border border-slate-700 px-3 py-1 text-xs text-slate-300 hover:bg-slate-800">Cancel</button>
+        </div>
+      </div>
       <p id="model-picker-status" class="text-xs text-slate-500 px-2 pt-1"></p>
     </div>
 
@@ -282,5 +298,6 @@
 <script src="/static/js/account_panel.js?v={{ static_version }}"></script>
 <script src="/static/js/chat_share.js?v={{ static_version }}"></script>
 <script src="/static/js/chat_tools.js?v={{ static_version }}"></script>
+<script src="/static/js/chat_tables.js?v={{ static_version }}"></script>
 <script src="/static/js/chat.js?v={{ static_version }}"></script>
 {% endblock %}

@@ -299,6 +299,7 @@ function renderMessageContent(container, text) {
     html = html.split(mathPlaceholder(index)).join(rendered);
   });
   container.innerHTML = html;
+  ChatTables.frame(container);
   // Direction is re-derived from the current (possibly still-streaming) text on each render; see app.js
   // detectTextDirection for why this beats `dir="auto"` on mixed Hebrew/Arabic text.
   container.dir = detectTextDirection(text || "");
@@ -883,9 +884,14 @@ slotEditorTurnOffBtn.addEventListener("click", async () => {
 const modelPickerEl = document.getElementById("model-picker");
 const modelPickerListEl = document.getElementById("model-picker-list");
 const modelPickerStatusEl = document.getElementById("model-picker-status");
+const modelPickerWarningEl = document.getElementById("model-picker-warning");
+const modelPickerConfirmEl = document.getElementById("model-picker-confirm");
+let modelPickerPending = null; // the model awaiting confirmation (askToSwitchModel)
 
 function closeModelPicker() {
   modelPickerEl.classList.add("hidden");
+  modelPickerConfirmEl.classList.add("hidden");
+  modelPickerPending = null;
 }
 
 /* Fetches the installed models into the picker opened from the model badge: a plain name list (no install here), only to change an existing conversation's model. */
@@ -894,6 +900,9 @@ async function openModelPicker() {
   closeSlotEditor();
   modelPickerListEl.innerHTML = "";
   modelPickerStatusEl.textContent = "Loading…";
+  modelPickerConfirmEl.classList.add("hidden");
+  // Changing the model mid-chat stays allowed (unlike notes), but the new model re-reads everything: say so.
+  modelPickerWarningEl.classList.toggle("hidden", !activeHasMessages);
   modelPickerEl.classList.remove("hidden");
 
   let models;
@@ -922,10 +931,29 @@ async function openModelPicker() {
     );
     btn.textContent = model;
     btn.title = model;
-    btn.addEventListener("click", () => switchModel(model));
+    btn.addEventListener("click", () => askToSwitchModel(model));
     modelPickerListEl.appendChild(btn);
   }
 }
+
+/* A chat with messages asks first (the new model re-reads the whole chat, see #model-picker-warning); a new chat switches at once. */
+function askToSwitchModel(model) {
+  if (!activeHasMessages || model === modelBadgeEl.textContent) {
+    switchModel(model);
+    return;
+  }
+  modelPickerPending = model;
+  document.getElementById("model-picker-confirm-model").textContent = model;
+  modelPickerConfirmEl.classList.remove("hidden");
+}
+
+document.getElementById("model-picker-confirm-btn").addEventListener("click", () => {
+  if (modelPickerPending) switchModel(modelPickerPending);
+});
+document.getElementById("model-picker-cancel-btn").addEventListener("click", () => {
+  modelPickerConfirmEl.classList.add("hidden");
+  modelPickerPending = null;
+});
 
 /* Switches the active conversation to another model going forward; past messages keep the model that generated them. */
 async function switchModel(model) {

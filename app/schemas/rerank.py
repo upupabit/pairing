@@ -1,7 +1,8 @@
 """Admin settings: the Knowledge base reranker."""
 
-from pydantic import BaseModel, computed_field
+from pydantic import BaseModel, Field, computed_field
 
+from app.config import RAG_RERANK_CANDIDATES_MAX, RAG_RERANK_CANDIDATES_MIN
 from app.quant_label import QuantLabel
 
 
@@ -12,11 +13,15 @@ class RerankModelSetting(BaseModel):
     installed: list[str]
     # Whether the active engine can rerank at all.
     engine_supports: bool
+    # Similarity matches handed to the reranker per question.
+    candidates: int
 
 
 class RerankModelUpdate(BaseModel):
     # None switches reranking off.
     model: str | None
+    # Passages to rerank; None keeps the saved value.
+    candidates: int | None = Field(default=None, ge=RAG_RERANK_CANDIDATES_MIN, le=RAG_RERANK_CANDIDATES_MAX)
 
 
 class RerankCatalogEntry(BaseModel):

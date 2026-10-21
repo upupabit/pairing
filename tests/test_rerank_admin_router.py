@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
+from pydantic import ValidationError
 
 from app.routers import rerank_admin
 from app.schemas.rerank import RerankModelUpdate
@@ -31,6 +32,24 @@ async def test_an_installed_reranker_is_used_by_default(db, matricxon_like):
 async def test_switching_off(db, matricxon_like):
     setting = await rerank_admin.set_rerank_model(RerankModelUpdate(model=None), db=db, _admin=None)
     assert (setting.model, setting.enabled) == (None, False)
+
+
+@pytest.mark.asyncio
+async def test_passages_to_rerank_default_to_20_and_are_kept_when_switching(db, matricxon_like):
+    assert (await rerank_admin.get_rerank_model(db=db, _admin=None)).candidates == 20
+
+    await rerank_admin.set_rerank_model(RerankModelUpdate(model="rr:latest", candidates=8), db=db, _admin=None)
+    await rerank_admin.set_rerank_model(RerankModelUpdate(model=None), db=db, _admin=None)  # off, count untouched
+    setting = await rerank_admin.set_rerank_model(RerankModelUpdate(model="rr:latest"), db=db, _admin=None)
+
+    assert (setting.model, setting.candidates) == ("rr:latest", 8)
+    assert await DefaultModelSettings(db).rerank_candidates() == 8
+
+
+@pytest.mark.parametrize("candidates", [4, 51])
+def test_passages_to_rerank_must_be_5_to_50(candidates):
+    with pytest.raises(ValidationError):
+        RerankModelUpdate(model="rr:latest", candidates=candidates)
 
 
 @pytest.mark.asyncio

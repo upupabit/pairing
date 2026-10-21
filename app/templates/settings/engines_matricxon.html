@@ -109,7 +109,7 @@
                 <div class="grid grid-cols-2 gap-3">
                 <div>
                   <label class="block text-xs font-medium text-slate-400 mb-1">Max loaded models</label>
-                  <input data-field="max_loaded_models" type="number" min="0" placeholder="2" title="Maximum number of models Matricxon keeps loaded in memory at the same time (default 2: the chat model plus the small embedding model used for document search, so searching documents doesn't unload the chat model). Leave blank for Matricxon's own default."
+                  <input data-field="max_loaded_models" type="number" min="0" placeholder="2" title="Maximum number of chat models Matricxon keeps loaded in memory at the same time (default 2). Embedding, reranker and vision models (the default vision model, for image attachments) don't count: they load beside the chat models without unloading one. Leave blank for Matricxon's own default."
                     class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
                 </div>
                 <div>

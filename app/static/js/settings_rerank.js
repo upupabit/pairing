@@ -5,6 +5,9 @@ class RerankSetting {
   constructor(root) {
     this.select = root.querySelector("#rerank-model");
     this.note = root.querySelector("#rerank-model-note");
+    this.candidatesRow = root.querySelector("#rerank-candidates-row");
+    this.candidates = root.querySelector("#rerank-candidates");
+    this.select.addEventListener("change", () => this.showCandidates());
     this.saveBtn = root.querySelector("#rerank-model-save-btn");
     this.status = root.querySelector("#rerank-model-status");
     this.saveBtn.addEventListener("click", () => this.save());
@@ -16,6 +19,8 @@ class RerankSetting {
     const options = [["", "Off"], ...setting.installed.map((tag) => [tag, tag])];
     this.select.replaceChildren(...options.map(([value, label]) => new Option(label, value)));
     this.select.value = setting.enabled && setting.model ? setting.model : "";
+    this.candidates.value = setting.candidates;
+    this.showCandidates();
     const note = !setting.engine_supports
       ? "The active engine can't rerank. Reranking works with Matricxon."
       : setting.installed.length
@@ -24,6 +29,11 @@ class RerankSetting {
     this.note.textContent = note;
     this.note.classList.toggle("hidden", !note);
     this.select.disabled = this.saveBtn.disabled = !setting.engine_supports || !setting.installed.length;
+  }
+
+  /* The passage count matters only while a reranker is selected. */
+  showCandidates() {
+    this.candidatesRow.classList.toggle("hidden", !this.select.value);
   }
 
   async load() {
@@ -38,7 +48,8 @@ class RerankSetting {
     this.status.textContent = "Saving…";
     try {
       const model = this.select.value || null;
-      this.render(await api(RerankSetting.URL, { method: "PUT", body: JSON.stringify({ model }) }));
+      const candidates = model ? Number(this.candidates.value) || null : null;
+      this.render(await api(RerankSetting.URL, { method: "PUT", body: JSON.stringify({ model, candidates }) }));
       this.status.textContent = model ? "Saved." : "Saved — reranking is off.";
       document.dispatchEvent(new Event("pairing:reranker-selected"));
     } catch (err) {

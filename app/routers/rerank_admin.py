@@ -23,6 +23,7 @@ async def _current(settings: DefaultModelSettings) -> RerankModelSetting:
         enabled=await settings.rerank_enabled(),
         installed=installed,
         engine_supports=engine_supports,
+        candidates=await settings.rerank_candidates(),
     )
 
 
@@ -44,7 +45,7 @@ async def set_rerank_model(
     try:
         if body.model is not None and body.model not in await settings.installed_rerankers():
             raise HTTPException(status_code=400, detail=f"{body.model} is not an installed reranker.")
-        await settings.set_rerank(body.model)
+        await settings.set_rerank(body.model, body.candidates)
         return await _current(settings)
     except InferenceError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc

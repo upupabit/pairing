@@ -67,7 +67,7 @@ const WORKFLOW_ML_NODES = [
     "ml_load", "Model get_or_load\n(GGUF file → memory)", 0, ML_ROW.r1,
     "Getting the model into memory",
     "Matricxon: app/models/manager.py — get_or_load · llama.cpp: llama-server's router (one child process per loaded model)",
-    "The first request for a model tag finds its GGUF file, checks it fits in free RAM, picks float32 or bf16 for the parts that stay unquantized, and memory-maps the file. Weights are unpacked lazily on the first forward pass; later requests reuse the loaded model until it is unloaded or evicted. This is the cold-start delay on a model's first message."
+    "The first request for a model tag finds its GGUF file, checks it fits in free RAM, picks float32 or bf16 for the parts that stay unquantized, and memory-maps the file. Weights are unpacked lazily on the first forward pass; later requests reuse the loaded model until it is unloaded or evicted. Matricxon's 'Max loaded models' counts chat models only: embedding, reranker and vision-role models load beside them without pushing one out. This is the cold-start delay on a model's first message."
   ),
   mlNode(
     "ml_template", "Chat template\n(messages → prompt text)", 1, ML_ROW.r1,

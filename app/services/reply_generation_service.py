@@ -178,6 +178,8 @@ async def _run_generation(
             try:
                 async with asyncio.timeout(effective_timeout):
                     gen_params = {**(params or {}), "request_id": message_id, "conversation_id": conversation_id}
+                    if has_image:  # the default vision model: Matricxon keeps it out of its loaded-model limit
+                        gen_params["model_role"] = "vision"
                     tools = await tool_loop_service.tool_stream_or_none(db, model, chat_messages, gen_params)
                     async for chunk in tools if tools is not None else chat_stream(model, chat_messages, gen_params):
                         if isinstance(chunk, dict):  # a finished MCP tool call, not text

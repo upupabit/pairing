@@ -2,13 +2,21 @@
 <div class="space-y-3" id="rerank-panel">
   <h3 class="text-xs font-semibold uppercase tracking-wide text-brand-500">Reranker</h3>
   <p class="text-xs text-slate-500 -mt-2">
-    Improves Knowledge base answers: similarity search shortlists 20 passages, and the reranker reads each one
-    with the question and keeps the best. Adds a short wait before each answer that uses the Knowledge base.
+    Improves Knowledge base answers: similarity search shortlists a number of passages, and the reranker reads each
+    one with the question and keeps the best. Adds a wait before each answer that uses the Knowledge base.
   </p>
   <div class="rounded-lg bg-slate-900 border border-slate-800 px-4 py-3 space-y-2">
     <select id="rerank-model" title="Which installed reranker orders Knowledge base results, or Off."
       class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500"></select>
     <p id="rerank-model-note" class="hidden text-xs text-warning-400"></p>
+    <!-- Shown only while a reranker is selected (settings_rerank.js). -->
+    <div id="rerank-candidates-row" class="hidden flex items-center gap-3 pt-1">
+      <label for="rerank-candidates" class="text-xs font-medium text-slate-400">Passages to rerank</label>
+      <input id="rerank-candidates" type="number" min="5" max="50" step="1"
+        title="How many of the closest passages the reranker reads per question (5–50, default 20). Fewer is faster, especially on a slow CPU; more can find a better match in a large Knowledge base."
+        class="w-20 rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+      <span class="text-xs text-slate-500">5–50, default 20. Fewer is faster.</span>
+    </div>
   </div>
   <div class="flex items-center gap-3">
     <button id="rerank-model-save-btn" type="button"

@@ -138,3 +138,12 @@ def test_keeps_only_the_latest_finished_runs(bus: LiveWorkflowBus, clock: FakeCl
 
     assert len(views) == LiveWorkflowBus.MAX_FINISHED + 1
     assert running.run_id in {v.run_id for v in views}
+
+
+def test_old_runs_are_dropped_even_when_no_one_watches(bus: LiveWorkflowBus, clock: FakeClock) -> None:
+    bus.begin("m").end()
+    clock.now += LiveWorkflowBus.KEEP_FINISHED_SECONDS + 1
+
+    bus.begin("m")
+
+    assert len(bus._runs) == 1

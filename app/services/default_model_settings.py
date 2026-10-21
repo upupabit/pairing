@@ -9,6 +9,7 @@ new conversations, separate from these three system-wide defaults.
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import RAG_RERANK_CANDIDATES
 from app.models import SYSTEM_OWNER_ID, AppSetting
 from app.services.inference_client import list_models
 
@@ -108,9 +109,23 @@ class DefaultModelSettings:
         row = await self._db.get(AppSetting, (SYSTEM_OWNER_ID, _RERANK_KEY))
         return row is None or row.value["model"] is not None
 
-    async def set_rerank(self, model: str | None) -> None:
-        """None switches reranking off."""
-        await self._set(_RERANK_KEY, model)
+    async def set_rerank(self, model: str | None, candidates: int | None = None) -> None:
+        """None switches reranking off. `candidates` (passages shortlisted for it) is kept when not given."""
+        row = await self._db.get(AppSetting, (SYSTEM_OWNER_ID, _RERANK_KEY))
+        kept = row.value.get("candidates") if row is not None else None
+        value = {"model": model}
+        if candidates is not None or kept is not None:
+            value["candidates"] = candidates if candidates is not None else kept
+        if row is None:
+            self._db.add(AppSetting(owner_id=SYSTEM_OWNER_ID, key=_RERANK_KEY, value=value))
+        else:
+            row.value = value
+        await self._db.commit()
+
+    async def rerank_candidates(self) -> int:
+        """How many similarity matches go to the reranker (Settings > System > Reranker)."""
+        row = await self._db.get(AppSetting, (SYSTEM_OWNER_ID, _RERANK_KEY))
+        return (row.value.get("candidates") if row is not None else None) or RAG_RERANK_CANDIDATES
 
     @staticmethod
     def _configured_or_first(configured: str | None, installed: list[str]) -> str | None:

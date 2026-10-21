@@ -141,17 +141,16 @@ async def chat_stream(model: str, messages: list[dict], params: dict) -> AsyncGe
     payload = {"model": model, "messages": messages, "options": options, "stream": True}
     add_tools_to_payload(payload, params)
     sink = sink_from(params)
-    # The reply's id (from reply_generation_service): lets stop_model cancel just this reply without unloading the model
-    # for others.
+    # The reply's id (reply_generation_service): stop_model cancels just this reply, the model stays for others.
     if params.get("request_id"):
         payload["request_id"] = params["request_id"]
     if params.get("conversation_id"):  # tags the cached prompt, so a deleted chat's cache can be dropped
         payload["cache_tag"] = params["conversation_id"]
+    if params.get("model_role"):  # "vision": not counted toward Matricxon's max loaded (chat) models
+        payload["model_role"] = params["model_role"]
 
-    # Filled by _raw_content_chunks_from (overwritten each attempt, as stream_with_failover may call it more than once)
-    # and
-    # read when the stream ends, to attach telemetry to the span. See llamacpp_client.chat_stream's call_state: the span
-    # wraps the whole failover loop, so plain locals won't do.
+    # Filled per attempt by _raw_content_chunks_from (failover may retry), read at the end for the span's telemetry;
+    # the span wraps the whole failover loop, so plain locals won't do (as llamacpp_client.chat_stream's call_state).
     call_state: dict = {"attempts": 0}
     # Cluster: a chat's processed state lives in RAM on one node. Send it there, or, when it must go elsewhere
     # (that node busy or down), have that node write it to the shared disk first.
@@ -175,11 +174,8 @@ async def chat_stream(model: str, messages: list[dict], params: dict) -> AsyncGe
         async with matricxon_http.client(timeout=_CHAT_TIMEOUT) as client:
             async with client.stream("POST", f"{host}/api/chat", json=payload) as resp:
                 if resp.is_error:
-                    # Read the body (Matricxon's `{"error": "..."}`, e.g. InsufficientMemoryError's "not enough memory
-                    # to load
-                    # ...: need ~12.9GB, only 10.9GB available") before the `async with` closes the stream:
-                    # httpx.HTTPStatusError.__str__
-                    # omits the body and would drop the one part an admin can act on.
+                    # Read the body (Matricxon's `{"error": ...}`, e.g. "not enough memory to load ...: need ~12.9GB")
+                    # before `async with` closes the stream: HTTPStatusError's text omits it, the part an admin needs.
                     body = await resp.aread()
                     raise MatricxonError(_error_detail_from_body(body, resp.status_code))
                 async for line in resp.aiter_lines():

@@ -133,3 +133,37 @@ async def test_matricxon_client_returns_scores_in_input_order(monkeypatch):
     assert scores == [0.2, 0.9]
     assert calls[0][0] == "http://mx:8420/api/rerank"
     assert calls[0][1] == {"model": "rr:latest", "query": "q", "documents": ["d0", "d1"]}
+
+
+@pytest.mark.asyncio
+async def test_retrieval_shortlists_the_configured_passages_to_rerank(db, monkeypatch):
+    """Similarity search hands the reranker as many passages as Settings > System > Reranker says."""
+    from app.services import document_retrieval
+    from app.services.chunk_vector_index import chunk_vector_index
+
+    limits = []
+
+    async def visible(*_a):
+        return True
+
+    async def search(_db, _vector, _user, _model, limit, refresh=True):
+        limits.append(limit)
+        return []
+
+    async def embedding_model(_db):
+        return "emb"
+
+    async def fake_embed(_text, _model):
+        return [1.0, 0.0]
+
+    monkeypatch.setattr(chunk_vector_index, "has_visible", visible)
+    monkeypatch.setattr(chunk_vector_index, "search", search)
+    monkeypatch.setattr(document_retrieval.model_catalog_service, "get_default_embedding_model", embedding_model)
+    monkeypatch.setattr(document_retrieval, "embed", fake_embed)
+    _engine(monkeypatch, rerank=False)
+    await DefaultModelSettings(db).set_rerank(None, candidates=8)
+
+    await document_retrieval.retrieve_context(db, "q", None, top_k=4)
+    await document_retrieval.retrieve_context(db, "q", None, top_k=12)
+
+    assert limits == [8, 12]  # never fewer than top_k

@@ -71,7 +71,11 @@ function liveEngineTexts(r) {
 }
 
 function liveLayerText(r) {
-  if (r.phase === "prefill") return `prefill ${r.prefilled_tokens}/${r.prompt_tokens - r.reused_tokens}`;
+  // The count moves once per 256-token piece (a minute or more on a slow CPU); the layer shows it is moving.
+  if (r.phase === "prefill") {
+    const layer = r.layer ? ` · layer ${r.layer}/${r.layer_count}` : "";
+    return `prefill ${r.prefilled_tokens}/${r.prompt_tokens - r.reused_tokens}${layer}`;
+  }
   if (r.phase === "decode" && r.layer) return `layer ${r.layer}/${r.layer_count} · tok ${r.generated_tokens}`;
   return r.first_token_seconds != null ? `first token ${liveFormatMs(r.first_token_seconds * 1000)}` : "";
 }

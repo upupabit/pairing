@@ -3,20 +3,17 @@
 from pathlib import Path
 
 import numpy as np
-from sqlalchemy import or_, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import RAG_RERANK_CANDIDATES, RAG_TOP_K
-from app.models import Chunk, Document
+from app.config import RAG_TOP_K
+from app.models import Chunk
 from app.services import model_catalog_service
+from app.services.chunk_vector_index import chunk_vector_index
+from app.services.default_model_settings import DefaultModelSettings
 from app.services.document_rerank import ChunkReranker
 from app.services.inference_client import embed
 from app.services.live_workflow_bus import live_workflow
-
-
-def _bytes_to_vector(data: bytes) -> np.ndarray:
-    """Reverses document_ingest._vector_to_bytes."""
-    return np.frombuffer(data, dtype=np.float32)
 
 
 async def retrieve_context(
@@ -37,13 +34,7 @@ async def retrieve_context(
 
 
 async def _retrieve(db: AsyncSession, query: str, user_id: str | None, top_k: int) -> list[dict]:
-    scope = (
-        Document.owner_id.is_(None)
-        if user_id is None
-        else or_(Document.owner_id.is_(None), Document.owner_id == user_id)
-    )
-    chunks = (await db.execute(select(Chunk).join(Document).where(scope))).scalars().all()
-    if not chunks:
+    if not await chunk_vector_index.has_visible(db, user_id):
         return []
 
     embedding_model = await model_catalog_service.get_default_embedding_model(db)
@@ -54,30 +45,18 @@ async def _retrieve(db: AsyncSession, query: str, user_id: str | None, top_k: in
 
     async with live_workflow.stage("rag_embed", "rag_embed_ml_engine"):
         query_vector = np.asarray(await embed(query, embedding_model), dtype=np.float32)
-    query_norm = np.linalg.norm(query_vector) or 1.0
 
-    live_workflow.enter("rag_rank")
-    scored = []
-    for chunk in chunks:
-        # Only vectors from the current model compare: another model's (recorded, or of another size when
-        # unknown) waits for the next sync to re-embed it instead of failing or matching badly.
-        recorded = chunk.document.embedding_model
-        if recorded is not None and recorded != embedding_model:
-            continue
-        vector = _bytes_to_vector(chunk.embedding)
-        if vector.shape != query_vector.shape:
-            continue
-        norm = np.linalg.norm(vector) or 1.0
-        # Cosine similarity: direction alignment, ignoring magnitude; the standard embedding comparison.
-        similarity = float(np.dot(query_vector, vector) / (query_norm * norm))
-        # chunk.document is selectin-loaded (models/document.py), so access is safe under the async session.
-        scored.append((similarity, chunk))
-
-    scored.sort(key=lambda pair: pair[0], reverse=True)
-    live_workflow.exit("rag_rank")
+    # Cosine similarity over the in-memory index. Only vectors from the current model compare: another model's
+    # (recorded, or of another size when unknown) waits for the next sync to re-embed it instead of matching badly.
+    # A reranker, if set, gets a wider shortlist (Settings > System > Reranker: passages to rerank).
+    shortlist = max(top_k, await DefaultModelSettings(db).rerank_candidates())
+    async with live_workflow.stage("rag_rank"):
+        ids = await chunk_vector_index.search(db, query_vector, user_id, embedding_model, shortlist, refresh=False)
+        by_id = {c.id: c for c in (await db.execute(select(Chunk).where(Chunk.id.in_(ids)))).scalars()}
     # A reranker, if set, picks the best top_k from a wider similarity shortlist.
-    candidates = [chunk for _similarity, chunk in scored[: max(top_k, RAG_RERANK_CANDIDATES)]]
+    candidates = [by_id[chunk_id] for chunk_id in ids if chunk_id in by_id]
     best = await ChunkReranker(db).order(query, candidates, top_k)
+    # chunk.document is selectin-loaded (models/document.py), so access is safe under the async session.
     return [
         {"text": chunk.text, "filename": Path(chunk.document.filename).name, "document_id": chunk.document_id}
         for chunk in best

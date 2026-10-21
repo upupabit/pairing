@@ -246,6 +246,11 @@ async def test_chat_stream_routes_the_actual_http_call_through_stream_with_failo
     with_id = {**_chat_params(), "request_id": "msg-1"}
     _ = [c async for c in matricxon_client.chat_stream("fake-model", [], with_id)]
     assert sent_payloads[1]["request_id"] == "msg-1"
+    assert "model_role" not in sent_payloads[1]
+
+    vision = {**_chat_params(), "model_role": "vision"}
+    _ = [c async for c in matricxon_client.chat_stream("fake-model", [], vision)]
+    assert sent_payloads[2]["model_role"] == "vision"  # kept out of Matricxon's loaded-model limit
 
 
 @pytest.mark.asyncio

@@ -124,6 +124,7 @@ class LiveWorkflowBus:
         """Starts a run for this context; None (nothing tracked) unless the engine is Matricxon."""
         if self._engine() != "matricxon":
             return None
+        self._prune()  # also when no one watches, so old runs never pile up
         run = LiveRun(self, model, self._clock)
         self._runs[run.run_id] = run
         _current.set(run)
@@ -181,6 +182,11 @@ class LiveWorkflowBus:
         return usual
 
     def views(self) -> list[LiveRunView]:
+        self._prune()
+        return [run.view() for run in self._runs.values()]
+
+    def _prune(self) -> None:
+        """Ends stale runs and drops old finished ones (time window and MAX_FINISHED)."""
         now = self._clock()
         for run_id, run in list(self._runs.items()):
             if run.finished_at is None and run.request_id is None and now - run.last_activity > self.STALE_SECONDS:
@@ -190,7 +196,6 @@ class LiveWorkflowBus:
         finished = sorted((r for r in self._runs.values() if r.finished_at is not None), key=lambda r: r.finished_at)
         for run in finished[: max(len(finished) - self.MAX_FINISHED, 0)]:
             del self._runs[run.run_id]
-        return [run.view() for run in self._runs.values()]
 
 
 live_workflow = LiveWorkflowBus()

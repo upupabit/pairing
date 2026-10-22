@@ -110,17 +110,19 @@ async def build_reply_stream(
     past = conversation_service.visible_messages(conversation)
     if not is_personal and not await channel_history_setting.get_include_plain_messages(db):
         past = chat_history_service.only_addressed_to_ai(past)
+    # Room for a full reply (num_predict); else a long chat cuts the reply short.
+    reserved_tokens = max(512, params.get("num_predict", 0))
     history = chat_history_service.trim_history(
-        [*chat_history_service.without_failed_replies(past), user_message],
-        params["num_ctx"],
-        # Room for a full reply (num_predict); else a long chat cuts the reply short.
-        reserved_tokens=max(512, params.get("num_predict", 0)),
+        [*chat_history_service.without_failed_replies(past), user_message], params["num_ctx"], reserved_tokens
     )
 
-    # Notes/RAG/attachment layering: see chat_prompt_service.build_system_prompt.
-    system_prompt, turn_context, source_filenames = await chat_prompt_service.build_system_prompt(
-        db, conversation, user, content, params, attachments
+    # Notes/RAG/attachment layering: see chat_prompt_service.build_system_prompt. Excerpts and files get only the room
+    # the history leaves; whatever was cut is reported to the sender as a "notice" event.
+    system_prompt, turn_context, source_filenames, notices = await chat_prompt_service.build_system_prompt(
+        db, conversation, user, content, params, attachments, history, reserved_tokens
     )
+    for notice in notices:
+        yield {"notice": notice}
     chat_prompt_service.prepend_turn_context(history, turn_context)
     # Always sent, even when "": an explicit empty system message tells the engine there is no preamble,
     # whereas omitting it makes some chat-template layers (e.g. Matricxon's VicunaPromptBuilder) substitute their own

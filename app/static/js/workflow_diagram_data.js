@@ -404,7 +404,7 @@ const WORKFLOW_NODES = [
       server: APP_NAME,
       title: "Attachments — a text file folds straight into the prompt",
       location: "app/services/chat_attachment_service.py",
-      body: "A non-image attachment's extracted text content is folded directly into the system prompt (same layering approach as RAG results) — no model override, since there's no vision involved.",
+      body: "A non-image attachment's extracted text goes in front of the newest message, after any RAG excerpts, using only the room the chat history leaves in the context window (turn_context_fit.py). A file that doesn't fit is cut: the model is told, and the sender sees a notice under their message. The history itself is never trimmed for it, so the chat's cached prompt still matches. No model override, since there's no vision involved.",
     },
   },
 

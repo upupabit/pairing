@@ -36,6 +36,21 @@ function workflowEdgePath(from, to, dir) {
 
   const path = d3.path();
   path.moveTo(sx, sy);
+  // A vertical edge running far sideways (e.g. ML engine -> Model get_or_load) as a curve stays flat and turns down
+  // only at the end, so the arrowhead meets the line at an angle. Drawn as drop, run, drop with rounded corners
+  // instead, so the last stretch is straight and the arrowhead sits on it.
+  if (!horizontal && Math.abs(ex - sx) > 3 * Math.abs(ey - sy)) {
+    const mid = sy + Math.min(12, (ey - sy) / 3);
+    const r = Math.min(10, Math.abs(ey - mid) / 2, Math.abs(mid - sy));
+    const side = Math.sign(ex - sx);
+    const down = Math.sign(ey - sy);
+    path.lineTo(sx, mid - down * r);
+    path.quadraticCurveTo(sx, mid, sx + side * r, mid);
+    path.lineTo(ex - side * r, mid);
+    path.quadraticCurveTo(ex, mid, ex, mid + down * r);
+    path.lineTo(ex, ey);
+    return path.toString();
+  }
   if (horizontal) {
     const cdx = (ex - sx) / 2;
     path.bezierCurveTo(sx + cdx, sy, ex - cdx, ey, ex, ey);

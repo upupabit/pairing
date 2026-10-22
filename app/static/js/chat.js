@@ -1604,6 +1604,8 @@ async function readAssistantReplyStream(
         attachDeleteButtonIfEligible(userWrapper, payload.user_message_id);
         ChannelShare.decorate(userWrapper, payload.user_message_id, "user");
       }
+      // An attached file (or knowledge base excerpts) cut to fit the context window (turn_context_fit.py).
+      if (payload.notice) showMessageNotice(userWrapper, payload.notice);
       // Present on every event (reply_generation_service): tag the bubble the first time it's seen, before the error
       // check, since an instant failure's first event can be the error and a later reconcile must find this node
       // instead of duplicating the message_id. Only present when askAi is true (wrapper/bubble are null otherwise).
@@ -1669,6 +1671,16 @@ async function readAssistantReplyStream(
       }
     }
   }
+}
+
+/* A short warning under a message bubble, above its time; sent only to the sender's tab, not saved. */
+function showMessageNotice(wrapper, text) {
+  const notice = document.createElement("p");
+  notice.className = "message-notice mt-1 max-w-[min(75ch,100%)] px-1 text-xs text-warning-400";
+  notice.textContent = text;
+  const time = wrapper.querySelector(".message-time");
+  if (time) wrapper.insertBefore(notice, time);
+  else wrapper.appendChild(notice);
 }
 
 /* Updates the header and the sidebar row with a new title; shared by the immediate update above and pollForGeneratedTitle ("smart" mode). No-op if `conversationId` is gone from the sidebar; the header updates only if it is still active. */

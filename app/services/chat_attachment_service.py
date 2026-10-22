@@ -21,6 +21,7 @@ from app.services import model_catalog_service
 from app.services.document_extract import SUPPORTED_EXTENSIONS, extract_text
 from app.services.document_retrieval import build_attachment_system_prompt
 from app.services.document_upload import safe_filename
+from app.services.turn_context_fit import TurnContextFit
 
 # `type="image"` goes to the default vision model with the request (chat_service.py). Extensions in
 # document_extract.SUPPORTED_EXTENSIONS become `"text"`: extracted into the system prompt, using the
@@ -109,15 +110,20 @@ def extract_attachment_text(path: Path) -> str:
     return extract_text(path.read_bytes(), path.suffix.lower())
 
 
-def fold_text_attachments_into_prompt(system_prompt: str, attachments: list[AttachmentInfo]) -> str:
+def fold_text_attachments_into_prompt(
+    system_prompt: str, attachments: list[AttachmentInfo], fit: TurnContextFit | None = None
+) -> str:
     """Folds each `type="text"` attachment's content into the system prompt as its own section (images are
     handled by apply_image_attachment). Called by chat_service.build_reply_stream before chat_messages is built.
+    With `fit`, each file is cut to the context window's remaining room (turn_context_fit.py).
     """
     for attachment in attachments:
         if attachment.type == "text":
-            system_prompt = build_attachment_system_prompt(
-                system_prompt, attachment.filename, extract_attachment_text(attachment.path)
-            )
+            text = extract_attachment_text(attachment.path)
+            if fit is not None:
+                text = fit.cut(attachment.filename, text)
+            if text:
+                system_prompt = build_attachment_system_prompt(system_prompt, attachment.filename, text)
     return system_prompt
 
 

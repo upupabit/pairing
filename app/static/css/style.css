@@ -73,6 +73,10 @@ they suit both reply and user bubbles in every theme. Whole words only, unlike t
   border-radius: 0.3rem;
 }
 .markdown-body a { color: rgb(var(--color-brand-400)); text-decoration: underline; }
+/* Code colours: the Nord scheme (HLJS_THEME) paints comments #4c566a on #2e3440, 1.7:1 and hard to read. Lighter, still
+dimmer than code text: comments 6.6:1, numbers 5.2:1 (was 4.4:1). Same in every UI theme, like the code block itself. */
+.markdown-body .hljs-comment, .markdown-body .hljs-quote { color: #b4bdcd; font-style: italic; }
+.markdown-body .hljs-number { color: #c49bbd; }
 
 /* Pulsing dot shown while the assistant is generating. */
 .typing-dot {

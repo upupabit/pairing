@@ -36,11 +36,11 @@ function workflowEdgePath(from, to, dir) {
 
   const path = d3.path();
   path.moveTo(sx, sy);
-  // A vertical edge running far sideways (e.g. ML engine -> Model get_or_load) as a curve stays flat and turns down
-  // only at the end, so the arrowhead meets the line at an angle. Drawn as drop, run, drop with rounded corners
-  // instead, so the last stretch is straight and the arrowhead sits on it.
-  if (!horizontal && Math.abs(ex - sx) > 3 * Math.abs(ey - sy)) {
-    const mid = sy + Math.min(12, (ey - sy) / 3);
+  // A vertical edge running far sideways (ML engine -> Model get_or_load, NDJSON -> publish_chunk) as a curve stays
+  // flat and turns down only at the end, so the arrowhead meets the line at an angle. Drawn as drop, run, drop with
+  // rounded corners instead, so the last stretch is straight and the arrowhead sits on it.
+  if (!horizontal && Math.abs(ex - sx) > 2 * Math.abs(ey - sy)) {
+    const mid = (sy + ey) / 2; // the run sits in the middle of the gap between the two rows
     const r = Math.min(10, Math.abs(ey - mid) / 2, Math.abs(mid - sy));
     const side = Math.sign(ex - sx);
     const down = Math.sign(ey - sy);
@@ -239,11 +239,6 @@ function initWorkflowDiagram() {
         .attr("dy", i === 0 ? 0 : 14)
         .text(line);
     });
-  });
-
-  document.getElementById("workflow-detail-close").addEventListener("click", () => {
-    document.getElementById("workflow-detail-panel").classList.add("hidden");
-    d3.selectAll(".wf-node rect").attr("stroke-width", 1.5);
   });
 
   window.workflowFocus = new WorkflowFocus(svg, root);

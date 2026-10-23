@@ -42,18 +42,40 @@ class WorkflowLiveState {
       if (chat.request) this._applyEngine(chat, chat.request);
       this._applyGroups(chat);
     }
-    for (const node of this.nodes.values()) {
-      node.active = node.chats.size > 0;
-      if (node.chats.size > 1) node.text = `×${node.chats.size}${node.text ? ` · ${node.text}` : ""}`;
+    const crowd = this._crowdCounts(snapshot.crowd);
+    for (const [id, count] of crowd) {
+      const node = this._node(id);
+      node.extra = count;
+      node.past = false;
     }
+    for (const node of this.nodes.values()) {
+      const count = node.chats.size + (node.extra || 0);
+      node.active = count > 0;
+      if (count > 1) node.text = `×${count}${node.text ? ` · ${node.text}` : ""}`;
+    }
+    const nodeCount = snapshot.engine_node_count || 0;
+    if (nodeCount > 1) this._labelEngineHosts(chats, snapshot.crowd);
     return {
       live: snapshot.live,
       engine: snapshot.engine,
       error: snapshot.engine_error,
+      nodeCount,
+      moreRunning: snapshot.crowd?.running || 0,
       nodes: this.nodes,
-      edges: this._edges(chats),
-      runs: chats.map((chat) => liveChatSummary(chat)),
+      edges: this._edges(chats, crowd, snapshot.crowd),
+      runs: chats.map((chat) => liveChatSummary(chat, nodeCount > 1)),
     };
+  }
+
+  /* Cluster: the ML engine node names the Matricxon node its running replies are on, or how many nodes. */
+  _labelEngineHosts(chats, crowd) {
+    const node = this.nodes.get("ml_engine_server");
+    const hosts = new Set(chats.filter((c) => !c.done && c.request).map((c) => c.request.host));
+    const busy = crowd ? crowd.busy_nodes : hosts.size;
+    if (!node || !busy) return;
+    const name = hosts.size ? liveNodeName([...hosts][0]) : "";
+    const where = busy > 1 || !name ? `${busy} nodes` : name.length > 18 ? `${name.slice(0, 17)}…` : name;
+    node.text = node.text ? `${node.text} · ${where}` : where;
   }
 
   _chats(snapshot) {
@@ -80,7 +102,7 @@ class WorkflowLiveState {
       chat.pulsed.add(id);
     }
     if (patch.active || (this.recentUntil.get(`${chat.key}:${id}`) || 0) > this.now) chat.busy.add(id);
-    const node = this.nodes.get(id) || { chats: new Set(), best: null, past: true, text: "", ratio: 0, share: null };
+    const node = this._node(id);
     if (patch.active) node.chats.add(chat.key);
     if (!chat.done) node.past = false;
     const candidate = { active: Boolean(patch.active), ratio: patch.ratio || 0, elapsed: patch.elapsed || 0 };
@@ -88,10 +110,31 @@ class WorkflowLiveState {
       node.best = candidate;
       Object.assign(node, { text: patch.text, ratio: candidate.ratio, share: patch.share ?? null });
     }
-    this.nodes.set(id, node);
     if (this.groupOf(id) && (patch.active || candidate.ratio) && (!chat.worst || liveBetter(candidate, chat.worst))) {
       chat.worst = { ...candidate, id, text: patch.text };
     }
+  }
+
+  _node(id) {
+    if (!this.nodes.has(id)) this.nodes.set(id, { chats: new Set(), best: null, past: true, text: "", ratio: 0, share: null });
+    return this.nodes.get(id);
+  }
+
+  /* Large cluster: running chats sent only as counts (workflow_live_summary.py) -> Map(node id -> count). A folded
+  group shows its busiest step's count. */
+  _crowdCounts(crowd) {
+    const counts = new Map();
+    if (!crowd) return counts;
+    const add = (id, n) => counts.set(id, (counts.get(id) || 0) + n);
+    for (const [phase, c] of Object.entries(crowd.engine)) {
+      for (const id of [...(LIVE_PHASE_NODES[phase] || []), "ml_engine_server"]) add(id, c.replies);
+    }
+    for (const [id, n] of Object.entries(crowd.app)) {
+      add(id, n);
+      const group = this.groupOf(id);
+      if (group) counts.set(group, Math.max(counts.get(group) || 0, n));
+    }
+    return counts;
   }
 
   _applyRun(chat, usualMs) {
@@ -128,14 +171,18 @@ class WorkflowLiveState {
   }
 
   /* Per arrow: the chats busy at both ends, combined tokens/s, and a dot per chat that just finished the start. */
-  _edges(chats) {
+  _edges(chats, crowd, crowdSnapshot) {
     const out = new Map();
+    const decode = new Set(LIVE_PHASE_NODES.decode);
     for (const edge of this.edges) {
       const users = chats.filter((c) => c.busy.has(edge.from) && c.busy.has(edge.to));
-      if (!users.length) continue;
-      const tps = users.reduce((sum, c) => sum + (c.tps || 0), 0);
+      // Counted chats: as many as the less busy end (they are not followed one by one).
+      const extra = Math.min(crowd.get(edge.from) || 0, crowd.get(edge.to) || 0);
+      if (!users.length && !extra) continue;
+      const crowdTps = extra && decode.has(edge.from) && decode.has(edge.to) ? crowdSnapshot.engine.decode?.tokens_per_second || 0 : 0;
+      const tps = users.reduce((sum, c) => sum + (c.tps || 0), crowdTps);
       out.set(`${edge.from}>${edge.to}`, {
-        count: users.length,
+        count: users.length + extra,
         speed: tps ? Math.min(Math.max(tps / LIVE_BASE_TPS, 0.4), 4) : 1,
         dots: users.filter((c) => c.pulsed.has(edge.from)).map((c) => c.color),
       });

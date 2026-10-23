@@ -7,6 +7,7 @@ class MatricxonCachePanel {
     this.enabled = root.querySelector("#matricxon-cache-enabled");
     this.budget = root.querySelector("#matricxon-cache-budget");
     this.ttl = root.querySelector("#matricxon-cache-ttl");
+    this.saveEvery = root.querySelector("#matricxon-cache-save-every");
     this.saveButton = root.querySelector("#matricxon-cache-save");
     this.clearButton = root.querySelector("#matricxon-cache-clear");
     this.status = root.querySelector("#matricxon-cache-status");
@@ -23,7 +24,7 @@ class MatricxonCachePanel {
 
   /** The limits only matter while the switch is on. */
   syncFields() {
-    this.budget.disabled = this.ttl.disabled = !this.enabled.checked;
+    this.budget.disabled = this.ttl.disabled = this.saveEvery.disabled = !this.enabled.checked;
   }
 
   show(state) {
@@ -31,6 +32,7 @@ class MatricxonCachePanel {
     this.syncFields();
     this.budget.value = state.budget_mb;
     this.ttl.value = state.ttl_hours;
+    this.saveEvery.value = state.save_every_seconds ?? 30;
     const hosts = state.hosts > 1 ? ` on ${state.hosts} hosts` : "";
     // One chat can have several files (branches), so chats are counted, with files shown when they differ.
     const chats = state.chats ?? state.files;
@@ -61,6 +63,7 @@ class MatricxonCachePanel {
       enabled: this.enabled.checked,
       budget_mb: Number(this.budget.value),
       ttl_hours: Number(this.ttl.value),
+      save_every_seconds: Number(this.saveEvery.value),
     };
     return this.run(() => api(MatricxonCachePanel.URL, { method: "PUT", body: JSON.stringify(body) }), "Saved");
   }

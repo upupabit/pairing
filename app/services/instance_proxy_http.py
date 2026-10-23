@@ -26,6 +26,9 @@ EXEMPT_PREFIXES = (
     # missing: a start/stop landing on a sibling 400'd with "Matricxon can only be managed from the primary
     # instance", so the button worked about half the time.
     "/api/settings/matricxon",
+    # The live workflow view and its analysis: the poller cache and history (workflow_history.py) are this process's
+    # memory, so both must land on the same instance.
+    "/api/stats/workflow/live",
     "/health",
     "/static/",
 )

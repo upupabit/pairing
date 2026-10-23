@@ -12,13 +12,13 @@
         <p class="text-xs text-slate-500">Turning this off deletes everything saved.</p>
       </div>
       <label class="relative inline-flex items-center cursor-pointer shrink-0"
-        title="Write chat caches to disk when they leave memory, when a model unloads and when Matricxon stops.">
+        title="Write chat caches to disk after replies (see Save to disk every), when they leave memory, when a model unloads and when Matricxon stops.">
         <input type="checkbox" id="matricxon-cache-enabled" class="peer sr-only">
         <div class="h-6 w-11 rounded-full bg-slate-700 transition-colors peer-checked:bg-brand-600 peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand-500"></div>
         <div class="absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform peer-checked:translate-x-5"></div>
       </label>
     </div>
-    <div class="grid grid-cols-2 gap-3">
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
       <div>
         <label class="block text-xs font-medium text-slate-400 mb-1" for="matricxon-cache-budget">Disk limit (MB)</label>
         <input id="matricxon-cache-budget" type="number" min="0" max="1048576" placeholder="4096"
@@ -29,6 +29,12 @@
         <label class="block text-xs font-medium text-slate-400 mb-1" for="matricxon-cache-ttl">Keep for (hours)</label>
         <input id="matricxon-cache-ttl" type="number" min="1" max="8760" placeholder="168"
           title="Saved caches older than this are deleted. 168 hours is 7 days."
+          class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500 disabled:opacity-40">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-400 mb-1" for="matricxon-cache-save-every">Save to disk every (seconds)</label>
+        <input id="matricxon-cache-save-every" type="number" min="0" max="3600" placeholder="30"
+          title="After a reply, a chat still in memory is copied to disk at most this often, so a restart or crash doesn't lose it. 0 saves only when the chat leaves memory, the model unloads or Matricxon stops."
           class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500 disabled:opacity-40">
       </div>
     </div>

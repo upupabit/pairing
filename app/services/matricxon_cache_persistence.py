@@ -73,6 +73,7 @@ class MatricxonCachePersistenceService:
             enabled=all(r["enabled"] for r in results),
             budget_mb=results[0]["budget_mb"],
             ttl_hours=results[0]["ttl_hours"],
+            save_every_seconds=results[0].get("save_every_seconds", 30),  # older Matricxon: its fixed behaviour
             files=files,
             chats=chats,
             used_bytes=used,

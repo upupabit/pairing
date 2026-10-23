@@ -84,9 +84,45 @@ async def test_poller_learns_usual_rates_from_finished_replies() -> None:
     assert live.usual_prefill_tokens_per_second == 100.0
 
 
+@pytest.mark.asyncio
+async def test_poller_counts_errors_past_a_few_nodes() -> None:
+    hosts = [f"http://n{i}" for i in range(5)]
+    fetch = FakeFetch({host: httpx.ConnectError("down") for host in hosts})
+
+    _, error = await MatricxonLivePoller(fetch, lambda: hosts, FakeClock()).requests()
+
+    assert error == "http://n0: down; http://n1: down; http://n2: down; and 2 more nodes"
+
+
+@pytest.mark.asyncio
+async def test_poller_keeps_usual_rates_per_node() -> None:
+    clock = FakeClock()
+    done = [_entry(f"d{i}", "done", tokens_per_second=10.0) for i in range(3)]
+    fetch = FakeFetch({"http://a": [*done, _entry("on-a")], "http://b": [_entry("on-b")]})
+    poller = MatricxonLivePoller(fetch, lambda: ["http://a", "http://b"], clock)
+
+    views, _ = await poller.requests()
+
+    usual = {v.request_id: v.usual_tokens_per_second for v in views}
+    assert usual["on-a"] == 10.0 and usual["on-b"] is None
+    assert poller.nodes == ["http://a", "http://b"]
+
+
+@pytest.mark.asyncio
+async def test_poller_shows_the_running_attempt_after_a_failover() -> None:
+    failed = _entry("r1", "done", elapsed_seconds=9.0)
+    retry = _entry("r1", "prefill", elapsed_seconds=2.0)
+    fetch = FakeFetch({"http://a": [failed], "http://b": [retry]})
+
+    views, _ = await MatricxonLivePoller(fetch, lambda: ["http://a", "http://b"], FakeClock()).requests()
+
+    assert [(v.host, v.phase) for v in views] == [("http://b", "prefill")]
+
+
 class FakePoller:
     def __init__(self) -> None:
         self.calls = 0
+        self.nodes = ["http://a"]
 
     async def requests(self) -> tuple[list, str | None]:
         self.calls += 1
@@ -119,7 +155,7 @@ async def test_service_combines_runs_and_engine_state() -> None:
 
 @pytest.mark.asyncio
 async def test_snapshot_route_answers_an_admin(admin_user, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(workflow_live.WorkflowLiveService, "snapshot", _fake_snapshot)
+    monkeypatch.setattr(WorkflowLiveService, "snapshot", _fake_snapshot)
 
     snapshot = await workflow_live.get_snapshot(_admin=admin_user)
 

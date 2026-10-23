@@ -65,9 +65,24 @@ function liveEngineTexts(r) {
     const pct = share < 0.01 ? "<1%" : `${Math.round(share * 100)}%`;
     for (const id of ids) out.push([id, { share, text: group === "norm" ? `norms ${pct}` : pct }]);
   }
-  const matmul = Math.min((stages.matmul || 0) / total, 1);
-  out.push(["ml_kernels", { share: matmul, text: `${Math.round(matmul * 100)}% matmul` }]);
+  const matmul = liveMatmulShare(stages);
+  out.push(["ml_kernels", { share: matmul, text: liveMatmulText(r) || `${Math.round(matmul * 100)}% matmul` }]);
   return out;
+}
+
+/* Weight matrix multiplies as a share of the other stages' time (they run inside them); null without data. */
+function liveMatmulShare(stages) {
+  const total = Object.entries(stages || {}).reduce((sum, [group, s]) => (group === "matmul" ? sum : sum + s), 0);
+  return total > 0 ? Math.min((stages.matmul || 0) / total, 1) : null;
+}
+
+/* "read 86% · write 54%": reading the prompt runs big multiplies (80-90% is normal), writing one token at a time
+small ones (50-60%), so the two are shown apart instead of one figure that moves with the reply's mix. */
+function liveMatmulText(r) {
+  const parts = [["read", liveMatmulShare(r.prefill_stage_seconds)], ["write", liveMatmulShare(r.decode_stage_seconds)]]
+    .filter(([, share]) => share !== null)
+    .map(([label, share]) => `${label} ${Math.round(share * 100)}%`);
+  return parts.join(" · ");
 }
 
 function liveLayerText(r) {
@@ -87,8 +102,14 @@ function liveRateRatio(r) {
   return r.usual_prefill_tokens_per_second / (fresh / r.first_token_seconds);
 }
 
-/* One status-box row. `untracked`: a Matricxon reply no pAIring chat here started (a smart title, another instance). */
-function liveChatSummary(chat) {
+/* "http://node-2:8420" -> "node-2" (Matricxon's default port dropped). */
+function liveNodeName(host) {
+  return host.replace(/^https?:\/\//, "").replace(/:8420$/, "");
+}
+
+/* One status-box row. `untracked`: a Matricxon reply no pAIring chat here started (a smart title, another instance).
+`cluster`: more than one Matricxon node, so the row names the reply's node. */
+function liveChatSummary(chat, cluster = false) {
   const { run, request: r } = chat;
   let step = LIVE_PHASE_TEXT.done;
   if (!chat.done) {
@@ -104,6 +125,7 @@ function liveChatSummary(chat) {
     color: chat.color,
     untracked: !run,
     model: run ? run.model : r.model,
+    node: cluster && r ? liveNodeName(r.host) : null,
     done: chat.done,
     step,
     focus: r && r.phase !== "done" ? LIVE_PHASE_NODES[r.phase]?.[0] || "ml_engine_server" : appFocus,

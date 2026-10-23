@@ -174,7 +174,15 @@ async def test_cache_limits_are_published_through_the_cluster(db, monkeypatch):
     transport = _cluster({SEED: _status("s", "leader")}, puts)
     cache = ClusterCache(enabled=True, budget_mb=512, ttl_hours=24)
     assert await ClusterSettings(db, transport, [SEED]).set_cache(cache) is None
-    assert puts == [(SEED, {"key": "cluster/cache", "value": {"enabled": True, "budget_mb": 512, "ttl_hours": 24}})]
+    assert puts == [
+        (
+            SEED,
+            {
+                "key": "cluster/cache",
+                "value": {"enabled": True, "budget_mb": 512, "ttl_hours": 24, "save_every_seconds": 30},
+            },
+        )
+    ]
 
 
 def test_cache_limits_must_make_sense():

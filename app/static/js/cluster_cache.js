@@ -10,6 +10,7 @@ function _clusterCacheFill(status) {
     document.getElementById("cluster-cache-enabled").checked = status.enabled;
     document.getElementById("cluster-cache-budget").value = status.budget_mb;
     document.getElementById("cluster-cache-ttl").value = status.ttl_hours;
+    document.getElementById("cluster-cache-save-every").value = status.save_every_seconds ?? 30;
   }
   const mb = (status.used_bytes / 1048576).toFixed(1);
   const lost = status.unreachable.length ? ` — unreachable: ${status.unreachable.join(", ")}` : "";
@@ -28,7 +29,7 @@ function renderClusterCache(state) {
   const form = document.getElementById("cluster-cache-form");
   form.classList.toggle("hidden", !(state.supported && state.enabled && state.quorum !== "off"));  // not while setting up
   document.getElementById("cluster-cache-quorum").classList.toggle("hidden", state.quorum !== "lost");
-  for (const id of ["cluster-cache-enabled", "cluster-cache-budget", "cluster-cache-ttl", "cluster-cache-save"]) {
+  for (const id of ["cluster-cache-enabled", "cluster-cache-budget", "cluster-cache-ttl", "cluster-cache-save-every", "cluster-cache-save"]) {
     const el = document.getElementById(id);
     el.disabled = state.quorum === "lost";
     el.title = state.quorum === "lost" ? QUORUM_LOCK_TIP : "";
@@ -45,6 +46,7 @@ async function saveClusterCache(event) {
     enabled: document.getElementById("cluster-cache-enabled").checked,
     budget_mb: Number(document.getElementById("cluster-cache-budget").value),
     ttl_hours: Number(document.getElementById("cluster-cache-ttl").value),
+    save_every_seconds: Number(document.getElementById("cluster-cache-save-every").value),
   };
   try {
     _clusterCacheDirty = false;
@@ -69,6 +71,6 @@ async function clearClusterCache() {
 
 document.getElementById("cluster-cache-form").addEventListener("submit", saveClusterCache);
 document.getElementById("cluster-cache-clear").addEventListener("click", clearClusterCache);
-for (const id of ["cluster-cache-enabled", "cluster-cache-budget", "cluster-cache-ttl"]) {
+for (const id of ["cluster-cache-enabled", "cluster-cache-budget", "cluster-cache-ttl", "cluster-cache-save-every"]) {
   document.getElementById(id).addEventListener("input", () => (_clusterCacheDirty = true));
 }

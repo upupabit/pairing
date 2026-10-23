@@ -42,6 +42,15 @@ async def test_status_sums_files_and_bytes_across_hosts() -> None:
     assert result.chats == 3  # these hosts report no `chats`: their files count
     assert result.enabled is False  # on only if every host has it on
     assert (result.budget_mb, result.ttl_hours, result.unreachable) == (4096, 168, [])
+    assert result.save_every_seconds == 30  # an older Matricxon without the setting
+
+
+@pytest.mark.asyncio
+async def test_the_save_interval_is_read_and_sent() -> None:
+    service, seen = _service(lambda r: httpx.Response(200, json={**_state(), "save_every_seconds": 5}), [A])
+    result = await service.update(MatricxonCachePersistenceUpdate(save_every_seconds=5))
+    assert json.loads(seen[0].content) == {"save_every_seconds": 5}
+    assert result.save_every_seconds == 5
 
 
 @pytest.mark.asyncio

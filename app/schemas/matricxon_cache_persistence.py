@@ -9,6 +9,7 @@ class MatricxonCachePersistence(BaseModel):
     enabled: bool
     budget_mb: int
     ttl_hours: int
+    save_every_seconds: int = 30  # a chat still in memory is copied to disk this often; 0: only when it leaves
     files: int
     # Distinct chats with a saved copy; `files` can be more (branches of one chat).
     chats: int = 0
@@ -23,3 +24,4 @@ class MatricxonCachePersistenceUpdate(BaseModel):
     enabled: bool | None = None
     budget_mb: int | None = Field(default=None, ge=0, le=1048576)
     ttl_hours: int | None = Field(default=None, ge=1, le=8760)
+    save_every_seconds: int | None = Field(default=None, ge=0, le=3600)

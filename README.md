@@ -10,6 +10,10 @@
 
 Private AI ring is a self-hosted, production-ready platform for deploying private LLMs & image generation models across a single node, a team, a department, or an organization — role-based access, load balancing failover across servers, and rock solid UI validations to avoid configuration mistakes. Start chatting with open weights LLMs, create images and much more. Supports every existing public GGUF model out of the box, browsable from Hugging Face or your own private repository. Switch the inference engine with one setting: local llama.cpp or Matricxon, or one of a growing number of cloud connectors.
 
+**See where every reply spends its time:** the live workflow shows each chat moving through pAIring and the Matricxon engine in real time, from one server to clusters of hundreds of nodes.
+
+**Find problems without reading logs:** Workflow analysis sums up every running Matricxon server on one page and lists what needs attention (unreachable or slow nodes, queued replies, slow steps), each with what to change.
+
 ## Quick start
 
 ```bash
@@ -109,7 +113,17 @@ It is also important not to expose more models to users than the system RAM/VRAM
 - A real usage overview (conversations, messages, users, knowledge
   base).
 - An interactive D3 diagram of the app's own request pipeline, click
-  any step for detail — genuinely useful documentation.
+  any step for detail — genuinely useful documentation. With Matricxon it
+  is live: running steps light up, slow ones are flagged, and each reply's
+  data streams along the arrows, from one server to clusters of hundreds of nodes.
+- **Workflow analysis**: a new way to find problems. Instead of opening
+  each server's logs, one page sums up the last minutes of every running
+  Matricxon server and lists what needs attention, most serious first:
+  unreachable, overloaded or slower-than-usual nodes, a long chat read from the start
+  holding up everyone else on a node, replies waiting for a free model
+  slot, models loading while users wait, slow first tokens, slow app steps
+  and low prompt-cache reuse. Each finding says what to change, and tables
+  show the nodes, models and app steps behind it.
 - Telemetry data via OpenTelemetry (latency, tokens/sec, error
   rate, currently-loaded models) and live CPU/RAM/disk/GPU monitoring
   for the host — the kind of visibility that's nice to have and, for a
@@ -214,6 +228,14 @@ Setup, limits and privacy notes for each: [pAIring connectors](https://upupabit.
   <tr>
     <td><img src="docs/screenshots/stats-workflow-live.gif" alt="Live chat workflow" width="100%"></td>
     <td><img src="docs/screenshots/stats-system.png" alt="System dashboard" width="100%"></td>
+  </tr>
+  <tr>
+    <th width="50%">Workflow analysis</th>
+    <th width="50%">Live workflow on a 50-node cluster</th>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/stats-workflow-analysis.png" alt="Workflow analysis" width="100%"></td>
+    <td><img src="docs/screenshots/stats-workflow-cluster-50-nodes.gif" alt="Live workflow on a 50-node cluster" width="100%"></td>
   </tr>
   <tr>
     <th width="50%">Settings-&gt;models</th>

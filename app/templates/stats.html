@@ -36,6 +36,10 @@
           class="stats-nav-btn w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors">
           Visual chat workflow
         </button>
+        <button type="button" data-view="analysis"
+          class="stats-nav-btn w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors">
+          Workflow analysis
+        </button>
         <button type="button" data-view="telemetry"
           class="stats-nav-btn w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors">
           Telemetry
@@ -94,6 +98,9 @@
           <div id="workflow-detail-content"></div>
         </aside>
       </div>
+
+      <!-- The live workflow's last minutes, summed up: heading, report and error filled by workflow_analysis.js. -->
+      <div id="stats-view-analysis" class="hidden flex-1 overflow-y-auto p-6 space-y-6"></div>
 
       <div id="stats-view-telemetry" class="hidden flex-1 overflow-y-auto p-6 space-y-6">
         <div class="flex items-center justify-between gap-3">
@@ -232,6 +239,7 @@
 <script src="/static/js/workflow_diagram_live_map.js?v={{ static_version }}"></script>
 <script src="/static/js/workflow_diagram_live_state.js?v={{ static_version }}"></script>
 <script src="/static/js/workflow_diagram_live.js?v={{ static_version }}"></script>
+<script src="/static/js/workflow_analysis.js?v={{ static_version }}"></script>
 <script src="/static/js/telemetry_charts.js?v={{ static_version }}"></script>
 <script src="/static/js/telemetry_bar_chart.js?v={{ static_version }}"></script>
 <script src="/static/js/telemetry.js?v={{ static_version }}"></script>

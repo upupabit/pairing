@@ -259,10 +259,16 @@ marked.use({
 });
 marked.setOptions({ breaks: true });
 
-// Matches $$...$$ and \[...\] (display math) or \(...\) (inline math), deliberately not bare $...$: a single dollar
-// sign is common in prose ("$5 and $10"). Extraction runs on the raw model text before marked.parse, whose CommonMark
-// backslash-escape rule would drop the backslash from the delimiters before KaTeX saw them.
-const MATH_SPAN_RE = /\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)/g;
+// Matches $$...$$ and \[...\] (display math), \(...\) and $...$ (inline math). A single dollar follows Pandoc's rule so
+// prices stay prose ("$5 and $10"): the opening $ is followed by a non-space, the closing one follows a non-space and
+// isn't followed by a digit, and (checked in extractMathSpans) the content looks like math. Extraction runs on the raw
+// model text before marked.parse, whose CommonMark backslash-escape rule would drop the delimiters' backslashes.
+const MATH_SPAN_RE =
+  /\$\$([\s\S]+?)\$\$|\\\[([\s\S]+?)\\\]|\\\(([\s\S]+?)\\\)|(?<![\\$\w])\$(?=\S)([^$\n]+?)(?<=\S)\$(?![\d$])/g;
+// Inline $...$ only when it looks like math: a TeX command, sub/superscript, braces, an operator, or one letter.
+const DOLLAR_MATH_LOOK_RE = /[\\^_{}=+*\/<>]|^[A-Za-z]$/;
+// Code is never math: fenced blocks (also one still streaming in) and inline code spans are left as they are.
+const CODE_SEGMENT_RE = /(```[\s\S]*?(?:```|$)|`[^`\n]*`)/;
 
 function mathPlaceholder(index) {
   // Plain letters/digits/"@", which marked and DOMPurify leave unchanged, to be swapped back for the trusted
@@ -273,9 +279,10 @@ function mathPlaceholder(index) {
 /* Pulls math spans out of `text` before markdown parsing (see MATH_SPAN_RE), renders each with KaTeX, and leaves a placeholder. Returns the substituted text plus the rendered HTML per placeholder, for renderMessageContent to splice back after sanitization. A span still streaming in (opening \[ with no closing \]) stays plain text until it completes. */
 function extractMathSpans(text) {
   const mathHtml = [];
-  const placeholderText = text.replace(MATH_SPAN_RE, (match, dollarBlock, bracketBlock, parenInline) => {
+  const replaceMath = (part) => part.replace(MATH_SPAN_RE, (match, dollarBlock, bracketBlock, parenInline, dollarInline) => {
+    if (dollarInline !== undefined && !DOLLAR_MATH_LOOK_RE.test(dollarInline)) return match;
     const displayMode = dollarBlock !== undefined || bracketBlock !== undefined;
-    const tex = dollarBlock ?? bracketBlock ?? parenInline;
+    const tex = dollarBlock ?? bracketBlock ?? parenInline ?? dollarInline;
     let html;
     try {
       // throwOnError: false shows a parse error as inline red text, so a malformed \[...\] doesn't break the reply.
@@ -287,6 +294,8 @@ function extractMathSpans(text) {
     mathHtml.push(html);
     return mathPlaceholder(index);
   });
+  // split with a capture group: odd entries are code segments, kept as they are.
+  const placeholderText = text.split(CODE_SEGMENT_RE).map((part, i) => (i % 2 ? part : replaceMath(part))).join("");
   return { placeholderText, mathHtml };
 }
 
@@ -471,7 +480,7 @@ function renderAttachment(bubble, message) {
       img.className = "mt-2 max-w-full rounded-lg";
       // An <img> has no height until it loads, so callers' scrollTop=scrollHeight undershoots; re-scroll once the real
       // size is known, whichever caller (send, poll, reload) rendered it.
-      img.addEventListener("load", () => scrollMessagesToBottom());
+      img.addEventListener("load", () => chatScroll.settle());
       bubble.appendChild(img);
     } else {
       const chip = document.createElement("a");
@@ -519,7 +528,7 @@ function addMessageBubble(
   renderReplyBody(bubble, content, status, sources, errorText);
   renderAttachment(bubble, attachmentSource);
   messagesEl.appendChild(wrapper);
-  messagesEl.scrollTop = messagesEl.scrollHeight;
+  chatScroll.follow();
   return { wrapper, bubble };
 }
 
@@ -537,6 +546,9 @@ function findOrCreateBubbleForMessage(messageId, role, senderLabel, avatarUrl, i
 
 /* Renders a conversation's full message list from scratch, for selectConversation (initial load) and reconcileConversationMessages (channel live-updates backstop). */
 function renderMessageList(messages, channelInfo) {
+  // A rebuild while the reader is further up (a channel resync) keeps their place; otherwise it ends at the bottom.
+  const following = chatScroll.following;
+  const readingAt = messagesEl.scrollTop;
   messagesEl.innerHTML = "";
   showEmptyState(messages.length === 0);
   for (const message of messages) {
@@ -559,7 +571,10 @@ function renderMessageList(messages, channelInfo) {
       message.error_message
     );
   }
-  if (messages.length > 0) scrollMessagesToBottom();
+  if (messages.length > 0) {
+    if (following) chatScroll.jump();
+    else messagesEl.scrollTop = readingAt;
+  }
 
   if (channelInfo) {
     // Covers the initial load and every reconcileConversationMessages call, including right after a reply finishes: the
@@ -626,7 +641,7 @@ function handleReplyLiveEvent(conversationId, payload) {
     const { bubble, created } = findOrCreateBubbleForMessage(messageId, "assistant", "AI");
     bubble._toolEvents = payload.tool_events;
     renderReplyBody(bubble, replyLiveContent.get(messageId), payload.status);
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+    chatScroll.follow();
     if (created) reconcileConversationMessages(conversationId);
     return;
   }
@@ -642,7 +657,7 @@ function handleReplyLiveEvent(conversationId, payload) {
     replyLiveContent.set(messageId, text);
     const { bubble, created } = findOrCreateBubbleForMessage(messageId, "assistant", "AI");
     renderReplyBody(bubble, text, "streaming");
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+    chatScroll.follow();
     // A brand-new message this tab hasn't shown: fetch the prompting user message and anything missed in one reconcile,
     // rather than teaching the broadcast hub about messages it doesn't carry.
     if (created) reconcileConversationMessages(conversationId);
@@ -737,7 +752,7 @@ async function runChannelPoll(conversationId) {
     bubble._toolEvents = message.tool_events;
     renderReplyBody(bubble, message.content, message.status, message.sources, message.error_message);
     renderAttachment(bubble, message);
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+    chatScroll.follow();
   }
   updateAskAiButtonState();
   if (messagesEl.children.length === 0) showEmptyState(true);
@@ -1173,6 +1188,7 @@ function renderChannelListItem(channel) {
 
 async function selectConversation(id) {
   activeConversationId = id;
+  chatScroll.following = true; // opening a chat starts at its latest message
   closeSlotEditor();
   closeModelPicker();
   highlightActiveInSidebar();
@@ -1342,6 +1358,7 @@ async function sendMessage(askAi) {
     currentInitials,
     activeChannelInfo ? currentUserId : null
   );
+  chatScroll.jump(); // the reader just wrote: show it and follow the reply
   if (!activeHasMessages) {
     activeHasMessages = true;
     renderPinnedBadges();
@@ -1355,7 +1372,7 @@ async function sendMessage(askAi) {
     ({ wrapper, bubble } = bubbleFor("assistant", activeChannelInfo ? "AI" : null));
     renderReplyBody(bubble, "", "streaming");
     messagesEl.appendChild(wrapper);
-    messagesEl.scrollTop = messagesEl.scrollHeight;
+    chatScroll.follow();
     if (activeChannelInfo) {
       channelReplyInFlight = true;
       updateAskAiButtonState();
@@ -1651,7 +1668,7 @@ async function readAssistantReplyStream(
       if (bubble && payload.chunk) {
         fullText += payload.chunk;
         renderReplyBody(bubble, fullText, "streaming");
-        messagesEl.scrollTop = messagesEl.scrollHeight;
+        chatScroll.follow();
       }
       if (payload.done) {
         if (bubble) renderReplyBody(bubble, fullText, "complete", payload.sources);

@@ -15,7 +15,7 @@
   <label class="flex items-center gap-2 text-sm text-slate-200">
     <input id="cluster-cache-enabled" type="checkbox"> Save chat caches to disk
   </label>
-  <div class="grid items-start gap-3 sm:grid-cols-2">
+  <div class="grid items-start gap-3 sm:grid-cols-3">
     <label class="block">
       <span class="text-xs text-slate-400">Disk limit (MB)</span>
       <input id="cluster-cache-budget" type="number" min="0" max="1048576"
@@ -27,6 +27,12 @@
       <input id="cluster-cache-ttl" type="number" min="1" max="8760"
         class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm text-slate-100 focus:outline-none focus:border-brand-500 disabled:opacity-40">
       <span class="mt-1 block text-xs text-slate-500">168 hours is 7 days</span>
+    </label>
+    <label class="block">
+      <span class="text-xs text-slate-400">Save to disk every (seconds)</span>
+      <input id="cluster-cache-save-every" type="number" min="0" max="3600"
+        class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm text-slate-100 focus:outline-none focus:border-brand-500 disabled:opacity-40">
+      <span class="mt-1 block text-xs text-slate-500">Chats still in memory, after a reply; 0 only when they leave it</span>
     </label>
   </div>
   <div class="flex flex-wrap items-center gap-3">

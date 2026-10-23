@@ -9,13 +9,15 @@
  * (switching clears it), and the visibilitychange listener pauses it in a background tab.
  */
 
-const STATS_VIEWS = ["overview", "workflow", "telemetry", "system", "architectures"];
+const STATS_VIEWS = ["overview", "workflow", "analysis", "telemetry", "system", "architectures"];
 
 // Refresh interval per view, matching its data cadence: System mirrors its poller's 15s sample interval
 // (app.services.system_metrics_poller); Telemetry/Overview use 30s, as new calls/messages/conversations don't need
 // sub-15s freshness.
 const STATS_VIEW_REFRESH = {
   overview: { fn: loadStatsOverviewSummary, intervalMs: 30000 },
+  // Each fetch is also a sample of the live workflow history (workflow_history.py).
+  analysis: { fn: loadWorkflowAnalysis, intervalMs: 5000 },
   telemetry: { fn: loadTelemetry, intervalMs: 30000 },
   system: { fn: loadSystemMetrics, intervalMs: 15000 },
   // Changes only when Matricxon gains support for something; a slow poll is plenty.

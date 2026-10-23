@@ -75,6 +75,7 @@ class ClusterCache(BaseModel):
     enabled: bool
     budget_mb: int = Field(ge=0, le=1_048_576)
     ttl_hours: int = Field(ge=1, le=8760)
+    save_every_seconds: int = Field(default=30, ge=0, le=3600)
 
 
 class ClusterTimers(BaseModel):

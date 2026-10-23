@@ -168,17 +168,18 @@ class WorkflowLiveView {
       ? `<span class="rounded-full bg-emerald-900/70 px-2 py-0.5 font-mono text-[10px] font-semibold text-emerald-300">LIVE</span>`
       : `<span class="rounded-full bg-slate-800 px-2 py-0.5 font-mono text-[10px] font-semibold text-slate-400">OFF</span>`;
     const note = view.live
-      ? "Matricxon engine"
+      ? `Matricxon engine${view.nodeCount > 1 ? ` · ${view.nodeCount} nodes` : ""}`
       : view.engine ? `Live view needs the Matricxon engine (active: ${escapeHtml(view.engine)})` : "Connecting…";
     // Running chats first (oldest on top), then the latest finished ones in the room left.
     const running = view.runs.filter((r) => !r.done);
     const finished = view.runs.filter((r) => r.done).reverse();
     const shown = [...running, ...finished].slice(0, WorkflowLiveView.ROWS);
-    const more = running.length - shown.filter((r) => !r.done).length;
+    const more = running.length - shown.filter((r) => !r.done).length + (view.moreRunning || 0);
     const rows = shown.map((run) => this._runRow(run)).join("") +
       (more > 0 ? `<p class="mt-2 text-slate-500">+${more} more running</p>` : "");
     const idle = view.live && !view.runs.length ? `<p class="mt-2 text-slate-500">No replies right now. Send a chat message to watch it here.</p>` : "";
-    const error = view.error ? `<p class="mt-2 text-amber-400">${escapeHtml(view.error)}</p>` : "";
+    // Many unreachable nodes: two lines at most, the full text on hover.
+    const error = view.error ? `<p class="mt-2 line-clamp-2 text-amber-400" title="${escapeHtml(view.error)}">${escapeHtml(view.error)}</p>` : "";
     const toggle = `<button type="button" data-toggle class="ml-auto text-slate-500 hover:text-slate-300">${this.collapsed ? "Show" : "Hide"}</button>`;
     const body = this.collapsed ? "" : `${rows}${idle}${error}`;
     this.strip.innerHTML = `<div class="flex items-center gap-2">${status}<span class="truncate text-slate-400">${note}</span>${toggle}</div>${body}`;
@@ -195,10 +196,13 @@ class WorkflowLiveView {
           <span class="h-2.5 w-2.5 shrink-0 rounded-full" style="background:${run.color}"></span>
           <span class="truncate text-slate-200">${escapeHtml(run.step)}</span>
         </span>
-        <!-- A long model tag takes at most half the row, cut with "…"; the full name shows on hover. -->
-        <span class="min-w-0 max-w-[50%] truncate font-mono text-[10px] text-slate-500"
-          title="${escapeHtml(run.model)}${run.untracked ? " · a Matricxon reply not started by a chat here (a smart title, or another instance)" : ""}">
-          ${run.untracked ? "untracked · " : ""}${escapeHtml(run.model)}</span>
+        <!-- At most 55% of the row on one line: the node keeps up to 65% of that, the model gets the rest; each is cut
+          with "…" and the full text shows on hover. -->
+        <span class="flex min-w-0 max-w-[55%] gap-1 whitespace-nowrap font-mono text-[10px] text-slate-500"
+          title="${run.node ? `on ${escapeHtml(run.node)} · ` : ""}${escapeHtml(run.model)}${run.untracked ? " · a Matricxon reply not started by a chat here (a smart title, or another instance)" : ""}">
+          ${run.untracked ? `<span class="shrink-0">untracked ·</span>` : ""}
+          ${run.node ? `<span class="max-w-[65%] shrink-0 truncate text-sky-400">${escapeHtml(run.node)}</span><span class="shrink-0">·</span>` : ""}
+          <span class="min-w-0 truncate">${escapeHtml(run.model)}</span></span>
       </div>
       <div class="mt-1 grid grid-cols-5 gap-1">
         ${cell("Elapsed", liveFormatMs(run.elapsedMs))}

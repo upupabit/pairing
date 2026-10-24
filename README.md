@@ -5,6 +5,35 @@
 
 </div>
 
+<br>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.11%2B-blue" alt="Python">
+  <img src="https://img.shields.io/badge/FastAPI-async-009688" alt="FastAPI">
+  <img src="https://img.shields.io/badge/self--hosted-yes-pink" alt="Self-hosted">
+  <img src="https://img.shields.io/badge/license-AGPL--3.0-blue" alt="License">
+  <img src="https://img.shields.io/badge/docker-compose_ready-2496ED?logo=docker&logoColor=white" alt="Docker">
+  <img src="https://img.shields.io/badge/SQLAlchemy-2.0_async-D71F00" alt="SQLAlchemy">
+  <img src="https://img.shields.io/badge/Pydantic-v2-E92063" alt="Pydantic">
+  <img src="https://img.shields.io/badge/database-SQLite_%7C_MySQL-003B57" alt="Database">
+  <img src="https://img.shields.io/badge/migrations-Alembic-6BA81E" alt="Alembic">
+  <img src="https://img.shields.io/badge/engine-Matricxon-7C3AED" alt="Engine">
+  <img src="https://img.shields.io/badge/cloud_connectors-8-0EA5E9" alt="Cloud connectors">
+  <img src="https://img.shields.io/badge/RAG-knowledge_base-10B981" alt="RAG">
+  <img src="https://img.shields.io/badge/MCP-tools-EC4899" alt="MCP">
+  <img src="https://img.shields.io/badge/telemetry-OpenTelemetry-425CC7" alt="OpenTelemetry">
+  <img src="https://img.shields.io/badge/roles_%26_channels-yes-6366F1" alt="Roles">
+  <img src="https://img.shields.io/badge/cluster-load_balancing_%2B_failover-14B8A6" alt="Cluster">
+  <img src="https://img.shields.io/badge/tests-1%2C600%2B_pytest-22C55E" alt="Tests">
+  <img src="https://img.shields.io/badge/code_style-ruff-261230" alt="Ruff">
+</p>
+
+<br>
+
+> [!IMPORTANT]
+> **Under active development.** pAIring is updated every few days with new features and fixes. Pull often to stay current, and check the [GitHub commits](https://github.com/upupabit/pairing/commits/main) for what changed.
+
+<br>
 
 # pAIring
 
@@ -39,9 +68,8 @@ Supports MySQL migration and multi-server deployment.
 
 1. Go to **Settings → Inference engines** and choose your inference engine. llama.cpp and Matricxon are supported (Matricxon has many more options — see the Matricxon repository for details). Both can be installed directly from there: llama.cpp from its official prebuilt release (CPU by default, or a Vulkan/CUDA build). By default both use one shared models folder, so a model downloaded under either engine is stored once and is ready for both. Prefer the cloud? Set up a connector on the **Connectors** page and pick it here instead; switching back is just as quick.
 2. After configuring the engine, go to **Settings → Models** and download some models. Embedding models are needed for RAG support, an optional reranker model makes RAG answers more accurate, and vision projectors are needed for image understanding in chats and channels.
-3. Want images? Go to **Settings → Image**, press **Install from GitHub** for stable-diffusion.cpp (or, on Linux, **Build from source** — needs `git`, `cmake` and `g++`: `sudo apt install git cmake build-essential`; `scripts/install_on_fresh_server.sh` installs them), then download a diffusion model (SD-Turbo is a good start) under **Settings → Models → Diffusion models**, choose it in the engine's *Model* dropdown and press **Start**.
-4. Once the models are ready, go to **Settings → System** and set the important parameters (such as the default vision model).
-5. Run a few tests.
+3. Once the models are ready, go to **Settings → System** and set the important parameters (such as the default vision model).
+4. Run a few tests.
 
 
 **Production notes**
@@ -274,22 +302,10 @@ Setup, limits and privacy notes for each: [pAIring connectors](https://upupabit.
 
 <br><br>
 
-![Python](https://img.shields.io/badge/python-3.11%2B-blue)
-![FastAPI](https://img.shields.io/badge/FastAPI-async-009688)
-![Self-hosted](https://img.shields.io/badge/self--hosted-yes-pink)
-![License](https://img.shields.io/badge/license-AGPL--3.0-blue)
-
-<br><br>
-
 ## License
 
 [GNU AGPL-3.0](LICENSE) — you're free to run it, modify it, and
-self-host it, no strings attached, for personal or internal use. The
-one thing it asks in return: if you take a modified version and offer
-it to other people as a hosted service, you share those changes back
-too. If that's relevant to how you're planning to use this (it usually
-isn't, for a personal setup or an internal company deployment), it's
-worth a quick look either way.
+self-host it, no strings attached, for personal or internal use.
 
 If you try it, a ⭐ is always appreciated — and issues/PRs are genuinely
 welcome, whoever you're running this for.

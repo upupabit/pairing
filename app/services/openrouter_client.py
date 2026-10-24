@@ -16,7 +16,7 @@ _REQUEST_TIMEOUT = httpx.Timeout(30.0, connect=10.0)
 _HEALTH_TIMEOUT = httpx.Timeout(10.0, connect=5.0)
 _CHAT_TIMEOUT = httpx.Timeout(None, connect=10.0)  # unbounded, as the other connector clients
 # OpenRouter's optional app attribution headers.
-_APP_HEADERS = {"HTTP-Referer": "https://upupabit.ai", "X-Title": "pAIring"}
+_APP_HEADERS = {"HTTP-Referer": "https://bytepenny.com", "X-Title": "pAIring"}
 
 
 class OpenRouterError(Exception):

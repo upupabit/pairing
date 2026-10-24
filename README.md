@@ -25,7 +25,7 @@
   <img src="https://img.shields.io/badge/roles_%26_channels-yes-6366F1" alt="Roles">
   <img src="https://img.shields.io/badge/cluster-load_balancing_%2B_failover-14B8A6" alt="Cluster">
   <img src="https://img.shields.io/badge/tests-1%2C600%2B_pytest-22C55E" alt="Tests">
-  <img src="https://img.shields.io/badge/code_style-ruff-261230" alt="Ruff">
+  <img src="https://img.shields.io/badge/code_style-ruff-FED7AA" alt="Ruff">
 </p>
 
 <br>
@@ -205,7 +205,7 @@ It is also important not to expose more models to users than the system RAM/VRAM
 | Amazon Bedrock | GPT-OSS, Claude, Llama, Mistral, DeepSeek, Qwen and more | No, billed to your AWS account | No |
 | RunPod Serverless | Your own vLLM endpoint | No, billed by use | No |
 
-Setup, limits and privacy notes for each: [pAIring connectors](https://upupabit.ai/docs/pairing/connectors/).
+Setup, limits and privacy notes for each: [pAIring connectors](https://bytepenny.com/docs/pairing/connectors/).
 
 **Guardrails for admin changes**
 - Risky settings (switching database, external servers) get tested before they're saved, so a bad edit doesn't take the UI down.

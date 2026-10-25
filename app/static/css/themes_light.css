@@ -34,6 +34,8 @@
   --chart-7: 202 138 4;
   --chart-8: 219 39 119;
   --chart-9: 71 85 105;
+  /* Warning frame and badge tint: muted red instead of the shared light-theme gray (themes.css); text stays 400. */
+  --color-warn-red-500: 220 38 38;
 }
 
 [data-theme="bubblegum"] {

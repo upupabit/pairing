@@ -179,7 +179,7 @@ class WorkflowLiveView {
       (more > 0 ? `<p class="mt-2 text-slate-500">+${more} more running</p>` : "");
     const idle = view.live && !view.runs.length ? `<p class="mt-2 text-slate-500">No replies right now. Send a chat message to watch it here.</p>` : "";
     // Many unreachable nodes: two lines at most, the full text on hover.
-    const error = view.error ? `<p class="mt-2 line-clamp-2 text-amber-400" title="${escapeHtml(view.error)}">${escapeHtml(view.error)}</p>` : "";
+    const error = view.error ? `<p class="mt-2 line-clamp-2 text-red-400" title="${escapeHtml(view.error)}">${escapeHtml(view.error)}</p>` : "";
     const toggle = `<button type="button" data-toggle class="ml-auto text-slate-500 hover:text-slate-300">${this.collapsed ? "Show" : "Hide"}</button>`;
     const body = this.collapsed ? "" : `${rows}${idle}${error}`;
     this.strip.innerHTML = `<div class="flex items-center gap-2">${status}<span class="truncate text-slate-400">${note}</span>${toggle}</div>${body}`;

@@ -454,6 +454,10 @@ const REPLY_FAILED_NOTICE = "⚠️ This reply didn't finish — generation fail
 function renderReplyBody(bubble, content, status, sources, errorText) {
   if (status === "streaming" && !content) {
     bubble.innerHTML = '<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>';
+    // Says what the wait is: while reasoning, one word for the current stage (ReasoningSteps.label; "Reasoning…" before
+    // the first), else "Thinking…" until the first words arrive.
+    const waiting = ReasoningSteps.label(bubble, thinkingChip.on ? "Reasoning…" : "Thinking…");
+    bubble.insertAdjacentHTML("beforeend", `<span class="ml-2 text-xs text-slate-400">${waiting}</span>`);
     ToolBlocks.render(bubble);
     return;
   }
@@ -640,6 +644,7 @@ function handleReplyLiveEvent(conversationId, payload) {
     updateAskAiButtonState();
     const { bubble, created } = findOrCreateBubbleForMessage(messageId, "assistant", "AI");
     bubble._toolEvents = payload.tool_events;
+    bubble._reasoning = payload.reasoning;
     renderReplyBody(bubble, replyLiveContent.get(messageId), payload.status);
     chatScroll.follow();
     if (created) reconcileConversationMessages(conversationId);
@@ -649,6 +654,11 @@ function handleReplyLiveEvent(conversationId, payload) {
   if (payload.tool) {
     const { bubble } = findOrCreateBubbleForMessage(messageId, "assistant", "AI");
     ToolBlocks.add(bubble, payload.tool);
+  }
+  if (payload.reasoning) {
+    const { bubble } = findOrCreateBubbleForMessage(messageId, "assistant", "AI");
+    ReasoningSteps.set(bubble, payload.reasoning);
+    renderReplyBody(bubble, replyLiveContent.get(messageId) || "", "streaming");
   }
   if (payload.chunk) {
     channelReplyInFlight = true;
@@ -794,6 +804,7 @@ function clearMainPane() {
   pinnedBadgesEl.innerHTML = "";
   modelBadgeEl.textContent = "";
   modelBadgeEl.classList.add("hidden");
+  thinkingChip.hide();
   setModelBadgeManageable(true);
   messagesEl.innerHTML = "";
   showEmptyState(true);
@@ -983,6 +994,7 @@ async function switchModel(model) {
       body: JSON.stringify({ model }),
     });
     modelBadgeEl.textContent = conversation.model || "";
+    thinkingChip.sync(activeConversationId, conversation, canManageActive);
     closeModelPicker();
   } catch (err) {
     modelPickerStatusEl.textContent = err.message;
@@ -1213,6 +1225,7 @@ async function selectConversation(id) {
   modelBadgeEl.textContent = conversation.model || "";
   modelBadgeEl.classList.remove("hidden");
   toolToggle.sync(id, conversation, canManageActive);
+  thinkingChip.sync(id, conversation, canManageActive);
   activeHasMessages = false;
   loadPinnedBadges(id);
 
@@ -1665,6 +1678,10 @@ async function readAssistantReplyStream(
         updateConversationTitleDisplay(conversationId, payload.title);
       }
       if (bubble && payload.tool) ToolBlocks.add(bubble, payload.tool);
+      if (bubble && payload.reasoning) {
+        ReasoningSteps.set(bubble, payload.reasoning);
+        renderReplyBody(bubble, fullText, "streaming");
+      }
       if (bubble && payload.chunk) {
         fullText += payload.chunk;
         renderReplyBody(bubble, fullText, "streaming");

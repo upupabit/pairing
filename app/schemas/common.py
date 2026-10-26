@@ -126,6 +126,10 @@ class GenerationParams(BaseModel):
     num_ctx: int = Field(4096, ge=256, le=32768)
     num_predict: int = Field(1024, ge=-1, le=8192)
     seed: int = -1
+    # Reason before answering (models with a thinking switch, e.g. Qwen 3.5, Gemma 4): the chat header's Reasoning
+    # chip, off by default. Always sent (Matricxon `think`, llama.cpp chat_template_kwargs), so models that would reason
+    # on their own don't. None (chats saved before off became the default) counts as off.
+    think: bool | None = False
     # Independent of the chat `model`: all models share the knowledge base and retrieval settings
     # (document_service.py). Only the generation knobs above vary per model.
     rag_top_k: int = Field(4, ge=1, le=10)

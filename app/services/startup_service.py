@@ -34,6 +34,7 @@ from app.services.document_sync import sync_all_on_startup
 from app.services.image_generation_service import mark_interrupted_jobs_as_errored
 from app.services.inference_client import InferenceError, list_models
 from app.services.note_service import seed_default_notes
+from app.services.settings_sync import settings_sync
 
 logger = logging.getLogger("llama_chat")
 
@@ -157,6 +158,9 @@ async def run_startup_tasks() -> None:
                     "" if interrupted_jobs == 1 else "s",
                 )
 
+    # Every instance (not only the primary): other machines' saves reach this process's caches (settings_sync.py).
+    settings_sync.start()
+
     active_engine = engine_service.current_engine()
     try:
         models = await list_models()
@@ -190,6 +194,7 @@ async def run_shutdown_tasks() -> None:
     systemd stop/reboot; see instance_service.py). Also flushes telemetry spans still queued in either engine's
     OTel SDK before exit (on a worker thread; see llamacpp_telemetry.shutdown_llamacpp_telemetry).
     """
+    await settings_sync.stop()
     if IS_PRIMARY:
         await instance_service.terminate_all_siblings()
     await llamacpp_telemetry.shutdown_llamacpp_telemetry()

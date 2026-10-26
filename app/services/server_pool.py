@@ -148,10 +148,13 @@ class HostPool:
         make_stream: Callable[[str], AsyncGenerator[str, None]],
         prefer: str | None = None,
         info: RouteInfo | None = None,
+        retry_on: tuple[type[Exception], ...] = (),
     ) -> AsyncGenerator[str, None]:
         """Runs `make_stream(host)` on the chosen host, retrying on another if `httpx.HTTPError` occurs *before* any
         chunk was yielded (safe: nothing downstream has seen anything). After one chunk has gone out a failure
         propagates: switching hosts mid-reply would duplicate or truncate it. Gives up once every host was tried once.
+        `retry_on`: more errors worth another host (an engine's error reply, e.g. out of memory), retried without the
+        cooldown: the host answered, so it isn't down.
         """
         tried: set[str] = set()
         while True:
@@ -163,8 +166,9 @@ class HostPool:
                     async for chunk in make_stream(host):
                         first_chunk_sent = True
                         yield chunk
-                except httpx.HTTPError:
-                    self.mark_failure(host)
+                except (httpx.HTTPError, *retry_on) as exc:
+                    if isinstance(exc, httpx.HTTPError):
+                        self.mark_failure(host)
                     if first_chunk_sent or tried >= set(self._hosts):
                         raise
                     continue
@@ -172,9 +176,11 @@ class HostPool:
                     self.mark_recovered(host)
                     return
 
-    async def call_with_failover(self, make_call: Callable[[str], Awaitable[T]]) -> T:
-        """Same retry/cooldown contract as stream_with_failover for a single request/response call: no
-        partial output exists, so retrying on another host is always safe.
+    async def call_with_failover(
+        self, make_call: Callable[[str], Awaitable[T]], retry_on: tuple[type[Exception], ...] = ()
+    ) -> T:
+        """Same retry/cooldown contract as stream_with_failover (including `retry_on`) for a single request/response
+        call: no partial output exists, so retrying on another host is always safe.
         """
         tried: set[str] = set()
         while True:
@@ -183,8 +189,9 @@ class HostPool:
             async with self.track_request(host):
                 try:
                     result = await make_call(host)
-                except httpx.HTTPError:
-                    self.mark_failure(host)
+                except (httpx.HTTPError, *retry_on) as exc:
+                    if isinstance(exc, httpx.HTTPError):
+                        self.mark_failure(host)
                     if tried >= set(self._hosts):
                         raise
                     continue

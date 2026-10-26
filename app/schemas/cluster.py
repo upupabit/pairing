@@ -59,6 +59,7 @@ class NodeAdd(BaseModel):
     address: str
     advertise_url: str | None = None  # how the OTHER nodes reach it, if different
     node_kind: Literal["compute", "voter"] = "compute"  # "voter": consensus only, never given chats
+    join_token: str | None = None  # from the new node's log; Matricxon asks for it from another machine
 
 
 class VoterId(BaseModel):

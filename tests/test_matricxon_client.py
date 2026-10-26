@@ -11,6 +11,8 @@ from app.services import matricxon_client, matricxon_pool
 
 
 class _FakeResponse:
+    is_error = False
+
     def __init__(self, json_body: dict):
         self._json_body = json_body
 
@@ -138,21 +140,13 @@ async def test_embed_uses_whatever_host_the_pool_picks(monkeypatch):
     calls: list[str] = []
     tracked_hosts: list[str] = []
 
-    monkeypatch.setattr(matricxon_pool, "pick_host", lambda: "http://pool-picked:8420")
     monkeypatch.setattr(httpx, "AsyncClient", lambda **_kw: _FakeAsyncClient(calls, {"embedding": [0.1, 0.2]}))
 
-    class _RecordingTrack:
-        def __init__(self, host):
-            tracked_hosts.append(host)
+    async def on_the_pools_host(make_call, retry_on=()):
+        tracked_hosts.append("http://pool-picked:8420")
+        return await make_call("http://pool-picked:8420")
 
-        async def __aenter__(self):
-            return None
-
-        async def __aexit__(self, *_exc):
-            return False
-
-    monkeypatch.setattr(matricxon_pool, "track_request", _RecordingTrack)
-    monkeypatch.setattr(matricxon_pool, "mark_recovered", lambda _host: None)
+    monkeypatch.setattr(matricxon_pool, "call_with_failover", on_the_pools_host)
 
     result = await matricxon_client.embed("hello world", "nomic-embed-text:latest")
 
@@ -173,10 +167,12 @@ async def test_embed_raises_matricxon_error_on_http_failure(monkeypatch):
         async def post(self, *_a, **_kw):
             raise httpx.ConnectError("boom", request=httpx.Request("POST", "http://x/api/embeddings"))
 
-    monkeypatch.setattr(matricxon_pool, "pick_host", lambda: "http://pool-picked:8420")
     monkeypatch.setattr(httpx, "AsyncClient", lambda **_kw: _FailingClient())
-    monkeypatch.setattr(matricxon_pool, "track_request", lambda _host: _NullCtx())
-    monkeypatch.setattr(matricxon_pool, "mark_failure", lambda _host: None)
+
+    async def on_one_host(make_call, retry_on=()):
+        return await make_call("http://pool-picked:8420")
+
+    monkeypatch.setattr(matricxon_pool, "call_with_failover", on_one_host)
 
     with pytest.raises(matricxon_client.MatricxonError):
         await matricxon_client.embed("hello world", "nomic-embed-text:latest")
@@ -199,7 +195,7 @@ async def test_chat_stream_routes_the_actual_http_call_through_stream_with_failo
     seen_hosts: list[str] = []
     sent_payloads: list[dict] = []
 
-    async def fake_stream_with_failover(make_stream, prefer=None, info=None):
+    async def fake_stream_with_failover(make_stream, prefer=None, info=None, retry_on=()):
         async for chunk in make_stream("http://chosen-by-pool:8420"):
             yield chunk
 
@@ -260,7 +256,7 @@ async def test_chat_stream_surfaces_matricxons_own_error_body_not_the_generic_ht
     10.9GB available") in a {"error": "..."} body. It must reach the admin, not a generic "503 Service Unavailable".
     """
 
-    async def fake_stream_with_failover(make_stream, prefer=None, info=None):
+    async def fake_stream_with_failover(make_stream, prefer=None, info=None, retry_on=()):
         async for chunk in make_stream("http://chosen-by-pool:8420"):
             yield chunk
 
@@ -307,7 +303,7 @@ async def test_chat_stream_falls_back_to_raw_body_text_when_it_isnt_json(monkeyp
     reach the admin.
     """
 
-    async def fake_stream_with_failover(make_stream, prefer=None, info=None):
+    async def fake_stream_with_failover(make_stream, prefer=None, info=None, retry_on=()):
         async for chunk in make_stream("http://chosen-by-pool:8420"):
             yield chunk
 
@@ -349,7 +345,7 @@ async def test_chat_stream_falls_back_to_raw_body_text_when_it_isnt_json(monkeyp
 
 @pytest.mark.asyncio
 async def test_chat_stream_raises_matricxon_error_on_http_failure(monkeypatch):
-    async def fake_stream_with_failover(make_stream, prefer=None, info=None):
+    async def fake_stream_with_failover(make_stream, prefer=None, info=None, retry_on=()):
         async for _ in make_stream("http://chosen-by-pool:8420"):
             pass
         raise httpx.ConnectError("boom", request=httpx.Request("POST", "http://x/api/chat"))

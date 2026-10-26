@@ -116,6 +116,8 @@ def _chat_payload(model: str, messages: list[dict], params: dict) -> dict:
         payload["max_tokens"] = params["num_predict"]
     if params.get("seed", -1) != -1:
         payload["seed"] = params["seed"]
+    # The model's template switch, off unless the chat turned Reasoning on; reasoning_content stays out of the text.
+    payload["chat_template_kwargs"] = {"enable_thinking": bool(params.get("think"))}
     add_tools_to_payload(payload, params)
     return payload
 
@@ -153,6 +155,8 @@ async def chat_stream(model: str, messages: list[dict], params: dict) -> AsyncGe
                         collector.add(delta["tool_calls"])
                     if delta.get("content"):
                         yield delta["content"]
+                    elif delta.get("reasoning_content") and params.get("reasoning_ticks"):
+                        yield {"reasoning": delta["reasoning_content"]}  # not reply text: stages and checks only
         if sink:
             sink.add_calls(collector.calls())
 

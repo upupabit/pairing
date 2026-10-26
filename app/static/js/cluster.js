@@ -207,8 +207,10 @@ async function addClusterNode(event) {
   _clusterNodeNote("Configuring the node…");
   try {
     const advertise_url = document.getElementById("cluster-node-advertise").value.trim() || null;
-    renderCluster(await api("/api/cluster/nodes", { method: "POST", body: JSON.stringify({ address, advertise_url, node_kind: document.getElementById("cluster-node-kind").value }) }));
+    const join_token = document.getElementById("cluster-node-token").value.trim() || null;
+    renderCluster(await api("/api/cluster/nodes", { method: "POST", body: JSON.stringify({ address, advertise_url, node_kind: document.getElementById("cluster-node-kind").value, join_token }) }));
     document.getElementById("cluster-node-address").value = "";
+    document.getElementById("cluster-node-token").value = "";
     document.getElementById("cluster-node-advertise").value = "";
     document.getElementById("cluster-node-kind").value = "compute";
     document.getElementById("cluster-node-reset").classList.add("hidden");

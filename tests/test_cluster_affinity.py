@@ -127,7 +127,7 @@ async def test_chat_stream_prefers_the_holder_and_spills_it_only_when_the_chat_m
 
     chosen: dict = {}
 
-    async def fake_stream(make_stream, prefer=None, info=None):
+    async def fake_stream(make_stream, prefer=None, info=None, retry_on=()):
         chosen["prefer"], chosen["info"] = prefer, info
         async for chunk in make_stream(chosen["host"]):
             yield chunk

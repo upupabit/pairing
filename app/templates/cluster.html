@@ -115,7 +115,7 @@
           folders, the cluster timers and the saved-chat-cache limits are locked, and so are changes to who pulls models. Chats keep working.
           All resume when enough voters are back.
         </p>
-        <p id="cluster-unsupported" class="hidden text-sm text-slate-400">
+        <p id="cluster-unsupported" class="hidden max-w-2xl text-xs text-warning-400 bg-slate-900 border border-warning-500/50 rounded-lg px-3 py-2">
           Cluster mode is a Matricxon feature &mdash; switch the active engine to Matricxon first.
         </p>
         <!-- Another pAIring joins a cluster that already exists: the address of any of its nodes and its id. -->
@@ -373,6 +373,12 @@
               <span class="text-slate-500">(optional; only when it differs from the address above)</span></span>
             <input id="cluster-node-advertise" type="text" autocomplete="off" placeholder="http://host.containers.internal:8420"
               class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
+          </label>
+          <label class="block">
+            <span class="text-xs text-slate-400">Join token
+              <span class="text-slate-500">(from the new node's log: "use this join token"; not needed on this machine)</span></span>
+            <input id="cluster-node-token" type="text" autocomplete="off" spellcheck="false"
+              class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 font-mono text-sm text-slate-100 focus:outline-none focus:border-brand-500">
           </label>
           <label class="block">
             <span class="text-xs text-slate-400">Node type</span>

@@ -11,6 +11,7 @@ import httpx
 
 from app.config import INSTANCE_INDEX
 from app.services import instance_process
+from app.services.settings_sync import settings_sync
 
 _TIMEOUT = httpx.Timeout(10.0, connect=2.0)
 
@@ -26,9 +27,15 @@ async def broadcast_refresh(path: str) -> list[str]:
     """POSTs to every other live instance's internal refresh endpoint at `path` (e.g.
     "/api/settings/llamacpp/internal-refresh").
     No body: each instance re-reads the config from the shared DB. Best-effort: a failed sibling doesn't undo
-    the rest. Returns a description of each failure (empty if all refreshed).
+    the rest. Also bumps the settings version, for servers on other machines (settings_sync.py). Returns a
+    description of each failure (empty if all refreshed).
     """
     failures: list[str] = []
+    # Servers on other machines: they see the new version within settings_sync.POLL_SECONDS and reload.
+    try:
+        await settings_sync.bump()
+    except Exception as exc:  # the save itself is done; only cross-machine sync is late
+        failures.append(f"settings version: {exc}")
     async with httpx.AsyncClient(timeout=_TIMEOUT) as client:
         for port in _other_live_ports():
             try:

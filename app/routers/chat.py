@@ -126,6 +126,7 @@ async def subscribe_to_reply(
                             "status": state.status,
                             "sources": state.sources,
                             "tool_events": state.tool_events,
+                            "reasoning": state.reasoning,
                         }
                     )
                     + "\n\n"

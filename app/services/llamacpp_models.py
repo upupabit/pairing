@@ -77,6 +77,11 @@ class LlamaCppCapabilities:
             capabilities.append("tools")
         if "think" in template:
             capabilities.append("thinking")
+        # The switch used before the reply prompt (Gemma 4: in the system turn): changing Thinking on a live chat
+        # re-reads it once. Matricxon checks this by rendering; here the template text has to do.
+        switch, reply_prompt = template.find("enable_thinking"), template.find("add_generation_prompt")
+        if switch != -1 and (reply_prompt == -1 or switch < reply_prompt):
+            capabilities.append("thinking_rereads")
         return capabilities
 
 

@@ -32,6 +32,7 @@ from app.services import (
 )
 from app.services.inference_client import InferenceError, chat_stream, stop_model
 from app.services.live_workflow_bus import live_workflow
+from app.services.reply_side_events import ReplySideEvents
 
 logger = logging.getLogger("llama_chat")
 
@@ -178,12 +179,16 @@ async def _run_generation(
             try:
                 async with asyncio.timeout(effective_timeout):
                     gen_params = {**(params or {}), "request_id": message_id, "conversation_id": conversation_id}
+                    gen_params["reasoning_ticks"] = True
                     if has_image:  # the default vision model: Matricxon keeps it out of its loaded-model limit
                         gen_params["model_role"] = "vision"
                     tools = await tool_loop_service.tool_stream_or_none(db, model, chat_messages, gen_params)
+                    side_events = ReplySideEvents(db, message, conversation_id)
                     async for chunk in tools if tools is not None else chat_stream(model, chat_messages, gen_params):
-                        if isinstance(chunk, dict):  # a finished MCP tool call, not text
-                            await tool_event_service.record(db, message, chunk["tool"], conversation_id)
+                        if isinstance(chunk, dict):  # an MCP tool call or reasoning (reply_side_events.py)
+                            if await side_events.handle(chunk):
+                                await stop_model(model, request_id=message_id)
+                                return
                             continue
                         full_reply += chunk
                         unflushed += chunk
@@ -195,10 +200,8 @@ async def _run_generation(
                             await db.commit()
                             unflushed = ""
                             last_flush = now
-                            # Cross-instance guard (reply_cross_instance_service); also stop_model: a bare `return`
-                            # never stops the engine.
-                            fresh = await reply_cross_instance_service.refresh_or_none(db, message)
-                            if fresh is None or fresh.status == "deleted":
+                            # Cross-instance guard; also stop_model: a bare `return` never stops the engine.
+                            if await reply_cross_instance_service.deleted_elsewhere(db, message):
                                 await stop_model(model, request_id=message_id)
                                 return
             except InferenceError as exc:
@@ -206,8 +209,7 @@ async def _run_generation(
                 await reply_model_unload_service.mark_error(db, message, full_reply, conversation_id, str(exc))
                 return
             except TimeoutError:
-                # asyncio.timeout's deadline, not a raw CancelledError: cancellation state is cleared, so `await`
-                # works
+                # asyncio.timeout's deadline, not a raw CancelledError: cancellation state is cleared, so `await` works
                 # here (unlike the CancelledError branch below).
                 await reply_model_unload_service.mark_error(
                     db, message, full_reply, conversation_id, f"Reply timed out after {timeout_seconds} seconds."
@@ -217,8 +219,7 @@ async def _run_generation(
                 return
             except asyncio.CancelledError:
                 # cancel_on_disconnect or cancel_generation: cancellation is pending, so an `await` here would re-raise.
-                # Write
-                # from a fresh, non-cancelled task, then re-raise so this one stays cancelled.
+                # Write from a fresh, non-cancelled task, then re-raise so this one stays cancelled.
                 reply_model_unload_service.schedule_cancelled_write(message_id, model, full_reply, conversation_id)
                 raise
 

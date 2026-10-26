@@ -6,7 +6,6 @@ that keeps calling tools can't run forever.
 """
 
 import json
-import time
 from collections.abc import AsyncIterator
 from typing import Any
 
@@ -19,6 +18,7 @@ from app.services.inference_client import InferenceError
 from app.services.live_workflow_bus import live_workflow
 from app.services.mcp_client import McpError
 from app.services.mcp_tool_catalog import ExposedTool, McpToolCatalog
+from app.services.model_capabilities import model_capabilities
 from app.services.tool_call_sink import ToolCallSink
 from app.services.tool_result_clip import ToolResultClip
 
@@ -47,6 +47,9 @@ class ToolLoop:
             text = ""
             try:
                 async for chunk in inference_client.chat_stream(model, messages, call_params):
+                    if isinstance(chunk, dict):  # reasoning (reasoning_ticks): passed on, not reply text
+                        yield chunk
+                        continue
                     if round_number > 0 and not text:
                         yield "\n\n"
                     text += chunk
@@ -142,22 +145,9 @@ async def tool_stream_or_none(
     return ToolLoop(tools, limits.rounds, limits.result_chars).run(model, messages, params)
 
 
-_CAPABILITY_SECONDS = 60.0
-_capabilities: tuple[float, list[dict]] | None = None
-
-
 async def _model_can_use_tools(model: str) -> bool:
     """False only when the engine reports capabilities for this model and "tools" isn't among them (Matricxon does;
-    a remote llama-server's list doesn't, so it is tried and falls back if refused). The model list is cached briefly so
-    a tool reply doesn't pay for an extra engine call.
+    a remote llama-server's list doesn't, so it is tried and falls back if refused). See model_capabilities.py.
     """
-    global _capabilities
-    now = time.monotonic()
-    if _capabilities is None or _capabilities[0] < now:
-        try:
-            _capabilities = (now + _CAPABILITY_SECONDS, await inference_client.list_models())
-        except InferenceError:
-            return True
-    entry = next((m for m in _capabilities[1] if m.get("name") == model), None)
-    capabilities = entry.get("capabilities") if entry else None
+    capabilities = await model_capabilities.of(model)
     return capabilities is None or "tools" in capabilities

@@ -49,6 +49,17 @@ def _stub_gguf_probe(monkeypatch):
     monkeypatch.setattr(gguf_probe, "probe_metadata", fake_probe_metadata)
 
 
+@pytest.fixture(autouse=True)
+def _no_engine_call(monkeypatch):
+    """The catalog asks the active engine what is installed; these tests need no engine (the active one may be left
+    as Matricxon, with fake hosts, by an earlier test)."""
+
+    async def nothing_installed():
+        return []
+
+    monkeypatch.setattr(extended_model_catalog_service, "list_models", nothing_installed)
+
+
 @pytest.mark.asyncio
 async def test_get_extended_catalog_starts_empty(db, user):
     result = await model_catalog_admin.get_extended_catalog(db=db, user=user)

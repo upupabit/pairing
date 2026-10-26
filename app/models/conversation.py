@@ -83,7 +83,7 @@ class Message(Base):
     # an AI reply); this only drives the "Shared from a private chat" remark. No link back, to keep the chat private.
     shared_from = Column(String(20), nullable=True)
     # The real failure reason of a status="error" message (e.g. Matricxon's "not enough memory to load...",
-    # matricxon_client._error_detail_from_body), set by reply_model_unload_service.mark_error; null otherwise.
+    # matricxon_errors.MatricxonReply.detail), set by reply_model_unload_service.mark_error; null otherwise.
     # Before this column the text reached only live SSE viewers (reply_broadcast_service.publish_error);
     # MessageOut.error_message now lets a reload show it too.
     error_message = Column(Text, nullable=True)

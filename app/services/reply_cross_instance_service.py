@@ -17,6 +17,12 @@ from app.database import AsyncSessionLocal
 from app.models import Message
 
 
+async def deleted_elsewhere(db: AsyncSession, message: Message) -> bool:
+    """True when `message` (or its whole conversation) was deleted, possibly through another instance."""
+    fresh = await refresh_or_none(db, message)
+    return fresh is None or fresh.status == "deleted"
+
+
 async def refresh_or_none(db: AsyncSession, message: Message) -> Message | None:
     """Re-reads just `message`'s status fresh from the DB (not the whole row, so the caller's in-memory content like
     `full_reply` stays authoritative). Returns `message` (mutated) if the row exists, None if hard-deleted (a

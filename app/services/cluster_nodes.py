@@ -17,6 +17,9 @@ from app.services.cluster_reach import ClusterReach
 from app.services.cluster_settings import ClusterSettings
 from app.services.cluster_voter_changes import VoterChanges
 
+# Matricxon asks a new node's provisioning from another machine for this (its cluster/join_token.py).
+JOIN_TOKEN_HEADER = "X-Matricxon-Join-Token"
+
 logger = logging.getLogger("llama_chat")
 _TIMEOUT = httpx.Timeout(20.0, connect=5.0)
 _LOOPBACK = {"localhost", "127.0.0.1", "::1", "0.0.0.0"}
@@ -106,9 +109,11 @@ class ClusterNodes(VoterChanges):
             raise NodeNotAllowedError(f"{host} could not be reset: HTTP {resp.status_code}")
         logger.info("cluster: node %s reset to a fresh install (restarting)", host)
 
-    async def add(self, address: str, advertise_url: str | None = None, node_kind: str = "compute") -> str:
+    async def add(
+        self, address: str, advertise_url: str | None = None, node_kind: str = "compute", join_token: str | None = None
+    ) -> str:
         """Provisions a fresh node with the saved folders and adds it to the pool; returns its address.
-        `advertise_url`: how other nodes reach it, if not as pAIring does.
+        `advertise_url`: how other nodes reach it, if not as pAIring does. `join_token`: from the node's log.
         """
         config = await settings_service.get_matricxon_server_config(self._db)
         host = self.normalize(address)
@@ -132,8 +137,9 @@ class ClusterNodes(VoterChanges):
             await reach.cluster_reaches(await self._seed_consensus(config), host, advertise)
             await reach.joiner_reaches(host, voters)
         await self._provision(
-            host, config.models_path, config.prompt_cache_path, advertise, voters, node_kind, config.admin_secret
-        )
+            host, config.models_path, config.prompt_cache_path, advertise, voters, node_kind, config.admin_secret,
+            join_token,
+        )  # fmt: skip
         listed = listed or host  # a listed plain host keeps its spelling
         config.remote_hosts = [h for h in config.remote_hosts if h != listed]
         config.cluster_hosts = [*config.cluster_hosts, listed]
@@ -219,6 +225,7 @@ class ClusterNodes(VoterChanges):
         voters: dict[str, str] | None,
         node_kind: str = "compute",
         admin_secret: str | None = None,
+        join_token: str | None = None,
     ) -> None:
         body: dict = {"models_dir": models, "prompt_cache_dir": cache, "restart": True}
         if node_kind != "compute":
@@ -227,13 +234,18 @@ class ClusterNodes(VoterChanges):
             body["admin_secret"] = admin_secret
         if voters:  # joiner learns its address and whom to catch up from
             body |= {"advertise_url": advertise, "consensus_seeds": voters}
+        headers = {JOIN_TOKEN_HEADER: join_token.strip()} if join_token and join_token.strip() else {}
         async with matricxon_http.client(timeout=_TIMEOUT, transport=self._transport) as client:
             try:
-                resp = await client.post(host + "/api/cluster/provision", json=body)
+                resp = await client.post(host + "/api/cluster/provision", json=body, headers=headers)
             except httpx.HTTPError as exc:
                 raise NodeNotAllowedError(f"Could not configure {host}: {exc}") from exc
         if resp.status_code == 409:
             raise NodeNotFreshError(f"{host}: {resp.json().get('detail', 'not a fresh install')}")
+        if resp.status_code == 403:
+            raise NodeNotAllowedError(
+                f'{host} needs its join token: copy it from the node\'s log (the line with "use this join token").'
+            )
         if resp.is_error:
             detail = resp.json().get("detail", f"HTTP {resp.status_code}") if resp.content else resp.status_code
             raise NodeNotAllowedError(f"{host} refused the configuration: {detail}. Is the shared storage mounted?")

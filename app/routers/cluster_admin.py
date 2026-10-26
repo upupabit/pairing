@@ -252,7 +252,7 @@ async def add_node(
     """
     await _require_quorum(db)
     try:
-        await ClusterNodes(db).add(body.address, body.advertise_url, body.node_kind)
+        await ClusterNodes(db).add(body.address, body.advertise_url, body.node_kind, body.join_token)
     except NodeNotAllowedError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except NodeNotFreshError as exc:

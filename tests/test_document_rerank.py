@@ -89,6 +89,8 @@ async def test_rerank_setting_falls_back_to_an_installed_reranker_and_can_be_swi
 
 
 class _FakeResponse:
+    is_error = False
+
     def raise_for_status(self) -> None:
         return None
 
@@ -123,9 +125,10 @@ class _NullCtx:
 @pytest.mark.asyncio
 async def test_matricxon_client_returns_scores_in_input_order(monkeypatch):
     calls: list = []
-    monkeypatch.setattr(matricxon_pool, "pick_host", lambda: "http://mx:8420")
-    monkeypatch.setattr(matricxon_pool, "track_request", lambda _host: _NullCtx())
-    monkeypatch.setattr(matricxon_pool, "mark_recovered", lambda _host: None)
+    async def on_one_host(make_call, retry_on=()):
+        return await make_call("http://mx:8420")
+
+    monkeypatch.setattr(matricxon_pool, "call_with_failover", on_one_host)
     monkeypatch.setattr(httpx, "AsyncClient", lambda **_kw: _FakeClient(calls))
 
     scores = await MatricxonRerankClient().rerank("q", ["d0", "d1"], "rr:latest")

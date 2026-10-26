@@ -46,7 +46,7 @@ function _analysisTable(title, hint, headers, rows) {
 
 function _analysisFindings(findings) {
   if (!findings.length) {
-    return `<p class="rounded-lg border border-emerald-600/50 bg-emerald-950/20 px-4 py-3 text-sm text-emerald-300">Nothing needs attention in this window.</p>`;
+    return `<p class="rounded-lg border border-warning-500/50 bg-slate-900 px-4 py-3 text-sm text-warning-400">Nothing needs attention at the moment</p>`;
   }
   const cards = findings.slice(0, ANALYSIS_MAX_FINDINGS).map((f) => {
     const level = ANALYSIS_LEVELS[f.level] || ANALYSIS_LEVELS.info;

@@ -148,7 +148,7 @@ async def test_router_maps_errors_to_400_and_409(db, monkeypatch):
         await cluster_admin.add_node(NodeAdd(address=NODE), db=db, _admin=None)
     assert bad.value.status_code == 400
 
-    async def not_fresh(self, address, advertise_url=None, node_kind="compute"):
+    async def not_fresh(self, address, advertise_url=None, node_kind="compute", join_token=None):
         raise NodeNotFreshError("populated")
 
     monkeypatch.setattr(cluster_nodes.ClusterNodes, "add", not_fresh)

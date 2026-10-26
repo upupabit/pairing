@@ -5,7 +5,8 @@ plumbing keeps their failure/cooldown state and error types from leaking. Matric
 router/schema code (tags_router.py, chat_router.py, embeddings_router.py), not Ollama's docs.
 
 Differences from llamacpp_client.py (an OpenAI-style API):
-  - No reasoning to filter: Matricxon's replies carry no separate thinking text.
+  - Reasoning (with `think` on) arrives in `message.thinking`, apart from `content`, and is left out, like
+    llama-server's reasoning_content.
   - Embeddings use Matricxon's singular `/api/embeddings` (not Ollama's `/api/embed`); same shapes otherwise
     (../matricxon/app/schemas/embeddings.py).
 
@@ -24,18 +25,13 @@ from opentelemetry.trace import SpanKind, Status, StatusCode
 
 from app.config import EMBEDDING_NUM_CTX
 from app.services import matricxon_http, matricxon_pool, matricxon_telemetry
+from app.services.matricxon_errors import MatricxonError, MatricxonHostError, MatricxonReply
 from app.services.tool_call_sink import add_tools_to_payload, sink_from
 
 logger = logging.getLogger("llama_chat")
 
 _REQUEST_TIMEOUT = httpx.Timeout(120.0, connect=5.0)
 _CHAT_TIMEOUT = httpx.Timeout(None, connect=5.0)
-
-
-class MatricxonError(Exception):
-    """Raised when Matricxon is unreachable or errors; like llamacpp_client.LlamaCppError, a separate type (no shared
-    base) so one engine's errors can't be caught as the other's. inference_client normalizes both into InferenceError.
-    """
 
 
 async def list_models() -> list[dict]:
@@ -84,43 +80,36 @@ async def embed(text: str, model: str) -> list[float]:
     """Embeds `text` via POST /api/embeddings (singular) with `model` (the admin's default, resolved by callers via
     model_catalog_service.get_default_embedding_model). No cold-start retry (see llamacpp_client.embed): Matricxon's
     ModelManager loads the model inside the request (../matricxon/app/routers/embeddings_router.py), so there's no
-    "dispatched before ready" race, and one span attempt_count always.
+    "dispatched before ready" race. Fails over like chat: a down node, or an error reply another node may not give.
     """
-    host = matricxon_pool.pick_host()
+    call_state: dict = {"attempts": 0}
+
+    async def _embedding_from(host: str) -> list[float]:
+        call_state["host"] = host
+        call_state["attempts"] += 1
+        async with matricxon_http.client(timeout=_REQUEST_TIMEOUT) as client:
+            resp = await client.post(
+                f"{host}/api/embeddings",
+                json={"model": model, "prompt": text, "options": {"num_ctx": EMBEDDING_NUM_CTX}},
+            )
+        if resp.is_error:
+            raise MatricxonReply.error(resp.content, resp.status_code)
+        return resp.json()["embedding"]
+
     with matricxon_telemetry.get_tracer().start_as_current_span(
         "matricxon.embed", kind=SpanKind.CLIENT, record_exception=False, set_status_on_exception=False
     ) as span:
         span.set_attribute("gen_ai.request.model", model)
-        span.set_attribute("server.address", host)
-        span.set_attribute("engine.attempt_count", 1)
-        async with matricxon_pool.track_request(host):
-            async with matricxon_http.client(timeout=_REQUEST_TIMEOUT) as client:
-                try:
-                    resp = await client.post(
-                        f"{host}/api/embeddings",
-                        json={"model": model, "prompt": text, "options": {"num_ctx": EMBEDDING_NUM_CTX}},
-                    )
-                    resp.raise_for_status()
-                except httpx.HTTPError as exc:
-                    matricxon_pool.mark_failure(host)
-                    span.set_status(Status(StatusCode.ERROR, str(exc)))
-                    raise MatricxonError(f"Embedding request failed: {exc}") from exc
-        matricxon_pool.mark_recovered(host)
-    return resp.json()["embedding"]
-
-
-def _error_detail_from_body(body: bytes, status_code: int) -> str:
-    """Extracts Matricxon's `{"error": "..."}` detail from an error body (the shape of every typed error
-    in../matricxon/app/server/errors.py). Falls back to the raw text (e.g. an unhandled exception's plain body, before
-    its catch-all handler) and only to a generic message when there is nothing.
-    """
-    try:
-        detail = json.loads(body).get("error")
-    except (json.JSONDecodeError, AttributeError):
-        detail = None
-    if not detail:
-        detail = body.decode("utf-8", errors="replace").strip() or None
-    return detail or f"Matricxon returned HTTP {status_code} with no error detail."
+        try:
+            return await matricxon_pool.call_with_failover(_embedding_from, retry_on=(MatricxonHostError,))
+        except (httpx.HTTPError, MatricxonError) as exc:
+            span.set_status(Status(StatusCode.ERROR, str(exc)))
+            if isinstance(exc, MatricxonError):
+                raise
+            raise MatricxonError(f"Embedding request failed: {exc}") from exc
+        finally:
+            span.set_attribute("server.address", call_state.get("host", ""))
+            span.set_attribute("engine.attempt_count", call_state["attempts"])
 
 
 async def chat_stream(model: str, messages: list[dict], params: dict) -> AsyncGenerator[str, None]:
@@ -139,6 +128,7 @@ async def chat_stream(model: str, messages: list[dict], params: dict) -> AsyncGe
         options["seed"] = params["seed"]
 
     payload = {"model": model, "messages": messages, "options": options, "stream": True}
+    payload["think"] = bool(params.get("think"))  # off unless the chat turned Reasoning on; reasoning stays out of text
     add_tools_to_payload(payload, params)
     sink = sink_from(params)
     # The reply's id (reply_generation_service): stop_model cancels just this reply, the model stays for others.
@@ -177,7 +167,7 @@ async def chat_stream(model: str, messages: list[dict], params: dict) -> AsyncGe
                     # Read the body (Matricxon's `{"error": ...}`, e.g. "not enough memory to load ...: need ~12.9GB")
                     # before `async with` closes the stream: HTTPStatusError's text omits it, the part an admin needs.
                     body = await resp.aread()
-                    raise MatricxonError(_error_detail_from_body(body, resp.status_code))
+                    raise MatricxonReply.error(body, resp.status_code)
                 async for line in resp.aiter_lines():
                     if not line:
                         continue
@@ -192,6 +182,8 @@ async def chat_stream(model: str, messages: list[dict], params: dict) -> AsyncGe
                     chunk = data.get("message", {}).get("content", "")
                     if chunk:
                         yield chunk
+                    elif data.get("message", {}).get("thinking") and params.get("reasoning_ticks"):
+                        yield {"reasoning": data["message"]["thinking"]}  # not reply text: stages and checks only
 
     # record_exception/set_status_on_exception off (as llamacpp_client.chat_stream): their defaults mark the span
     # ERROR on any exception, including the normal asyncio.CancelledError from "stop". Status is set explicitly below.
@@ -200,7 +192,9 @@ async def chat_stream(model: str, messages: list[dict], params: dict) -> AsyncGe
     ) as span:
         span.set_attribute("gen_ai.request.model", model)
         try:
-            async for chunk in matricxon_pool.stream_with_failover(_raw_content_chunks_from, prefer=holder, info=route):
+            async for chunk in matricxon_pool.stream_with_failover(
+                _raw_content_chunks_from, prefer=holder, info=route, retry_on=(MatricxonHostError,)
+            ):
                 yield chunk
         except (httpx.HTTPError, MatricxonError) as exc:
             matricxon_telemetry.record_chat_error(span, call_state.get("host", ""), call_state["attempts"], exc)

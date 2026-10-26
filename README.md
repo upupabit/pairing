@@ -164,6 +164,9 @@ It is also important not to expose more models to users than the system RAM/VRAM
 **Security, taken seriously either way**
 - bcrypt password hashing, signed session cookies, login rate limiting,
   timing-safe unknown-username handling.
+- CSRF protection: changes made with your login must come from pAIring's own pages (an origin check, so other
+  apps on the same host can't act as you). `CSRF_TRUSTED_ORIGINS` adds extra origins if a proxy needs it.
+- API docs (`/docs`, `/redoc`, `/openapi.json`) for admins only.
 - Role-based access (admin/user); disabling an account keeps its
   history intact rather than deleting anything.
 - SQLite out of the box, MySQL when you need more — switchable live.
@@ -224,7 +227,7 @@ Setup, limits and privacy notes for each: [pAIring connectors](https://bytepenny
 - The web UI is a client of pAIring's own JSON REST API — 90+ endpoints covering chat, channels,
   documents/RAG, notes, users, stats, telemetry, and every admin setting, so anything the UI can do, your own
   scripts/automation can do too.
-- Live, interactive docs at `/docs` (Swagger UI) and `/redoc`
+- Live, interactive docs at `/docs` (Swagger UI) and `/redoc`, for admins (log in first)
 - `GET /health` reports whether *this* instance can actually serve a chat request right now.
 
 <br>

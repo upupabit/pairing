@@ -8,6 +8,8 @@ to the admin's remote_hosts. Cached via refresh_from_config, not re-read per req
 """
 
 import asyncio
+from collections.abc import AsyncGenerator, Awaitable, Callable
+from typing import TypeVar
 
 import httpx
 
@@ -15,6 +17,8 @@ from app.schemas import MatricxonServerConfig
 from app.services import matricxon_http
 from app.services.cluster_routing import NodeLoads, WarmUp
 from app.services.server_pool import HostPool, RouteInfo, ping_host
+
+T = TypeVar("T")
 
 # Matches../matricxon/app/config.py's default (MATRICXON_PORT=8420). Like llamacpp_pool.LOCAL_LLAMACPP_HOST it is
 # a fixed fact (matricxon_process passes no host/port override to scripts/start.sh), not admin-editable.
@@ -64,9 +68,15 @@ def track_request(host: str):
     return _pool.track_request(host)
 
 
-async def stream_with_failover(make_stream, prefer: str | None = None, info: RouteInfo | None = None):
-    async for chunk in _pool.stream_with_failover(make_stream, prefer=prefer, info=info):
+async def stream_with_failover(
+    make_stream, prefer: str | None = None, info: RouteInfo | None = None, retry_on: tuple = ()
+) -> AsyncGenerator[str, None]:
+    async for chunk in _pool.stream_with_failover(make_stream, prefer=prefer, info=info, retry_on=retry_on):
         yield chunk
+
+
+async def call_with_failover(make_call: Callable[[str], Awaitable[T]], retry_on: tuple = ()) -> T:
+    return await _pool.call_with_failover(make_call, retry_on=retry_on)
 
 
 async def _load_model(host: str, model: str) -> None:

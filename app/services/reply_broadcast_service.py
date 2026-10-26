@@ -43,6 +43,8 @@ class GenerationState:
     status: str = "streaming"
     sources: list[str] | None = None
     tool_events: list[dict] = field(default_factory=list)
+    # Stages of the model's reasoning so far (reasoning_stages.py), for the chat's live "Reasoning..." list.
+    reasoning: list[str] = field(default_factory=list)
 
 
 class _Topic:
@@ -106,6 +108,14 @@ def publish_tool(conversation_id: str, tool_event: dict) -> None:
         return
     topic.state.tool_events.append(tool_event)
     _publish(conversation_id, {"tool": tool_event, "message_id": topic.state.message_id})
+
+
+def publish_reasoning(conversation_id: str, stages: list[str]) -> None:
+    topic = _topics.get(conversation_id)
+    if topic is None or topic.state is None:
+        return
+    topic.state.reasoning = stages
+    _publish(conversation_id, {"reasoning": stages, "message_id": topic.state.message_id})
 
 
 def publish_done(conversation_id: str, sources: list[str] | None) -> None:

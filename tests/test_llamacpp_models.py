@@ -89,3 +89,14 @@ def test_writing_the_preset_reports_whether_it_changed(tmp_path):
     assert preset.write(path) is True
     assert preset.write(path) is False
     assert LlamaCppPreset([], num_ctx=4096, slots=1).write(path) is True
+
+
+def test_a_thinking_switch_before_the_reply_prompt_means_a_live_chat_is_read_again(tmp_path):
+    gemma_like = "{% if enable_thinking %}<|think|>{% endif %}{% if add_generation_prompt %}model{% endif %}"
+    qwen_like = "{% if add_generation_prompt %}{% if enable_thinking %}<think>{% endif %}{% endif %}"
+
+    gemma = _capabilities(tmp_path / "g", {"general.architecture": "gemma4", "tokenizer.chat_template": gemma_like})
+    qwen = _capabilities(tmp_path / "q", {"general.architecture": "qwen35", "tokenizer.chat_template": qwen_like})
+
+    assert "thinking" in gemma and "thinking_rereads" in gemma
+    assert "thinking" in qwen and "thinking_rereads" not in qwen

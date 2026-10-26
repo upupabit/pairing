@@ -80,6 +80,7 @@ from app.schemas.model_catalog import (
     EmbeddingModelCatalogResponse,
     EngineModelSupport,
     InstalledModelsResponse,
+    ModelCapabilitiesResponse,
     ModelCatalogResponse,
 )
 from app.schemas.model_catalog_admin import (
@@ -254,6 +255,7 @@ __all__ = [
     "HideModelRequest",
     "HideModelResponse",
     "InstalledModelsResponse",
+    "ModelCapabilitiesResponse",
     "ModelCatalogResponse",
     "PullModelRequest",
     "RemoveExtendedModelRequest",

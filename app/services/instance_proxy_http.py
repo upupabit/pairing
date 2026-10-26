@@ -59,7 +59,7 @@ PROXY_TIMEOUT = httpx.Timeout(300.0, connect=5.0)
 # precedes the trusted one appended below, and Starlette's Headers.get (used by
 # auth_service.resolve_client_ip on the sibling) returns the first match: the forged value, defeating the
 # loopback-trust check and the per-IP login rate limiter.
-_DROP_REQUEST_HEADERS = {"host", "x-forwarded-for"}
+_DROP_REQUEST_HEADERS = {"host", "x-forwarded-for", "x-forwarded-host"}
 _DROP_RESPONSE_HEADERS = {"content-length", "transfer-encoding", "connection"}
 
 
@@ -85,6 +85,10 @@ def filter_request_headers(raw_headers: list[tuple[bytes, bytes]], ip: str) -> l
         if k.decode("latin-1").lower() not in _DROP_REQUEST_HEADERS
     ]
     headers.append(("X-Forwarded-For", ip))
+    # The browser's host: the target sees "localhost:<port>", and csrf_guard.py compares Origin with this.
+    host = next((v.decode("latin-1") for k, v in raw_headers if k.lower() == b"host"), "")
+    if host:
+        headers.append(("X-Forwarded-Host", host))
     return headers
 
 

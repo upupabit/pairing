@@ -191,3 +191,10 @@ class InstalledModelsResponse(BaseModel):
     """GET /api/settings/installed-models: plain tags for the chat page's model switcher."""
 
     models: list[str]
+
+
+class ModelCapabilitiesResponse(BaseModel):
+    """GET /api/settings/model-capabilities: what the active engine reports `model` can do; None when unknown."""
+
+    model: str
+    capabilities: list[str] | None = None

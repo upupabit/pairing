@@ -140,6 +140,9 @@
         <button id="model-badge" type="button"
           class="hidden shrink-0 rounded-full bg-slate-800 px-2.5 py-1 font-mono hover:bg-slate-700 transition-colors"
           title="Switch model for this chat"></button>
+        <!-- This chat's Reasoning setting (chat_thinking.js): hidden unless the model can reason. -->
+        <button id="thinking-chip" type="button"
+          class="hidden shrink-0 rounded-full bg-slate-800 px-2.5 py-1 hover:bg-slate-700 transition-colors disabled:opacity-60 disabled:cursor-default"></button>
         <span class="text-slate-500">{{ username }}</span>
         <form method="post" action="/logout" class="flex items-center">
           <button type="submit" class="text-slate-500 hover:text-slate-300 transition-colors">Log out</button>
@@ -298,6 +301,8 @@
 <script src="/static/js/account_panel.js?v={{ static_version }}"></script>
 <script src="/static/js/chat_share.js?v={{ static_version }}"></script>
 <script src="/static/js/chat_tools.js?v={{ static_version }}"></script>
+<script src="/static/js/chat_thinking.js?v={{ static_version }}"></script>
+<script src="/static/js/chat_reasoning.js?v={{ static_version }}"></script>
 <script src="/static/js/chat_tables.js?v={{ static_version }}"></script>
 <script src="/static/js/chat_scroll.js?v={{ static_version }}"></script>
 <script src="/static/js/chat.js?v={{ static_version }}"></script>

@@ -63,6 +63,9 @@ if not SECRET_KEY:
 # SESSION_COOKIE_SECURE=true under HTTPS, or the cookie is sent in cleartext.
 # The login cookie's name; distinct from Starlette's default "session" so other apps on the same host don't clash.
 SESSION_COOKIE_NAME = "pairing_session"
+# Extra origins allowed to send state-changing requests with the login cookie (app/services/csrf_guard.py), comma
+# separated, e.g. "https://chat.example.com". Rarely needed: the server's own host is always allowed.
+CSRF_TRUSTED_ORIGINS = [o.strip() for o in os.environ.get("CSRF_TRUSTED_ORIGINS", "").split(",") if o.strip()]
 SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "false").strip().lower() == "true"
 if not SESSION_COOKIE_SECURE:
     logging.getLogger("llama_chat").warning(
@@ -150,6 +153,8 @@ DEFAULT_GENERATION_PARAMS = {
     "num_predict": 1024,
     # Random seed; -1 = new each time.
     "seed": -1,
+    # Reason before answering (the chat's Reasoning chip): off unless turned on (GenerationParams.think).
+    "think": False,
     # Document chunks retrieved per question from the shared knowledge base (no per-chat switch).
     # No effect while the base is empty or no embedding model exists.
     "rag_top_k": 4,

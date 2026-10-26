@@ -5,10 +5,14 @@ from app.schemas import MatricxonServerConfig
 from app.services import matricxon_http, matricxon_pool
 from app.services.cluster_errors import NodeNotAllowedError
 from app.services.cluster_secret import ClusterSecret
+from app.services.server_pool import HostPool
 
 
 @pytest.fixture(autouse=True)
-def _reset_secret():
+def _reset_secret_and_hosts(monkeypatch):
+    """refresh_from_config sets module-wide state; a later test must not find these fake hosts in the pool."""
+    monkeypatch.setattr(matricxon_pool, "_pool", HostPool())
+    monkeypatch.setattr(matricxon_pool, "_all_hosts", list(matricxon_pool.get_effective_hosts()))
     yield
     matricxon_http.set_secret(None)
 

@@ -73,7 +73,7 @@ const WORKFLOW_ML_NODES = [
     "ml_template", "Chat template\n(messages → prompt text)", 1, ML_ROW.r1,
     "Rendering the model's own chat template",
     "app/runtime/chat_template.py — ChatTemplatePromptBuilder",
-    "The conversation (system prompt, history, new question) is turned into the single text string this particular model was trained on. The template ships inside the GGUF file as Jinja; it decides the role markers (for Qwen, <|im_start|>user …), where images and tool definitions go, and whether the reply starts with an empty or open thinking block. With tools on, the tool definitions (saved per chat) go into this rendering — in most templates (Gemma, Mistral) at the very start of the prompt, in Llama 3.2\u0027s only into the last user message — and each tool result comes back as a \"tool\" message the template renders into the model\u0027s turn. See the MCP tool loop stage."
+    "The conversation (system prompt, history, new question) is turned into the single text string this particular model was trained on. The template ships inside the GGUF file as Jinja; it decides the role markers (for Qwen, <|im_start|>user …), where images and tool definitions go, and whether the reply starts with an empty or open thinking block: the chat\u0027s Reasoning chip (chat header) is passed as the template\u0027s enable_thinking, and earlier replies keep the empty block the model saw, so the next turn reuses the cache. With tools on, the tool definitions (saved per chat) go into this rendering — in most templates (Gemma, Mistral) at the very start of the prompt, in Llama 3.2\u0027s only into the last user message — and each tool result comes back as a \"tool\" message the template renders into the model\u0027s turn. See the MCP tool loop stage."
   ),
   mlNode(
     "ml_tokenize", "Tokenizer\n(text → token ids)", 2, ML_ROW.r1,
@@ -173,7 +173,7 @@ const WORKFLOW_ML_NODES = [
     "ml_detok", "Incremental detokenizer\n(ids → text)", 4, ML_ROW.r3,
     "Turning token ids back into text",
     "app/runtime/tokenizer.py — IncrementalTextDecoder",
-    "Tokens map back to pieces of text, but a character can span several tokens (emoji, non-Latin scripts), so the decoder holds back incomplete bytes until they form a full character. Special tokens are filtered out so a reply never shows literal <|im_end|> markers. With tools on, the stream is also scanned for the model\u0027s tool-call markup (per chat-template format); a parsed call leaves as message.tool_calls instead of text, which is what the MCP tool loop acts on."
+    "Tokens map back to pieces of text, but a character can span several tokens (emoji, non-Latin scripts), so the decoder holds back incomplete bytes until they form a full character. Special tokens are filtered out so a reply never shows literal <|im_end|> markers, and reasoning (<think>…</think>, or Gemma\u0027s thought channel) is split off into message.thinking. With tools on, the stream is also scanned for the model\u0027s tool-call markup (per chat-template format); a parsed call leaves as message.tool_calls instead of text, which is what the MCP tool loop acts on."
   ),
   mlNode(
     "ml_ndjson", `NDJSON line out\n(→ back to ${APP_NAME})`, 5, ML_ROW.r3,

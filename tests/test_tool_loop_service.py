@@ -6,6 +6,7 @@ from app.services import inference_client, mcp_settings_service, tool_loop_servi
 from app.services.inference_client import InferenceError
 from app.services.mcp_client import McpConnection, McpError
 from app.services.mcp_tool_catalog import ExposedTool
+from app.services.model_capabilities import ModelCapabilities
 from app.services.tool_call_sink import ToolCallSink
 from app.services.tool_loop_service import ToolLoop
 from tests.mcp_fake_server import FakeMcpServer
@@ -156,7 +157,7 @@ async def test_tool_stream_or_none_gates(db, server, monkeypatch, use_tools, hav
 
     monkeypatch.setattr(tool_loop_service.McpToolCatalog, "tools", fake_tools)
     monkeypatch.setattr(inference_client, "list_models", fake_models)
-    monkeypatch.setattr(tool_loop_service, "_capabilities", None)
+    monkeypatch.setattr(tool_loop_service, "model_capabilities", ModelCapabilities())
 
     stream = await tool_loop_service.tool_stream_or_none(db, "m", [], {"use_tools": use_tools})
 
@@ -189,7 +190,7 @@ async def test_capabilities_are_cached_between_replies(db, server, monkeypatch) 
 
     monkeypatch.setattr(tool_loop_service.McpToolCatalog, "tools", fake_tools)
     monkeypatch.setattr(inference_client, "list_models", fake_models)
-    monkeypatch.setattr(tool_loop_service, "_capabilities", None)
+    monkeypatch.setattr(tool_loop_service, "model_capabilities", ModelCapabilities())
 
     for _ in range(3):
         assert await tool_loop_service.tool_stream_or_none(db, "m", [], {"use_tools": True}) is not None

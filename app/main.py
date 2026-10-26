@@ -11,6 +11,7 @@ from app.config import (
     APP_NAME,
     APP_VERSION,
     BASE_DIR,
+    CSRF_TRUSTED_ORIGINS,
     INSTANCE_INDEX,
     SECRET_KEY,
     SESSION_COOKIE_NAME,
@@ -18,6 +19,7 @@ from app.config import (
 )
 from app.routers import (
     account,
+    api_docs,
     auth,
     channel_history_admin,
     channels,
@@ -40,6 +42,7 @@ from app.routers import (
     matricxon_cache_admin,
     mcp_admin,
     mcp_tools,
+    model_capabilities,
     model_catalog_admin,
     notes,
     pages,
@@ -56,13 +59,21 @@ from app.routers import (
     workflow_live,
 )
 from app.services import startup_service
+from app.services.csrf_guard import CsrfOriginMiddleware
 from app.services.instance_proxy import InstanceProxyMiddleware
 from app.templates_env import templates
 
 logger = logging.getLogger("llama_chat")
 logging.basicConfig(level=logging.INFO)
 
-app = FastAPI(title=APP_NAME, description="On-prem, multi-user chat UI for models on a local ML engine")
+# Built-in /docs, /redoc and /openapi.json off: app/routers/api_docs.py serves them to admins only.
+app = FastAPI(
+    title=APP_NAME,
+    description="On-prem, multi-user chat UI for models on a local ML engine",
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
+)
 
 
 class InstanceIndexHeaderMiddleware:
@@ -101,6 +112,8 @@ app.add_middleware(
 # proxied request never touches this process's session (the target decodes the shared cookie, see instance_proxy.py).
 app.add_middleware(InstanceProxyMiddleware)
 app.add_middleware(InstanceIndexHeaderMiddleware)
+# Outermost: checked before a request is proxied to a sibling (which checks again via X-Forwarded-Host).
+app.add_middleware(CsrfOriginMiddleware, cookie_name=SESSION_COOKIE_NAME, trusted_origins=CSRF_TRUSTED_ORIGINS)
 
 # Serves app/static/ at /static/ (no build step, no login: the login page needs it). Uses BASE_DIR so it
 # works from any working directory (a relative path once crashed a systemd instance).
@@ -121,6 +134,7 @@ app.include_router(pages.router)
 # JSON API routers by resource (see each docstring). All but auth require a logged-in user via
 # get_current_user / require_admin.
 app.include_router(account.router)
+app.include_router(api_docs.router)
 app.include_router(auth.router)
 app.include_router(channels.router)
 app.include_router(channels.member_router)
@@ -128,6 +142,7 @@ app.include_router(conversations.router)
 app.include_router(chat.router)
 app.include_router(settings.router)
 app.include_router(model_catalog_admin.router)
+app.include_router(model_capabilities.router)
 app.include_router(users.router)
 app.include_router(db_admin.router)
 app.include_router(documents.router)

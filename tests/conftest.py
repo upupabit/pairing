@@ -55,6 +55,26 @@ def _tests_never_touch_the_real_llamacpp_files(monkeypatch, tmp_path):
 
 
 @pytest.fixture(autouse=True)
+def _fresh_model_capabilities():
+    """The engine's model list is cached module-wide (model_capabilities.py): each test asks its own fakes."""
+    from app.services.model_capabilities import model_capabilities
+
+    model_capabilities.forget()
+
+
+@pytest.fixture(autouse=True)
+def _tests_never_bump_the_real_settings_version(monkeypatch):
+    """Every save calls server_pool_broadcast.broadcast_refresh, which bumps the shared settings_sync's version
+    through the real AsyncSessionLocal; tests of SettingsSync build their own instance on the test database."""
+    from app.services.settings_sync import settings_sync
+
+    async def no_bump() -> None:
+        return None
+
+    monkeypatch.setattr(settings_sync, "bump", no_bump)
+
+
+@pytest.fixture(autouse=True)
 def _tests_never_write_to_the_real_cluster(monkeypatch):
     """Cluster settings go through whichever voter answers (ClusterSettings.status). With no mock transport or hosts
     that is the live cluster (a test wrote fake cluster/paths folders into it). Without a mock there is no

@@ -37,7 +37,7 @@
 
 # pAIring
 
-Private AI ring is a self-hosted, production-ready platform for deploying private LLMs & image generation models across a single node, a team, a department, or an organization — role-based access, load balancing failover across servers, and rock solid UI validations to avoid configuration mistakes. Start chatting with open weights LLMs, create images and much more. Supports every existing public GGUF model out of the box, browsable from Hugging Face or your own private repository. Switch the inference engine with one setting: local llama.cpp or Matricxon, or one of a growing number of cloud connectors.
+Private AI ring is a self-hosted, production-ready platform for deploying private LLMs & image generation models across a single node, a team, a department, or an organization — role-based access, load balancing failover across servers, and rock solid UI validations to avoid configuration mistakes. Start chatting with open weights LLMs, create images and much more. Supports every existing public GGUF model out of the box, browsable from Hugging Face or your own private repository. Switch the inference engine with one setting: local llama.cpp or Matricxon, or one of a growing number of cloud connectors. Runs as a normal user (no root needed).
 
 **See where every reply spends its time:** the live workflow shows each chat moving through pAIring and the Matricxon engine in real time, from one server to clusters of hundreds of nodes.
 
@@ -61,6 +61,12 @@ you're about to invite three friends or roll this out to a whole team.
 Configure it as a system service: `scripts/pairing.service` is a
 systemd unit template (Linux) — edit a couple of values and
 `systemctl enable` it.
+
+**No root needed.** pAIring runs as a normal user, and the service
+template runs it as a dedicated `pairing` user. Root is only needed
+once, at setup, to install system packages and the systemd service.
+`scripts/install_on_fresh_server.sh` does both, then runs pAIring as
+your own normal user (the one that ran `sudo`).
 
 Supports MySQL migration and multi-server deployment.
 

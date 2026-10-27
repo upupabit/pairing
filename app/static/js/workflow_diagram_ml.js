@@ -5,8 +5,8 @@
  * after workflow_diagram_data.js. Same node/edge shape; an edge may add `dir: "v"` to force a top/bottom connection
  * where the automatic choice would cross a neighbour.
  * 
- * Laid out in rows inside the diagram's width (x 30–1300; six 176px columns, 38px apart, right edge 1276) as a snake,
- * each row ending where the next begins, so new stages add height, never a horizontal scrollbar. Written from
+ * The x/y here are the Simple view's (vertical) layout; the New view places these nodes by workflow_diagram_inference.js
+ * (a new stage needs a spot in INFERENCE_LAYOUT too, or it shows there as a card). Written from
  * Matricxon's pipeline (app/runtime/chat_engine.py, app/architectures/*, app/runtime/sampler.py,
  * app/runtime/tokenizer.py); llama.cpp runs the same stages in C++ with its own cache and scheduler details,
  * noted in each body where they differ. All of it runs in the ML engine's process, not this app.

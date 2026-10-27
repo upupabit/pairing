@@ -1,4 +1,5 @@
 /*
+ * Shared by both workflow views (Simple and New; see CLAUDE.md "Stats workflow"): every update here must work in both.
  * Content for the Stats "Visual chat workflow" diagram: a hand-laid-out node graph of what the chat pipeline does end
  * to end, checked against the source (app/routers/chat.py and app/services/: chat_service, chat_history_service,
  * reply_generation_service, inference_client, llamacpp_client, llamacpp_pool, matricxon_client, matricxon_pool,
@@ -180,7 +181,7 @@ const WORKFLOW_NODES = [
   },
   {
     id: "ml_engine_server",
-    label: "ML engine\n(inference stages below)",
+    label: "ML engine\n(runs the chat model)",
     category: "engine",
     x: 560,
     y: 920,

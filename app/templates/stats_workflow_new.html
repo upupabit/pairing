@@ -1,0 +1,37 @@
+{# The New "Visual chat workflow" view: inference chart + step cards (workflow_diagram.js). Keep in step with stats_workflow_simple.html. #}
+      <div id="stats-view-workflow" class="hidden flex-1 min-h-0 relative">
+        <!-- The chat model's inference stages as a left-to-right chart (workflow_diagram.js), then every other step as a
+        card (workflow_diagram_cards.js). The view scrolls down; the chart scrolls sideways on narrow screens. -->
+        <div id="workflow-canvas-wrap" class="absolute inset-0 overflow-y-auto p-4 space-y-4">
+          <div class="flex flex-wrap items-start gap-3">
+            <!-- Live status (workflow_diagram_live.js): running replies while the engine is Matricxon. Click a row to scroll to its step. -->
+            <div id="workflow-live-strip"
+              class="w-96 max-w-full rounded-lg border border-slate-800 bg-slate-900/90 px-3 py-2.5 text-xs">
+            </div>
+            <div class="ml-auto">{% include "stats_workflow_switch.html" %}</div>
+            <!-- Legend: which border color is which app layer (workflow_diagram_legend.js); starts as a one-line chip. -->
+            <div id="workflow-legend"
+              class="grid grid-cols-2 gap-x-6 max-w-[29rem] rounded-lg border border-slate-800 bg-slate-900/90 px-3 py-2.5 text-xs">
+            </div>
+          </div>
+          <section class="wf-board" aria-label="Inference stages inside the ML engine">
+            <div class="overflow-x-auto"><svg id="workflow-svg" class="block mx-auto"></svg></div>
+          </section>
+          <section class="wf-board p-4" aria-label="App steps">
+            <h2 class="mb-3 text-sm font-semibold text-slate-200">App steps around the engine
+              (<span id="workflow-cards-count"></span>) <span class="font-normal text-slate-500">· click a card for details</span></h2>
+            <div id="workflow-cards" class="wf-cards"></div>
+          </section>
+        </div>
+        <!-- Detail panel: plain DOM (not D3), opened by clicking a node (workflow_diagram.js showDetail). -->
+        <aside id="workflow-detail-panel"
+          class="hidden absolute top-0 right-0 z-20 h-full w-96 border-l border-slate-800 bg-slate-900/95 backdrop-blur overflow-y-auto p-5">
+          <button id="workflow-detail-close" type="button"
+            class="absolute top-3 right-3 text-slate-500 hover:text-slate-300 transition-colors" aria-label="Close">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6 6 18M6 6l12 12"/>
+            </svg>
+          </button>
+          <div id="workflow-detail-content"></div>
+        </aside>
+      </div>

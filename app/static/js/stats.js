@@ -67,6 +67,7 @@ document.addEventListener("visibilitychange", () => {
 
 function activateStatsView(name) {
   _activeStatsView = name;
+  history.replaceState(null, "", `#${name}`); // a reload (e.g. the workflow view switch) reopens this tab
   document.querySelectorAll(".stats-nav-btn").forEach((btn) => {
     const active = btn.dataset.view === name;
     btn.classList.toggle("bg-slate-800", active);
@@ -246,4 +247,4 @@ async function loadStatsOverviewSummary() {
 }
 
 // Overview is the default view, so no click loads it or starts its timer; do both here, once, on page load.
-activateStatsView("overview");
+activateStatsView(STATS_VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "overview");

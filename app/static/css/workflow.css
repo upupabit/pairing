@@ -1,0 +1,82 @@
+/* Stats "Visual chat workflow", New view: the inference chart (workflow_diagram.js) and the step cards
+(workflow_diagram_cards.js), styled like the helpdesk: white boards and cards in every theme, so colours here are fixed.
+Live states toggle these classes, so a busy chat restyles without new Tailwind classes. */
+
+.wf-board { border: 1px solid #d5dbe7; border-radius: 20px; background: #ffffff; color: #1d2433; }
+.wf-board h2 { color: #1d2433; }
+.wf-board h2 span { color: #667085; }
+
+/* Chart */
+.wf-lane-0 { fill: rgba(99, 102, 241, 0.05); }
+.wf-lane-1 { fill: rgba(14, 165, 233, 0.05); }
+.wf-lane-title { font: 700 11px system-ui, sans-serif; letter-spacing: 0.12em; text-anchor: middle; }
+.wf-layer-frame { fill: none; stroke-width: 1.5; stroke-dasharray: 6 4; opacity: 0.8; }
+.wf-layer-caption { font: 600 11px system-ui, sans-serif; text-anchor: middle; }
+.wf-wire { fill: none; stroke: #d5dbe7; stroke-width: 6; stroke-linecap: round; opacity: 0.55; }
+.wf-line { stroke: #8b95ad; stroke-width: 2; stroke-dasharray: 7 7; }
+.wf-line.wf-edge-branch { stroke: #a5adc2; stroke-width: 1.5; stroke-dasharray: 3 6; }
+.wf-arrow { fill: #8b95ad; }
+.wf-edge-label rect { fill: #ffffff; stroke: #d5dbe7; }
+.wf-edge-label text { fill: #667085; font: 600 10.5px system-ui, sans-serif; text-anchor: middle; }
+/* Live streams march like the helpdesk's dashes (same 9.1px period as style.css, so the speed math holds). */
+.wf-board .wf-live-flow { stroke-width: 2.5; stroke-linecap: butt; stroke-dasharray: 6 3.1; }
+.wf-board .wf-live-count { fill: #1d2433; stroke: #ffffff; }
+.wf-board .wf-live-track { fill: #e6eaf3; }
+.wf-board .wf-live-metric rect { fill: #ffffff; }
+.wf-board .wf-live-metric text { fill: #1d2433; }
+
+.wf-node { outline: none; }
+.wf-body { fill: #ffffff; transition: stroke 0.2s; }
+.wf-node:hover .wf-body, .wf-node:focus-visible .wf-body { stroke: #6366f1; }
+.wf-icon { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.wf-label { fill: #1d2433; font: 700 12.5px system-ui, sans-serif; }
+.wf-label-sub { fill: #667085; font: 400 10.5px system-ui, sans-serif; }
+.wf-badge { fill: #ffffff; stroke: #d5dbe7; }
+.wf-badge-text { fill: #667085; font: 600 10.5px ui-monospace, Menlo, Consolas, monospace; text-anchor: middle; }
+
+/* Cards */
+.wf-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+.wf-card {
+  position: relative; display: grid; grid-template-columns: 34px 1fr; column-gap: 10px; row-gap: 1px; align-content: start;
+  min-width: 0; padding: 11px 12px 10px 16px; text-align: left; border-radius: 14px; border: 1px solid #d5dbe7;
+  background: #ffffff; box-shadow: 0 2px 6px rgba(15, 19, 32, 0.08); transition: border-color 0.2s, box-shadow 0.3s, opacity 0.15s;
+}
+.wf-card > :not(.wf-card-icon) { grid-column: 2; min-width: 0; }
+.wf-card::before {
+  content: ""; position: absolute; left: 0; top: 12px; bottom: 12px; width: 5px; border-radius: 2.5px; background: var(--wf-color);
+}
+.wf-card-icon {
+  grid-row: 1 / span 3; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--wf-color) 14%, transparent);
+}
+.wf-card-icon svg { width: 18px; height: 18px; fill: none; stroke: var(--wf-color); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.wf-card:hover { border-color: #6366f1; }
+.wf-card-selected { border-color: var(--wf-color); box-shadow: 0 0 0 1px var(--wf-color); }
+.wf-card-layer { font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--wf-color); }
+.wf-card-title { font-size: 13.5px; font-weight: 700; color: #1d2433; overflow-wrap: break-word; }
+.wf-card-sub { font-size: 12px; color: #667085; overflow-wrap: anywhere; }
+.wf-card-sub:empty { display: none; }
+.wf-card-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 5px; }
+.wf-card-server, .wf-card-metric, .wf-card-tag {
+  font: 600 10.5px ui-monospace, Menlo, Consolas, monospace; border-radius: 999px; padding: 1px 8px; white-space: nowrap;
+}
+.wf-card-server { color: #667085; background: #eef1f7; }
+.wf-card-metric { margin-left: auto; color: #1d2433; overflow: hidden; text-overflow: ellipsis; }
+.wf-card-metric:empty, .wf-card-tag:empty { display: none; }
+.wf-card-tag { color: #ffffff; }
+
+/* Live states, the cards' match for the chart's halo/ring (style.css .wf-live-*) */
+.wf-card-active { border-color: var(--wf-color); animation: wf-card-breathe 1.4s ease-in-out infinite; }
+.wf-card-active .wf-card-metric { border: 1px solid var(--wf-color); }
+.wf-card-past .wf-card-metric { opacity: 0.55; }
+.wf-card-warn { border-color: #f59e0b; }
+.wf-card-warn .wf-card-tag { background: #f59e0b; }
+.wf-card-crit { border-color: #f43f5e; }
+.wf-card-crit .wf-card-tag { background: #f43f5e; }
+@keyframes wf-card-breathe {
+  0%, 100% { box-shadow: 0 0 0 1px var(--wf-color); }
+  50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--wf-color) 35%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wf-card-active { animation: none; box-shadow: 0 0 0 2px var(--wf-color); }
+}

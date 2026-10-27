@@ -97,3 +97,11 @@ class RetentionSettings(BaseModel):
 
     telemetry_days: int = Field(ge=1, le=365)
     system_metrics_days: int = Field(ge=1, le=365)
+
+
+class WorkflowView(BaseModel):
+    """The Stats workflow view everyone sees: "simple" (one vertical diagram) or "new" (inference chart and step
+    cards). Admin-only, system-wide (workflow_view_setting).
+    """
+
+    view: Literal["simple", "new"]

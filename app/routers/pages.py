@@ -11,6 +11,7 @@ from app.models import User
 from app.services.auth_service import PageAuth
 from app.services.engines.registry import registry
 from app.services.theme_service import get_ui_theme
+from app.services.workflow_view_setting import get_workflow_view
 from app.templates_env import templates
 from app.theme_config import UI_THEMES
 
@@ -60,7 +61,8 @@ async def stats_page(request: Request, db: AsyncSession = Depends(get_db)):
     auth = await PageAuth(request, db).resolve()
     if isinstance(user := auth.require_admin(), RedirectResponse):
         return user
-    return templates.TemplateResponse(request, "stats.html", await _profile_context(db, user))
+    context = {**await _profile_context(db, user), "workflow_view": await get_workflow_view(db)}
+    return templates.TemplateResponse(request, "stats.html", context)
 
 
 @router.get("/cluster", response_class=HTMLResponse)

@@ -1,5 +1,5 @@
 /* The Stats "Visual chat workflow" legend (border color per app layer), split from workflow_diagram.js. It floats over
-the view's top-right corner (stats.html), as two columns: the app layers, then the stages inside the ML engine. A new WORKFLOW_CATEGORY_COLORS/LABELS entry is picked up automatically. Clicking an item
+the top of the view (stats.html), as two columns: the app layers, then the stages inside the ML engine. A new WORKFLOW_CATEGORY_COLORS/LABELS entry is picked up automatically. Clicking an item
 highlights that layer's nodes (and the arrows touching them) and fades the rest; clicking it again shows all. Hide/Show
 collapses it to one line, like the live status box (workflow_diagram_live.js). */
 
@@ -37,6 +37,7 @@ class WorkflowLegend {
           ? 1
           : WorkflowLegend.FADED,
       );
+    window.workflowCards?.fade(this.active, String(WorkflowLegend.FADED));
     for (const item of this.el.querySelectorAll("[data-category]")) {
       item.style.opacity = shown(item.dataset.category) ? "" : "0.4";
       item.setAttribute("aria-pressed", String(item.dataset.category === this.active));

@@ -57,6 +57,7 @@ from app.routers import (
     update_admin,
     users,
     workflow_live,
+    workflow_view_admin,
 )
 from app.services import startup_service
 from app.services.csrf_guard import CsrfOriginMiddleware
@@ -163,6 +164,7 @@ app.include_router(engine_admin.router)
 app.include_router(cluster_admin.router)
 app.include_router(connectors.router)
 app.include_router(channel_history_admin.router)
+app.include_router(workflow_view_admin.router)
 app.include_router(context_window_admin.router)
 app.include_router(mcp_admin.router)
 app.include_router(mcp_admin.enabled_router)

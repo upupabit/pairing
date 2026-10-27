@@ -1,0 +1,9 @@
+{# Simple / New switch for the workflow view (workflow_view_switch.js); saved for everyone, then the page reloads. #}
+<div id="workflow-view-switch" class="flex items-center gap-1 rounded-lg border border-slate-800 bg-slate-900/90 p-1 text-xs"
+  role="group" aria-label="Workflow view">
+  {% for value, label, hint in [("simple", "Simple", "The whole pipeline as one vertical diagram"),
+                                ("new", "New", "Inference chart, with the app steps as cards")] %}
+  <button type="button" data-workflow-view="{{ value }}" title="{{ hint }}" aria-pressed="{{ 'true' if workflow_view == value else 'false' }}"
+    class="rounded-md px-2.5 py-1 {{ 'bg-slate-700 text-slate-100' if workflow_view == value else 'text-slate-400 hover:text-slate-200' }}">{{ label }}</button>
+  {% endfor %}
+</div>

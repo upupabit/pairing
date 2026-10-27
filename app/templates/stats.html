@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Stats — {{ app_name }}{% endblock %}
+{% block head %}<link rel="stylesheet" href="/static/css/workflow.css?v={{ static_version }}">{% endblock %}
 {% block body %}
 <div class="flex h-full flex-col">
   <header class="flex items-center justify-between gap-3 border-b border-slate-800 px-4 py-3">
@@ -25,7 +26,7 @@
 
   <div class="flex flex-1 min-h-0">
 
-    <!-- This page's own left sidebar, separate from chat.html's app sidebar (not rendered here), like settings.html's tab nav. "Overview" is the default (a usage dashboard filled by stats.js); "Visual chat workflow" swaps in the D3 pipeline diagram (workflow_diagram.js); "Telemetry" the per-engine call-telemetry dashboard (telemetry.js); "System" this machine's live CPU/RAM/disk dashboard (system_metrics.js). A new option needs a data-view button here plus a matching #stats-view-<name> panel in <main>. -->
+    <!-- This page's own left sidebar, separate from chat.html's app sidebar (not rendered here), like settings.html's tab nav. "Overview" is the default (a usage dashboard filled by stats.js); "Visual chat workflow" swaps in the D3 inference chart and step cards (workflow_diagram.js); "Telemetry" the per-engine call-telemetry dashboard (telemetry.js); "System" this machine's live CPU/RAM/disk dashboard (system_metrics.js). A new option needs a data-view button here plus a matching #stats-view-<name> panel in <main>. -->
     <aside class="hidden md:flex w-64 shrink-0 flex-col border-r border-slate-800 bg-slate-900/60">
       <nav class="flex-1 overflow-y-auto px-2 py-3 space-y-1">
         <button type="button" data-view="overview"
@@ -65,39 +66,8 @@
         <p id="stats-overview-error" class="hidden text-sm text-red-400"></p>
       </div>
 
-      <div id="stats-view-workflow" class="hidden flex-1 min-h-0 relative">
-        <!-- Vertical diagram taller than any viewport, so it scrolls natively (both axes, mostly height) instead of drag-to-pan/wheel-zoom, which had no visible cue. The <svg> is sized to its content (workflow_diagram.js), so scrollbars appear where content overflows. -->
-        <div id="workflow-canvas-wrap" class="absolute inset-0 overflow-auto">
-          <!-- Centered when the diagram is narrower than the view (mx-auto + w-max); scrolls normally when wider. -->
-          <div class="relative mx-auto w-max">
-            <svg id="workflow-svg" class="block"></svg>
-          </div>
-        </div>
-        <!-- Legend: which border color is which app layer (workflow_diagram_legend.js). Floats over the top-right corner
-        like the live status box, so it never moves the diagram; starts as a one-line chip. -->
-        <div id="workflow-legend"
-          class="absolute top-3 right-3 z-10 grid grid-cols-2 gap-x-6 max-w-[29rem] max-h-[calc(100%-1.5rem)] overflow-y-auto rounded-lg border border-slate-800 bg-slate-900/90 backdrop-blur px-3 py-2.5 text-xs">
-        </div>
-        <!-- Folds the app steps above the ML engine into one node, or shows them (workflow_diagram_focus.js). -->
-        <button id="workflow-focus-toggle" type="button" aria-expanded="false"
-          class="absolute top-3 left-1/2 -translate-x-1/2 z-10 rounded-lg border border-slate-800 bg-slate-900/90 backdrop-blur px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800">
-        </button>
-        <!-- Live status (workflow_diagram_live.js): running replies while the engine is Matricxon. Click a row to scroll to its step. -->
-        <div id="workflow-live-strip"
-          class="absolute top-3 left-3 z-10 w-96 max-w-[calc(100%-1.5rem)] rounded-lg border border-slate-800 bg-slate-900/90 backdrop-blur px-3 py-2.5 text-xs">
-        </div>
-        <!-- Detail panel: plain DOM (not D3), opened by clicking a node (workflow_diagram.js showDetail). -->
-        <aside id="workflow-detail-panel"
-          class="hidden absolute top-0 right-0 z-20 h-full w-96 border-l border-slate-800 bg-slate-900/95 backdrop-blur overflow-y-auto p-5">
-          <button id="workflow-detail-close" type="button"
-            class="absolute top-3 right-3 text-slate-500 hover:text-slate-300 transition-colors" aria-label="Close">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 6 6 18M6 6l12 12"/>
-            </svg>
-          </button>
-          <div id="workflow-detail-content"></div>
-        </aside>
-      </div>
+      <!-- Admin picks the view (workflow_view_setting.py, the switch on the view): each partial is one view's markup. -->
+      {% include "stats_workflow_new.html" if workflow_view == "new" else "stats_workflow_simple.html" %}
 
       <!-- The live workflow's last minutes, summed up: heading, report and error filled by workflow_analysis.js. -->
       <div id="stats-view-analysis" class="hidden flex-1 overflow-y-auto p-6 space-y-6"></div>
@@ -233,8 +203,16 @@
 <script src="/static/js/workflow_diagram_ml_embed.js?v={{ static_version }}"></script>
 <script src="/static/js/workflow_diagram_learn.js?v={{ static_version }}"></script>
 <script src="/static/js/workflow_diagram_legend.js?v={{ static_version }}"></script>
-<script src="/static/js/workflow_diagram_focus.js?v={{ static_version }}"></script>
+{% if workflow_view == "new" %}
+<script src="/static/js/workflow_diagram_icons.js?v={{ static_version }}"></script>
+<script src="/static/js/workflow_diagram_inference.js?v={{ static_version }}"></script>
+<script src="/static/js/workflow_diagram_cards.js?v={{ static_version }}"></script>
 <script src="/static/js/workflow_diagram.js?v={{ static_version }}"></script>
+{% else %}
+<script src="/static/js/workflow_diagram_focus.js?v={{ static_version }}"></script>
+<script src="/static/js/workflow_diagram_simple.js?v={{ static_version }}"></script>
+{% endif %}
+<script src="/static/js/workflow_view_switch.js?v={{ static_version }}"></script>
 <script src="/static/js/workflow_diagram_detail.js?v={{ static_version }}"></script>
 <script src="/static/js/workflow_diagram_live_map.js?v={{ static_version }}"></script>
 <script src="/static/js/workflow_diagram_live_state.js?v={{ static_version }}"></script>

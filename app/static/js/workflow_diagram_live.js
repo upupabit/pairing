@@ -3,20 +3,24 @@
  * GET /api/stats/workflow/live (SSE) through WorkflowLiveState (workflow_diagram_live_state.js). Running nodes glow,
  * slow ones get an amber/red ring and a "×usual" tag. An arrow streams while a chat is busy at both its ends: thicker,
  * with "×N", when N chats use it, faster with their combined tokens/s; each finished step sends a dot in its chat's
- * colour (the mark on its status row). stats.js starts it while the view is open and stops it otherwise, so the
- * server polls Matricxon only while someone watches.
+ * colour (the mark on its status row). Works on both views (Simple: workflow_diagram_simple.js; New: workflow_diagram.js,
+ * whose cards, workflow_diagram_cards.js, light up the same way). stats.js
+ * starts it while the view is open and stops it otherwise, so the server polls Matricxon only while someone watches.
+ * No JS frame loop: arrows stream by a CSS animation and dots ride their arrow by SVG animateMotion, both run by the
+ * browser and only while something moves.
  */
 
 class WorkflowLiveView {
   static URL = "/api/stats/workflow/live";
   static DOT_MS = 450;
+  static MAX_DOTS = 60;
   static ROWS = 4;
+  static FLOW_PERIOD_S = 0.303; // one dash period (style.css .wf-live-flow) at speed 1, 30px/s
 
   constructor() {
     this.state = null;
     this.source = null;
-    this.frame = null;
-    this.dots = [];
+    this.dots = 0;
     this.flows = [];
     this.built = false;
     this.collapsed = false;
@@ -29,8 +33,8 @@ class WorkflowLiveView {
         return;
       }
       const row = event.target.closest("[data-focus]");
-      let node = row && document.querySelector(`.wf-node[data-id="${row.dataset.focus}"]`);
-      if (node?.getAttribute("display") === "none") node = document.querySelector(".wf-focus-group"); // folded away
+      let node = row && document.querySelector(`[data-id="${row.dataset.focus}"]`);
+      if (node?.getAttribute("display") === "none") node = document.querySelector(".wf-focus-group"); // Simple view, folded away
       node?.scrollIntoView({ block: "center", inline: "center", behavior: this.reduced ? "auto" : "smooth" });
     });
   }
@@ -41,20 +45,11 @@ class WorkflowLiveView {
     this.source = new EventSource(WorkflowLiveView.URL);
     this.source.onmessage = (event) => this._render((this.lastSnapshot = JSON.parse(event.data)));
     this.source.onerror = () => this._renderStrip({ live: false, error: "Live view disconnected; retrying…", runs: [] });
-    let last = performance.now();
-    const tick = (t) => {
-      this._animate(Math.min(t - last, 100));
-      last = t;
-      this.frame = requestAnimationFrame(tick);
-    };
-    this.frame = requestAnimationFrame(tick);
   }
 
   stop() {
     this.source?.close();
     this.source = null;
-    if (this.frame !== null) cancelAnimationFrame(this.frame);
-    this.frame = null;
   }
 
   _build() {
@@ -65,16 +60,18 @@ class WorkflowLiveView {
     this.dotLayer = d3.select(".wf-root").insert("g", ".wf-nodes").attr("class", "wf-live-dots");
     const category = new Map(d3.selectAll(".wf-node").data().map((n) => [n.id, n.category]));
     d3.selectAll(".wf-edge").each((d, i, paths) => {
-      const el = flowLayer.append("path").attr("class", "wf-live-flow").attr("d", paths[i].getAttribute("d"))
-        .attr("stroke", WORKFLOW_CATEGORY_COLORS[category.get(d.from)] || ThemeColors.get("--color-slate-400")).node();
+      // The New view's arrows carry a shorter path (data-flow) so the stream stops at the arrowhead.
+      const d0 = paths[i].getAttribute("data-flow") || paths[i].getAttribute("d");
+      const el = flowLayer.append("path").attr("class", "wf-live-flow").attr("d", d0)
+        .attr("stroke", d.color || WORKFLOW_CATEGORY_COLORS[category.get(d.from)] || ThemeColors.get("--color-slate-400")).node();
       const len = el.getTotalLength();
       const mid = el.getPointAtLength(len / 2);
       const label = flowLayer.append("text").attr("class", "wf-live-count").attr("x", mid.x + 8).attr("y", mid.y - 6).node();
-      this.flows.push({ key: `${d.from}>${d.to}`, from: d.from, to: d.to, base: paths[i], el, label, len, offset: 0, speed: 1 });
+      this.flows.push({ key: `${d.from}>${d.to}`, from: d.from, to: d.to, base: paths[i], el, label, len, speed: 0 });
     });
     d3.selectAll(".wf-node").each((d, i, groups) => this._decorate(d3.select(groups[i]), d));
+    // Simple view only: steps folded into "App steps" light up that node (workflow_diagram_focus.js).
     this.state = new WorkflowLiveState(this.flows, (id) => window.workflowFocus?.groupOf(id) ?? null);
-    // Folding or opening the app steps regroups the states at once, not on the next frame.
     document.addEventListener("workflow-focus-change", () => this.lastSnapshot && this._render(this.lastSnapshot));
   }
 
@@ -104,15 +101,23 @@ class WorkflowLiveView {
     this._renderStrip(view);
     const nodes = view.live ? view.nodes : new Map();
     d3.selectAll(".wf-node").each((d, i, groups) => this._renderNode(d3.select(groups[i]), d, nodes.get(d.id)));
+    window.workflowCards?.update(nodes);
     for (const flow of this.flows) {
       const edge = view.live && flow.base.getAttribute("display") !== "none" ? view.edges.get(flow.key) : null;
       flow.el.classList.toggle("on", Boolean(edge));
       flow.el.style.strokeWidth = edge ? Math.min(3 + 1.5 * (edge.count - 1), 9) : null;
       // Short arrows between neighbouring nodes skip the label: the node pills already show "×N".
       flow.label.textContent = edge && edge.count > 1 && flow.len > 80 ? `×${edge.count}` : "";
-      flow.speed = edge ? edge.speed : 1;
+      this._speed(flow, edge ? edge.speed : 1);
       for (const color of edge?.dots || []) this._spawnDot(flow, color);
     }
+  }
+
+  /* Faster arrows for more tokens/s: a shorter CSS animation period, set only when it changes. */
+  _speed(flow, speed) {
+    if (flow.speed === speed) return;
+    flow.speed = speed;
+    flow.el.style.animationDuration = `${(WorkflowLiveView.FLOW_PERIOD_S / speed).toFixed(3)}s`;
   }
 
   _renderNode(group, d, state) {
@@ -135,31 +140,19 @@ class WorkflowLiveView {
     pill.attr("transform", place(width));
   }
 
+  /* A dot in the chat's colour runs once along the arrow (animateMotion), with a faint static glow instead of a blur. */
   _spawnDot(flow, color) {
-    if (this.reduced || this.dots.length > 60) return;
-    const dot = this.dotLayer.append("circle").attr("class", "wf-live-dot").attr("r", 4.5).attr("fill", color)
-      .style("filter", `drop-shadow(0 0 4px ${color})`);
-    this.dots.push({ flow, el: dot.node(), t: 0 });
-  }
-
-  _animate(dt) {
-    if (this.reduced) return;
-    for (const flow of this.flows) {
-      if (!flow.el.classList.contains("on")) continue;
-      flow.offset -= dt * 0.03 * flow.speed;
-      flow.el.style.strokeDashoffset = flow.offset;
-    }
-    this.dots = this.dots.filter((dot) => {
-      dot.t += dt;
-      if (dot.t >= WorkflowLiveView.DOT_MS) {
-        dot.el.remove();
-        return false;
-      }
-      const point = dot.flow.el.getPointAtLength((dot.t / WorkflowLiveView.DOT_MS) * dot.flow.len);
-      dot.el.setAttribute("cx", point.x);
-      dot.el.setAttribute("cy", point.y);
-      return true;
-    });
+    if (this.reduced || this.dots >= WorkflowLiveView.MAX_DOTS) return;
+    const dot = this.dotLayer.append("g").attr("class", "wf-live-dot");
+    dot.append("circle").attr("r", 8).attr("fill", color).attr("opacity", 0.25);
+    dot.append("circle").attr("r", 4.5).attr("fill", color);
+    dot.append("animateMotion").attr("dur", `${WorkflowLiveView.DOT_MS}ms`).attr("begin", "indefinite")
+      .attr("fill", "freeze").attr("path", flow.el.getAttribute("d")).node().beginElement();
+    this.dots++;
+    setTimeout(() => {
+      dot.remove();
+      this.dots--;
+    }, WorkflowLiveView.DOT_MS);
   }
 
   _renderStrip(view) {

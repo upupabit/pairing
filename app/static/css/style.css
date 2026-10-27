@@ -166,11 +166,12 @@ dimmer than code text: comments 6.6:1, numbers 5.2:1 (was 4.4:1). Same in every 
 .wf-node.wf-live-past .wf-live-metric { opacity: 0.55; }
 .wf-live-track { fill: rgb(var(--color-slate-800, 30 41 59)); }
 .wf-live-flow { fill: none; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 0.1 9; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
-.wf-live-flow.on { opacity: 1; }
+.wf-live-flow.on { opacity: 1; animation: wf-live-flow 0.303s linear infinite; }
 .wf-live-dot { pointer-events: none; }
 .wf-live-count { fill: rgb(var(--color-slate-300, 203 213 225)); font: 600 10.5px ui-monospace, Menlo, Consolas, monospace; pointer-events: none; paint-order: stroke; stroke: rgb(var(--color-slate-950, 2 6 23)); stroke-width: 3px; }
 @keyframes wf-live-breathe { 0%, 100% { opacity: 0.18; } 50% { opacity: 0.55; } }
+@keyframes wf-live-flow { to { stroke-dashoffset: -9.1; } }
 @media (prefers-reduced-motion: reduce) {
   .wf-node.wf-live-active .wf-live-halo { animation: none; opacity: 0.45; }
-  .wf-live-flow { stroke-dasharray: none; stroke-width: 2.5; }
+  .wf-live-flow, .wf-live-flow.on { stroke-dasharray: none; stroke-width: 2.5; animation: none; }
 }

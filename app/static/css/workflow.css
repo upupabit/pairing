@@ -66,17 +66,20 @@ Live states toggle these classes, so a busy chat restyles without new Tailwind c
 .wf-card-tag { color: #ffffff; }
 
 /* Live states, the cards' match for the chart's halo/ring (style.css .wf-live-*) */
-.wf-card-active { border-color: var(--wf-color); animation: wf-card-breathe 1.4s ease-in-out infinite; }
+/* The glow breathes by opacity on its own layer (will-change): the graphics side runs it, nothing is repainted. */
+.wf-card-active { border-color: var(--wf-color); box-shadow: 0 0 0 1px var(--wf-color); }
+.wf-card-active::after {
+  content: ""; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none; opacity: 0; will-change: opacity;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--wf-color) 35%, transparent); animation: wf-card-breathe 1.4s ease-in-out infinite;
+}
+@keyframes wf-card-breathe { 50% { opacity: 1; } }
 .wf-card-active .wf-card-metric { border: 1px solid var(--wf-color); }
 .wf-card-past .wf-card-metric { opacity: 0.55; }
 .wf-card-warn { border-color: #f59e0b; }
 .wf-card-warn .wf-card-tag { background: #f59e0b; }
 .wf-card-crit { border-color: #f43f5e; }
 .wf-card-crit .wf-card-tag { background: #f43f5e; }
-@keyframes wf-card-breathe {
-  0%, 100% { box-shadow: 0 0 0 1px var(--wf-color); }
-  50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--wf-color) 35%, transparent); }
-}
 @media (prefers-reduced-motion: reduce) {
-  .wf-card-active { animation: none; box-shadow: 0 0 0 2px var(--wf-color); }
+  .wf-card-active { box-shadow: 0 0 0 2px var(--wf-color); }
+  .wf-card-active::after { animation: none; }
 }

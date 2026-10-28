@@ -6,21 +6,18 @@
  * colour (the mark on its status row). Works on both views (Simple: workflow_diagram_simple.js; New: workflow_diagram.js,
  * whose cards, workflow_diagram_cards.js, light up the same way). stats.js
  * starts it while the view is open and stops it otherwise, so the server polls Matricxon only while someone watches.
- * No JS frame loop: arrows stream by a CSS animation and dots ride their arrow by SVG animateMotion, both run by the
- * browser and only while something moves.
+ * The movement (streaming arrows, breathing halos and cards, dots) runs on one shared clock: WorkflowMotion
+ * (workflow_diagram_live_motion.js), only while something moves and the window is in front.
  */
 
 class WorkflowLiveView {
   static URL = "/api/stats/workflow/live";
-  static DOT_MS = 450;
-  static MAX_DOTS = 60;
   static ROWS = 4;
-  static FLOW_PERIOD_S = 0.303; // one dash period (style.css .wf-live-flow) at speed 1, 30px/s
 
   constructor() {
     this.state = null;
     this.source = null;
-    this.dots = 0;
+    this.motion = null;
     this.flows = [];
     this.built = false;
     this.collapsed = false;
@@ -50,6 +47,7 @@ class WorkflowLiveView {
   stop() {
     this.source?.close();
     this.source = null;
+    this.motion?.stop();
   }
 
   _build() {
@@ -57,7 +55,7 @@ class WorkflowLiveView {
     this.built = true;
     // Inside the edges group, after its paths: above the plain arrows, below the nodes.
     const flowLayer = d3.select(".wf-edges").append("g").attr("class", "wf-live-flows");
-    this.dotLayer = d3.select(".wf-root").insert("g", ".wf-nodes").attr("class", "wf-live-dots");
+    this.motion = new WorkflowMotion(d3.select(".wf-root").insert("g", ".wf-nodes").attr("class", "wf-live-dots"));
     const category = new Map(d3.selectAll(".wf-node").data().map((n) => [n.id, n.category]));
     d3.selectAll(".wf-edge").each((d, i, paths) => {
       // The New view's arrows carry a shorter path (data-flow) so the stream stops at the arrowhead.
@@ -67,7 +65,7 @@ class WorkflowLiveView {
       const len = el.getTotalLength();
       const mid = el.getPointAtLength(len / 2);
       const label = flowLayer.append("text").attr("class", "wf-live-count").attr("x", mid.x + 8).attr("y", mid.y - 6).node();
-      this.flows.push({ key: `${d.from}>${d.to}`, from: d.from, to: d.to, base: paths[i], el, label, len, speed: 0 });
+      this.flows.push({ key: `${d.from}>${d.to}`, from: d.from, to: d.to, base: paths[i], el, label, len, speed: 1 });
     });
     d3.selectAll(".wf-node").each((d, i, groups) => this._decorate(d3.select(groups[i]), d));
     // Simple view only: steps folded into "App steps" light up that node (workflow_diagram_focus.js).
@@ -108,16 +106,10 @@ class WorkflowLiveView {
       flow.el.style.strokeWidth = edge ? Math.min(3 + 1.5 * (edge.count - 1), 9) : null;
       // Short arrows between neighbouring nodes skip the label: the node pills already show "×N".
       flow.label.textContent = edge && edge.count > 1 && flow.len > 80 ? `×${edge.count}` : "";
-      this._speed(flow, edge ? edge.speed : 1);
-      for (const color of edge?.dots || []) this._spawnDot(flow, color);
+      this.motion.flow(flow, Boolean(edge), edge ? edge.speed : 1);
+      for (const color of edge?.dots || []) this.motion.dot(flow, color);
     }
-  }
-
-  /* Faster arrows for more tokens/s: a shorter CSS animation period, set only when it changes. */
-  _speed(flow, speed) {
-    if (flow.speed === speed) return;
-    flow.speed = speed;
-    flow.el.style.animationDuration = `${(WorkflowLiveView.FLOW_PERIOD_S / speed).toFixed(3)}s`;
+    this.motion.setBusy([...nodes.values()].some((s) => s.active));
   }
 
   _renderNode(group, d, state) {
@@ -132,27 +124,14 @@ class WorkflowLiveView {
 
   _pill(pill, text, place) {
     pill.style("display", text ? null : "none");
-    if (!text) return;
+    // Measuring the text forces a layout: only when it changed (most ticks, most pills keep their text).
+    if (!text || pill.node().dataset.text === text) return;
+    pill.node().dataset.text = text;
     const label = pill.select("text").text(text);
     const width = label.node().getComputedTextLength() + 14;
     label.attr("x", width / 2);
     pill.select("rect").attr("width", width);
     pill.attr("transform", place(width));
-  }
-
-  /* A dot in the chat's colour runs once along the arrow (animateMotion), with a faint static glow instead of a blur. */
-  _spawnDot(flow, color) {
-    if (this.reduced || this.dots >= WorkflowLiveView.MAX_DOTS) return;
-    const dot = this.dotLayer.append("g").attr("class", "wf-live-dot");
-    dot.append("circle").attr("r", 8).attr("fill", color).attr("opacity", 0.25);
-    dot.append("circle").attr("r", 4.5).attr("fill", color);
-    dot.append("animateMotion").attr("dur", `${WorkflowLiveView.DOT_MS}ms`).attr("begin", "indefinite")
-      .attr("fill", "freeze").attr("path", flow.el.getAttribute("d")).node().beginElement();
-    this.dots++;
-    setTimeout(() => {
-      dot.remove();
-      this.dots--;
-    }, WorkflowLiveView.DOT_MS);
   }
 
   _renderStrip(view) {

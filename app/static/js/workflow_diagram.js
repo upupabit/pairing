@@ -71,9 +71,6 @@ class InferenceChart {
     this.svg.append("defs").append("marker").attr("id", WORKFLOW_ARROW_MARKER_ID).attr("viewBox", "0 0 10 10")
       .attr("refX", 9).attr("refY", 5).attr("markerWidth", 7).attr("markerHeight", 7)
       .attr("orient", "auto-start-reverse").append("path").attr("d", "M0,1 L9,5 L0,9 Z").attr("class", "wf-arrow");
-    this.svg.select("defs").append("filter").attr("id", "wf-shadow").attr("x", "-20%").attr("y", "-20%")
-      .attr("width", "140%").attr("height", "160%").append("feDropShadow").attr("dx", 0).attr("dy", 2)
-      .attr("stdDeviation", 3).attr("flood-opacity", 0.12);
   }
 
   _lanes(root, height) {
@@ -175,8 +172,11 @@ class InferenceChart {
     groups.append("title").text((d) => d.label.replace(/\n/g, " "));
     // Helpdesk-style card: white, soft shadow, neutral border, a coloured accent bar and icon in the layer's colour.
     const color = (d) => WORKFLOW_CATEGORY_COLORS[d.category] || "#8b95ad";
+    // Shadow as a plain offset shape: a blur filter would be redrawn on every animation frame.
+    groups.append("rect").attr("class", "wf-shadow").attr("y", 2).attr("width", (d) => d.w).attr("height", (d) => d.h + 1)
+      .attr("rx", 14).attr("fill", "rgba(15, 23, 42, 0.07)");
     groups.append("rect").attr("class", "wf-body").attr("width", (d) => d.w).attr("height", (d) => d.h).attr("rx", 14)
-      .attr("stroke", InferenceChart.BORDER).attr("stroke-width", 1.5).attr("filter", "url(#wf-shadow)");
+      .attr("stroke", InferenceChart.BORDER).attr("stroke-width", 1.5);
     groups.append("rect").attr("class", "wf-accent").attr("x", 0).attr("y", 12).attr("width", 5)
       .attr("height", (d) => d.h - 24).attr("rx", 2.5).attr("fill", color);
     groups.append("circle").attr("cx", 27).attr("cy", (d) => d.h / 2).attr("r", 14).attr("fill", color).attr("fill-opacity", 0.14);

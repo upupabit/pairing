@@ -226,11 +226,34 @@ async def test_get_status_reports_running_and_healthy(tmp_path, monkeypatch):
     async def fake_ping():
         return True
 
+    async def fake_version():
+        return "2.0"
+
     monkeypatch.setattr(matricxon_process, "_ping_health", fake_ping)
+    monkeypatch.setattr(matricxon_process, "_fetch_version", fake_version)
     status = await matricxon_process.get_status()
     assert status.running is True
     assert status.pid == 4242
     assert status.healthy is True
+    assert status.version == "2.0"
+
+
+@pytest.mark.asyncio
+async def test_fetch_version_reads_matricxons_endpoint_and_tolerates_old_builds(monkeypatch):
+    answers = {"/api/version": httpx.Response(200, json={"version": "2.0"})}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return answers.get(request.url.path, httpx.Response(404))
+
+    real_client = httpx.AsyncClient
+
+    def mock_client(**kwargs):
+        return real_client(transport=httpx.MockTransport(handler), **kwargs)
+
+    monkeypatch.setattr(matricxon_process.httpx, "AsyncClient", mock_client)
+    assert await matricxon_process._fetch_version() == "2.0"
+    answers.clear()  # an older Matricxon without /api/version
+    assert await matricxon_process._fetch_version() is None
 
 
 @pytest.mark.asyncio

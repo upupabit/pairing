@@ -41,7 +41,7 @@ INSTANCE_INDEX = int(os.environ.get("PAIRING_INSTANCE_INDEX", "0"))
 IS_PRIMARY = INSTANCE_INDEX == 0
 
 # This build's version (a constant); shown in Settings > System and near the logo.
-APP_VERSION = "1.5"  # the one place: login form, chat sidebar and Admin settings > System read it
+APP_VERSION = "2.0"  # the one place: login form, chat sidebar and Admin settings > System read it
 
 # The display name (a constant): single source for UI/API occurrences of "pAIring". Templates read it
 # via `templates.env.globals["app_name"]`, plain JS via base.html's `window.APP_NAME`.

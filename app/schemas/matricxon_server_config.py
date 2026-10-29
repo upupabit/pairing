@@ -122,6 +122,8 @@ class MatricxonServerStatus(BaseModel):
     installed: bool = False
     pid: int | None = None
     healthy: bool | None = None
+    # Matricxon's own GET /api/version (e.g. "2.0") while it's running; None when unknown.
+    version: str | None = None
 
 
 class MatricxonSavePlan(BaseModel):

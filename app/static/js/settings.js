@@ -2129,7 +2129,8 @@ function renderServerStatus(section, status) {
     line.textContent = status.installed ? "Not running." : "Not installed.";
   } else {
     const health = status.healthy === null ? "checking…" : status.healthy ? "healthy" : "not responding";
-    line.textContent = status.pid ? `Running (pid ${status.pid}) — ${health}` : `Running — ${health}`;
+    const version = status.version ? ` · v${status.version}` : "";
+    line.textContent = (status.pid ? `Running (pid ${status.pid}) — ${health}` : `Running — ${health}`) + version;
   }
   applyServerVisibility(server, section);
 }

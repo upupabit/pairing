@@ -254,6 +254,18 @@ async def _ping_health() -> bool:
         return False
 
 
+async def _fetch_version() -> str | None:
+    """Matricxon's GET /api/version, or None (an older build without it, or not answering)."""
+    try:
+        async with httpx.AsyncClient(timeout=_HEALTH_CHECK_TIMEOUT) as client:
+            resp = await client.get(f"{LOCAL_MATRICXON_HOST}/api/version")
+            if resp.status_code != 200:
+                return None
+            return str(resp.json().get("version") or "") or None
+    except (httpx.HTTPError, ValueError, AttributeError):
+        return None
+
+
 async def _wait_until_healthy(timeout: float) -> bool:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -267,7 +279,11 @@ async def get_status(project_dir_override: str | None = None) -> MatricxonServer
     project_dir = _find_project_dir(project_dir_override)
     if project_dir is None or not _is_running(project_dir):
         return MatricxonServerStatus(running=False, installed=project_dir is not None)
-    return MatricxonServerStatus(running=True, installed=True, pid=_read_pid(project_dir), healthy=await _ping_health())
+    healthy = await _ping_health()
+    version = await _fetch_version() if healthy else None
+    return MatricxonServerStatus(
+        running=True, installed=True, pid=_read_pid(project_dir), healthy=healthy, version=version
+    )
 
 
 async def start(config: MatricxonServerConfig, proxy_url: str | None = None) -> MatricxonServerStatus:

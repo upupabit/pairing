@@ -51,9 +51,34 @@ cat << 'EOF'
 EOF
 printf '\033[0m'
 echo "pAIring installer — $OS_NAME, running from: $APP_DIR"
+# Asks before going on as things are; no terminal: goes on. "No" stops here, nothing changed.
+ask_continue() {
+    if [ "$INTERACTIVE" != true ]; then
+        info "No terminal to ask: continuing."
+        return 0
+    fi
+    read -r -p "$1 [y/N] " answer
+    case "$answer" in
+        [Yy]*) ;;
+        *) echo "Stopped, nothing was changed. Run the commands above, then this installer again."; exit 0 ;;
+    esac
+}
+
+# Linux servers (not with --dev): /opt/pairing is the usual place, outside anyone's home folder, so the user pAIring runs
+# as can reach it.
+me="$(id -un)"
+if [ "$OS_NAME" = "Linux" ] && [ "$INSTALL_DEV" = false ] && [[ "$APP_DIR" != /opt/* ]]; then
+    step "Checking where pAIring is installed"
+    warn "pAIring is in $APP_DIR. On a server it belongs in /opt/pairing, outside anyone's home folder."
+    info "To install it there instead (an admin with sudo runs the first line):"
+    info "  sudo mkdir -p /opt/pairing && sudo chown $me: /opt/pairing"
+    info "  git clone https://github.com/upupabit/pairing.git /opt/pairing   (or copy this folder there)"
+    info "  cd /opt/pairing && bash scripts/install.sh"
+    ask_continue "Install here in $APP_DIR anyway?"
+fi
+
 # Linux servers: pAIring (and the Matricxon it starts) is best run as its own user, "pairing" (no sudo), so it and anyone
 # supporting it reach only its own files. Says so and asks before going on as another user (not with --dev).
-me="$(id -un)"
 if [ "$OS_NAME" = "Linux" ] && [ "$INSTALL_DEV" = false ] && [ "$me" != "pairing" ]; then
     step "Checking the user pAIring will run as"
     if id pairing > /dev/null 2>&1; then
@@ -65,20 +90,8 @@ if [ "$OS_NAME" = "Linux" ] && [ "$INSTALL_DEV" = false ] && [ "$me" != "pairing
         info "  sudo useradd -m -s /bin/bash pairing"
         info "  sudo chown -R pairing: $APP_DIR"
         info "  sudo -u pairing bash $APP_DIR/scripts/install.sh"
-        case "$APP_DIR" in
-            /home/*|/root/*) info "$APP_DIR is inside a home folder: move it to /opt/pairing first, so the new user can reach it." ;;
-        esac
     fi
-
-    if [ "$INTERACTIVE" != true ]; then
-        info "No terminal to ask: continuing as $me."
-    else
-        read -r -p "Continue as $me anyway? [y/N] " answer
-        case "$answer" in
-            [Yy]*) info "Continuing as $me." ;;
-            *) echo "Stopped, nothing was changed. Run the commands above, then this installer again."; exit 0 ;;
-        esac
-    fi
+    ask_continue "Continue as $me anyway?"
 fi
 
 # ---------------------------------------------------------------------------

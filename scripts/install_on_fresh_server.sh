@@ -2,17 +2,20 @@
 # Sets up pAIring on a fresh Debian (or Ubuntu) server: system packages, a Python venv and a systemd service. Each step
 # says what it will do and checks that it worked, so a failure shows where it stopped.
 #
-# Copy the project over first:
+# Get the project onto the server first (git clone, or copy it over):
 #
 #   rsync -av --exclude.venv --exclude data --exclude models \
-#     /path/to/pAIring/ youruser@newserver:/opt/pairing/
+#     /path/to/pAIring/ youruser@newserver:/tmp/pairing/
 #
 # (knowledge/ is copied by default; exclude it too to start with an empty knowledge base. data/ is excluded since it is
 # regenerated; models/ since copying 100+GB of weights isn't worth it: pull them again on the new server.)
 #
-# Then, ON THE NEW SERVER, from the copied folder:
+# Then, ON THE NEW SERVER, from that folder:
 #
 #   sudo bash scripts/install_on_fresh_server.sh
+#
+# pAIring is installed into /opt/pairing (set INSTALL_DIR=path for another folder): copied there first when run from
+# elsewhere, then given to the user it runs as.
 #
 # pAIring runs as its own user, "pairing" (no password, no sudo), made here if missing; set APP_USER=name for another one.
 # A re-run keeps the user the service already runs as.
@@ -53,6 +56,19 @@ CURRENT_USER="$(sed -n 's/^User=//p' "$SERVICE_FILE" 2>/dev/null || true)"
 APP_USER="${APP_USER:-${CURRENT_USER:-pairing}}"
 if [ "$APP_USER" = "root" ]; then
     die "pAIring must not run as root: set APP_USER to a normal user, or leave it unset for 'pairing'."
+fi
+
+# Installs into INSTALL_DIR: outside anyone's home folder, so the user pAIring runs as can reach it.
+INSTALL_DIR="$(realpath -m "${INSTALL_DIR:-/opt/pairing}")"
+if [ "$APP_DIR" != "$INSTALL_DIR" ]; then
+    step "Copying pAIring to $INSTALL_DIR"
+    if [ -n "$(ls -A "$INSTALL_DIR" 2>/dev/null)" ]; then
+        die "$INSTALL_DIR already holds files. Run the installer from there: sudo bash $INSTALL_DIR/scripts/install_on_fresh_server.sh (or set INSTALL_DIR to another folder)."
+    fi
+    mkdir -p "$INSTALL_DIR"
+    tar -C "$APP_DIR" --exclude=./.venv -cf - . | tar -C "$INSTALL_DIR" -xf -
+    success "Copied (without .venv, made again there). $APP_DIR is no longer needed once this finishes."
+    exec env INSTALL_DIR="$INSTALL_DIR" bash "$INSTALL_DIR/scripts/install_on_fresh_server.sh"
 fi
 
 # ---------------------------------------------------------------------------

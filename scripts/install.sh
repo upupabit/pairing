@@ -51,6 +51,35 @@ cat << 'EOF'
 EOF
 printf '\033[0m'
 echo "pAIring installer — $OS_NAME, running from: $APP_DIR"
+# Linux servers: pAIring (and the Matricxon it starts) is best run as its own user, "pairing" (no sudo), so it and anyone
+# supporting it reach only its own files. Says so and asks before going on as another user (not with --dev).
+me="$(id -un)"
+if [ "$OS_NAME" = "Linux" ] && [ "$INSTALL_DEV" = false ] && [ "$me" != "pairing" ]; then
+    step "Checking the user pAIring will run as"
+    if id pairing > /dev/null 2>&1; then
+        warn "A 'pairing' user exists on this server: pAIring should be installed and run as it, not as $me."
+        info "To switch:  sudo chown -R pairing: $APP_DIR && sudo -u pairing bash $APP_DIR/scripts/install.sh"
+    else
+        warn "pAIring is best run as its own user, 'pairing' (no sudo), not as $me: it can then reach only its own files."
+        info "To create it and install as it (an admin with sudo runs these):"
+        info "  sudo useradd -m -s /bin/bash pairing"
+        info "  sudo chown -R pairing: $APP_DIR"
+        info "  sudo -u pairing bash $APP_DIR/scripts/install.sh"
+        case "$APP_DIR" in
+            /home/*|/root/*) info "$APP_DIR is inside a home folder: move it to /opt/pairing first, so the new user can reach it." ;;
+        esac
+    fi
+
+    if [ "$INTERACTIVE" != true ]; then
+        info "No terminal to ask: continuing as $me."
+    else
+        read -r -p "Continue as $me anyway? [y/N] " answer
+        case "$answer" in
+            [Yy]*) info "Continuing as $me." ;;
+            *) echo "Stopped, nothing was changed. Run the commands above, then this installer again."; exit 0 ;;
+        esac
+    fi
+fi
 
 # ---------------------------------------------------------------------------
 step "1. Checking for Python 3.11+"
@@ -183,18 +212,6 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-step "6. Checking for llama.cpp's llama-server (not installed by this script)"
-# ---------------------------------------------------------------------------
-LLAMACPP_FOUND=false
-if command -v llama-server > /dev/null 2>&1; then
-    success "Found: $(llama-server --version 2>&1 | grep -m1 version)"
-    LLAMACPP_FOUND=true
-elif [ -x "external/llama.cpp/llama-server" ]; then
-    success "Found: pAIring's managed install in external/llama.cpp"
-    LLAMACPP_FOUND=true
-fi
-
-# ---------------------------------------------------------------------------
 step "Done"
 # ---------------------------------------------------------------------------
 echo
@@ -254,8 +271,4 @@ if [ "$OS_NAME" = "Linux" ]; then
         info "  Debian/Ubuntu: sudo apt install git cmake build-essential"
         info "  (the one-click prebuilt download works without them)"
     fi
-fi
-if [ "$LLAMACPP_FOUND" = false ]; then
-    echo
-    warn "Remember: llama.cpp isn't installed yet — pAIring will start and you can install it from the pAIring UI (Settings > Inference engines). On macOS, install llama.cpp yourself and enter its llama-server path there."
 fi

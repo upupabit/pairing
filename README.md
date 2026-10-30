@@ -65,8 +65,13 @@ systemd unit template (Linux) — edit a couple of values and
 **No root needed.** pAIring runs as a normal user, and the service
 template runs it as a dedicated `pairing` user. Root is only needed
 once, at setup, to install system packages and the systemd service.
-`scripts/install_on_fresh_server.sh` does both, then runs pAIring as
-your own normal user (the one that ran `sudo`).
+`scripts/install_on_fresh_server.sh` does both, and runs pAIring as
+a dedicated `pairing` user it creates (no password, no sudo; set
+`APP_USER=name` for another). `scripts/install.sh` runs no root step: on
+Linux it suggests creating that user first, and asks before going on as
+your own user. pAIring starts its local Matricxon as the same user, and
+starts it again whenever pAIring starts (`MATRICXON_AUTOSTART`, on by
+default), so both come back after a restart or a reboot.
 
 Supports MySQL migration and multi-server deployment.
 

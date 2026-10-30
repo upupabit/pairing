@@ -14,6 +14,9 @@
 #
 #   sudo bash scripts/install_on_fresh_server.sh
 #
+# pAIring runs as its own user, "pairing" (no password, no sudo), made here if missing; set APP_USER=name for another one.
+# A re-run keeps the user the service already runs as.
+#
 # Safe to re-run: each step checks whether it is already done.
 
 set -euo pipefail
@@ -29,7 +32,6 @@ warn()    { printf '\033[1;33m  ! \033[0m%s\n' "$1"; }
 die()     { printf '\033[1;31mError:\033[0m %s\n' "$1" >&2; exit 1; }
 
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-APP_USER="${SUDO_USER:-$(whoami)}"
 APP_PORT="${APP_PORT:-8000}"
 SERVICE_NAME="pairing"
 
@@ -45,6 +47,12 @@ echo "This will need sudo for: apt packages, systemd services."
 
 if [ "$(id -u)" -ne 0 ]; then
     die "This script needs root — re-run with: sudo bash scripts/install_on_fresh_server.sh"
+fi
+SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
+CURRENT_USER="$(sed -n 's/^User=//p' "$SERVICE_FILE" 2>/dev/null || true)"
+APP_USER="${APP_USER:-${CURRENT_USER:-pairing}}"
+if [ "$APP_USER" = "root" ]; then
+    die "pAIring must not run as root: set APP_USER to a normal user, or leave it unset for 'pairing'."
 fi
 
 # ---------------------------------------------------------------------------
@@ -65,7 +73,22 @@ apt-get install -y -qq python3 python3-venv python3-pip rsync git cmake build-es
 success "System packages installed."
 
 # ---------------------------------------------------------------------------
-step "3. Creating the Python virtual environment"
+step "3. Setting up the user pAIring runs as ($APP_USER)"
+# ---------------------------------------------------------------------------
+if id "$APP_USER" > /dev/null 2>&1; then
+    info "User $APP_USER already exists — using it."
+else
+    useradd --create-home --shell /bin/bash "$APP_USER"
+    success "Created user $APP_USER (no password, no sudo): it can reach only pAIring's own files."
+fi
+chown -R "$APP_USER":"$APP_USER" "$APP_DIR"
+if ! sudo -u "$APP_USER" test -r "$APP_DIR/run.py"; then
+    die "$APP_USER can't reach $APP_DIR (a parent folder is private, e.g. a home folder). Move pAIring to /opt/pairing and re-run."
+fi
+success "$APP_DIR belongs to $APP_USER."
+
+# ---------------------------------------------------------------------------
+step "4. Creating the Python virtual environment"
 # ---------------------------------------------------------------------------
 if [ -x "$APP_DIR/.venv/bin/python" ]; then
     info ".venv already exists — skipping creation."
@@ -79,9 +102,9 @@ sudo -u "$APP_USER" "$APP_DIR/.venv/bin/pip" install --quiet -r "$APP_DIR/requir
 success "Python dependencies installed into .venv."
 
 # ---------------------------------------------------------------------------
-step "4. Creating the systemd service for pAIring itself"
+step "5. Creating the systemd service for pAIring itself"
 # ---------------------------------------------------------------------------
-cat > "/etc/systemd/system/${SERVICE_NAME}.service" << EOF
+cat > "$SERVICE_FILE" << EOF
 [Unit]
 Description=pAIring — on-prem multi-user chat UI for local models
 After=network.target
@@ -103,7 +126,7 @@ systemctl enable "$SERVICE_NAME" >/dev/null
 success "Created and enabled ${SERVICE_NAME}.service."
 
 # ---------------------------------------------------------------------------
-step "5. .env / SECRET_KEY"
+step "6. .env / SECRET_KEY"
 # ---------------------------------------------------------------------------
 if [ -f "$APP_DIR/.env" ] && grep -qE '^SECRET_KEY=.+' "$APP_DIR/.env" 2>/dev/null; then
     info "$APP_DIR/.env already has a SECRET_KEY — leaving it as-is."
@@ -124,7 +147,7 @@ chown "$APP_USER":"$APP_USER" "$APP_DIR/.env"
 chmod 600 "$APP_DIR/.env"
 
 # ---------------------------------------------------------------------------
-step "6. Starting pAIring"
+step "7. Starting pAIring"
 # ---------------------------------------------------------------------------
 systemctl start "$SERVICE_NAME"
 sleep 2
@@ -141,6 +164,7 @@ SERVER_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
 cat << EOF
 
 pAIring is running at:  http://${SERVER_IP:-<this-server>}:${APP_PORT}
+It runs as user ${APP_USER}; to work as it: sudo -iu ${APP_USER}
 
 Log in with the starter admin account:
     admin / admin   (full access, including the Settings > System tab)

@@ -86,6 +86,10 @@ DATABASE_URL = os.environ.get("DATABASE_URL", f"sqlite:///{DATA_DIR / 'pAIring.d
 # See ROADMAP.md "Scaling to more users".
 AUTO_MIGRATE = os.environ.get("AUTO_MIGRATE", "true").strip().lower() != "false"
 
+# Start the local Matricxon with pAIring when it is the active engine (services/matricxon_autostart.py), so it comes
+# back after a restart or reboot. Set false where you start it yourself (e.g. a development machine).
+MATRICXON_AUTOSTART = os.environ.get("MATRICXON_AUTOSTART", "true").strip().lower() != "false"
+
 # Folder where the admin drops RAG files (.txt/.md/.pdf): the knowledge base's source of truth,
 # synced by app/rag.py on startup and on "Rescan". Top-level so it is easy to find.
 KNOWLEDGE_DIR = Path(os.environ.get("KNOWLEDGE_DIR", BASE_DIR / "knowledge"))

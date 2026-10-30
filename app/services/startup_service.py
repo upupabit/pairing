@@ -33,6 +33,7 @@ from app.services.conversation_service import mark_interrupted_messages_as_error
 from app.services.document_sync import sync_all_on_startup
 from app.services.image_generation_service import mark_interrupted_jobs_as_errored
 from app.services.inference_client import InferenceError, list_models
+from app.services.matricxon_autostart import matricxon_autostart
 from app.services.note_service import seed_default_notes
 from app.services.settings_sync import settings_sync
 
@@ -161,6 +162,15 @@ async def run_startup_tasks() -> None:
     # Every instance (not only the primary): other machines' saves reach this process's caches (settings_sync.py).
     settings_sync.start()
 
+    # Matricxon down (restart, reboot): start it in the background, then check the engine and sync knowledge.
+    if wanted := await matricxon_autostart.needed():
+        matricxon_autostart.schedule(*wanted, then=check_engine_and_sync)
+        return
+    await check_engine_and_sync()
+
+
+async def check_engine_and_sync() -> None:
+    """Logs whether the active engine is reachable; if it is, syncs KNOWLEDGE_DIR."""
     active_engine = engine_service.current_engine()
     try:
         models = await list_models()

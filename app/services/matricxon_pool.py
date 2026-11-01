@@ -45,6 +45,7 @@ def refresh_from_config(config: MatricxonServerConfig) -> None:
     serving = [h for h in _all_hosts if h not in config.voter_hosts]
     _pool.set_hosts(serving or _all_hosts)  # voter-only nodes get no chats (unless nothing else exists)
     matricxon_http.set_secret(config.admin_secret)
+    matricxon_http.set_api_key(config.api_key)
 
 
 def get_effective_hosts() -> list[str]:

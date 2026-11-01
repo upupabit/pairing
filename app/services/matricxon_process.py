@@ -189,6 +189,7 @@ def write_env_file(config: MatricxonServerConfig) -> None:
             "MATRICXON_GPU_WEIGHT_MODE": config.gpu_weight_mode,
             "MATRICXON_LOG_LEVEL": str(config.log_level),
             "MATRICXON_CLUSTER_ROLE": config.cluster_role if config.cluster_role != "off" else None,
+            "MATRICXON_API_KEYS": config.api_key,
         },
         path=project_dir / ".env",
     )

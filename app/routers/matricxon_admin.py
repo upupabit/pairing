@@ -47,8 +47,8 @@ router = APIRouter(prefix="/api/settings/matricxon", tags=["matricxon"])
 
 
 def _without_secret(config: MatricxonServerConfig) -> MatricxonServerConfig:
-    """The admin secret never goes to the browser."""
-    return config.model_copy(update={"admin_secret": None})
+    """The admin secret and API key never go to the browser."""
+    return config.model_copy(update={"admin_secret": None, "api_key": None})
 
 
 async def _save_and_broadcast(db: AsyncSession, body: MatricxonServerConfig) -> None:
@@ -60,6 +60,7 @@ async def _save_and_broadcast(db: AsyncSession, body: MatricxonServerConfig) -> 
     previous = await settings_service.get_matricxon_server_config(db)
     # Nodes added on the Cluster page are not part of this form; saving must not wipe them (it once did).
     ClusterHosts.keep_through_a_save(previous, body)
+    body.api_key = previous.api_key  # set on its own panel (matricxon_api_key_admin.py), never by this form
     await settings_service.set_matricxon_server_config(db, body)
     if previous.mode != body.mode:
         await ExtendedModelCatalog(db).clear()

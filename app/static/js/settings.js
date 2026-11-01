@@ -56,6 +56,12 @@ const PARAM_DEFS = [
     help: "Restricts choices to the K most likely next tokens at each step." },
   { key: "repeat_penalty", label: "Repeat penalty", min: 0, max: 2, step: 0.05,
     help: "Discourages the model from repeating itself. 1.0 = no penalty." },
+  { key: "min_p", fallback: 0, label: "Min P", min: 0, max: 0.5, step: 0.01,
+    help: "Skips words far less likely than the best one. 0 = off. Matricxon and llama.cpp only." },
+  { key: "presence_penalty", fallback: 0, label: "Presence penalty", min: -2, max: 2, step: 0.1,
+    help: "Above 0 nudges the model toward new words and topics. 0 = off. Matricxon and llama.cpp only." },
+  { key: "frequency_penalty", fallback: 0, label: "Frequency penalty", min: -2, max: 2, step: 0.1,
+    help: "Above 0 makes words rarer the more often they were used. 0 = off. Matricxon and llama.cpp only." },
   { key: "num_predict", label: "Max reply length (tokens)", min: 32, max: 4096, step: 32,
     help: "Upper limit on how many tokens the model may generate in one reply." },
 ];
@@ -125,6 +131,8 @@ function engineOptionsList() {
 function renderSliders(params) {
   paramSlidersEl.innerHTML = "";
   for (const def of PARAM_DEFS) {
+    // Chats saved before a newer option existed don't have it yet: show (and keep) its off value.
+    if (params[def.key] === undefined && def.fallback !== undefined) params[def.key] = def.fallback;
     const row = document.createElement("div");
     row.innerHTML = `
       <div class="flex items-center justify-between mb-1">

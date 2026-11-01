@@ -62,6 +62,7 @@ from app.schemas.image_model import (
 )
 from app.schemas.instances import InstancesConfig, InstanceStatus, InstancesUpdate, ProxyMode
 from app.schemas.llamacpp_server_config import LlamaCppAutoDetectedPath, LlamaCppServerConfig, LlamaCppServerStatus
+from app.schemas.matricxon_api_key import MatricxonApiKeyState, MatricxonApiKeyUpdate
 from app.schemas.matricxon_cache_persistence import (
     MatricxonCachePersistence,
     MatricxonCachePersistenceUpdate,
@@ -233,6 +234,8 @@ __all__ = [
     "NoteSlotUpdate",
     "NoteUpdate",
     "MatricxonAutoDetectedPath",
+    "MatricxonApiKeyState",
+    "MatricxonApiKeyUpdate",
     "MatricxonCachePersistence",
     "MatricxonCachePersistenceUpdate",
     "MatricxonServerConfig",

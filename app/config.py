@@ -151,6 +151,11 @@ DEFAULT_GENERATION_PARAMS = {
     "top_k": 40,
     # Penalizes recently seen tokens; 1.0 = off.
     "repeat_penalty": 1.1,
+    # Drops tokens below this share of the top token's chance; 0 = off.
+    "min_p": 0.0,
+    # Lower a token once it appeared / for each time it appeared; 0 = off.
+    "presence_penalty": 0.0,
+    "frequency_penalty": 0.0,
     # Context window in tokens; kept conservative since it applies to every model.
     "num_ctx": 4096,
     # Max tokens per reply; -1 = no limit.

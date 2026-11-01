@@ -1,0 +1,36 @@
+<!-- Settings > Matricxon > API key, shown while Matricxon is the active engine. Wired by app/static/js/settings_matricxon_api_key.js to /api/settings/matricxon/api-key (app/routers/matricxon_api_key_admin.py). -->
+<section class="hidden space-y-3" id="matricxon-api-key-panel">
+  <h2 class="text-sm font-semibold text-slate-200">Matricxon API key</h2>
+  <p class="text-xs text-slate-500 -mt-2">
+    With a key, Matricxon answers chats, embeddings and reranking only for callers that send it, so other programs
+    on the network can't use your models. pAIring sends it on every call.
+  </p>
+  <div class="rounded-lg bg-slate-900 border border-slate-800 px-4 py-3 space-y-3">
+    <p id="matricxon-api-key-current" class="text-sm text-slate-200">Loading…</p>
+    <div class="flex flex-wrap items-center gap-3">
+      <input id="matricxon-api-key-input" type="password" autocomplete="new-password" maxlength="200"
+        placeholder="New key (no spaces or commas)"
+        class="min-w-0 flex-1 rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+      <button type="button" id="matricxon-api-key-generate" title="Fill in a long random key"
+        class="rounded-lg border border-slate-700 px-3 py-2 text-sm text-slate-200 hover:bg-slate-800 transition-colors">
+        Generate
+      </button>
+      <button type="button" id="matricxon-api-key-save"
+        class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+        Save
+      </button>
+      <button type="button" id="matricxon-api-key-remove"
+        class="hidden rounded-lg border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800 transition-colors disabled:opacity-40">
+        Remove key
+      </button>
+    </div>
+    <p id="matricxon-api-key-where" class="text-xs text-slate-500"></p>
+    <div class="flex flex-wrap items-center gap-3">
+      <button type="button" id="matricxon-api-key-restart"
+        class="hidden rounded-lg border border-amber-600 px-4 py-2 text-sm text-amber-200 hover:bg-amber-900/30 transition-colors disabled:opacity-40">
+        Restart Matricxon now
+      </button>
+      <span id="matricxon-api-key-status" class="text-xs text-slate-500"></span>
+    </div>
+  </div>
+</section>

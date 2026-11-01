@@ -1,8 +1,10 @@
-"""HTTP client for Matricxon calls: signs each request with the admin secret when one is set.
+"""HTTP client for Matricxon calls: signs each request with the admin secret when one is set, and
+sends the API key when one is set.
 
 Matricxon checks the signature on its admin routes (reset, provision, voters, pull, delete, cache
-policy...). Extra headers on other routes are ignored, so every Matricxon call can use `client()`.
-Mirrors ../matricxon/app/server/admin_auth.py.
+policy...) and the key on the routes that run a model (MATRICXON_API_KEYS). Extra headers on other
+routes are ignored, so every Matricxon call can use `client()`.
+Mirrors ../matricxon/app/server/admin_auth.py and api_keys.py.
 """
 
 import hashlib
@@ -15,12 +17,19 @@ from typing import Any
 import httpx
 
 _secret: str | None = None
+_api_key: str | None = None
 
 
 def set_secret(secret: str | None) -> None:
     """Called when the Matricxon config loads or changes (matricxon_pool.refresh_from_config)."""
     global _secret
     _secret = secret or None
+
+
+def set_api_key(key: str | None) -> None:
+    """Called with set_secret (matricxon_pool.refresh_from_config)."""
+    global _api_key
+    _api_key = key or None
 
 
 def signature(secret: str, method: str, target: str, body: bytes, stamp: str, nonce: str) -> str:
@@ -32,10 +41,14 @@ def signature(secret: str, method: str, target: str, body: bytes, stamp: str, no
 class _Signer(httpx.Auth):
     requires_request_body = True
 
-    def __init__(self, secret_of=lambda: _secret) -> None:
+    def __init__(self, secret_of=lambda: _secret, key_of=lambda: _api_key) -> None:
         self._secret_of = secret_of
+        self._key_of = key_of
 
     def auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response, None]:
+        key = self._key_of()
+        if key:
+            request.headers["Authorization"] = f"Bearer {key}"
         secret = self._secret_of()
         if secret:
             query = request.url.query.decode()
@@ -50,5 +63,5 @@ class _Signer(httpx.Auth):
 
 
 def client(**kwargs: Any) -> httpx.AsyncClient:
-    """An `httpx.AsyncClient` whose requests are signed while a secret is set."""
+    """An `httpx.AsyncClient` whose requests are signed while a secret is set, with the API key while one is set."""
     return httpx.AsyncClient(auth=_Signer(), **kwargs)

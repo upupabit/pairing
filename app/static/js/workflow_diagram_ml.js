@@ -161,13 +161,13 @@ const WORKFLOW_ML_NODES = [
     "ml_sampler", "Sampler\ntemp · top-k · top-p", 2, ML_ROW.r3,
     "Choosing the next token",
     "app/runtime/sampler.py — Sampler · app/native/src/mx_sample.c",
-    "Logits are adjusted by the repeat penalty, divided by the temperature, trimmed to the top-k and top-p candidates, turned into probabilities, and one token is drawn at random (or the highest one at temperature 0). These are the same options a chat's settings pass down (temperature, top_p, top_k, repeat_penalty, seed). Over a 150k–250k-word vocabulary this used to cost tens of milliseconds per token in PyTorch (a full sort and several softmaxes); the native version does it in one pass in about a millisecond."
+    "Logits are adjusted by the repeat penalty (and the presence and frequency penalties, when set), divided by the temperature, trimmed to the top-k, min-p and top-p candidates, turned into probabilities, and one token is drawn at random (or the highest one at temperature 0). These are the same options a chat's settings pass down (temperature, top_p, top_k, min_p, repeat_penalty, presence_penalty, frequency_penalty, seed). With structured output (an API caller's format or JSON schema), a drawn token that would break the JSON is refused and another is drawn. Over a 150k–250k-word vocabulary this used to cost tens of milliseconds per token in PyTorch (a full sort and several softmaxes); the native version does the original options in one pass in about a millisecond, and the newer ones run in PyTorch only when used."
   ),
   mlNode(
     "ml_stop_check", "Stop check\n(EOS · num_predict)", 3, ML_ROW.r3,
     "Deciding whether the reply is over",
     "app/runtime/chat_engine.py — ChatEngine.stream",
-    "Generation ends when the model emits an end-of-sequence token, when the num_predict limit or the context window is reached, or when a stop is requested from outside (a cancelled message). Otherwise the token continues down to be streamed out and also loops back as the next step's input. With tools on, generation also stops on <|tool_response> (Gemma) and <eos>: after the model\u0027s tool call it waits for the tool, so it must not keep writing."
+    "Generation ends when the model emits an end-of-sequence token, when the num_predict limit or the context window is reached, when the reply reaches one of the request's stop texts (which is not sent), when a structured-output reply's JSON is complete, or when a stop is requested from outside (a cancelled message). Otherwise the token continues down to be streamed out and also loops back as the next step's input. With tools on, generation also stops on <|tool_response> (Gemma) and <eos>: after the model\u0027s tool call it waits for the tool, so it must not keep writing."
   ),
   mlNode(
     "ml_detok", "Incremental detokenizer\n(ids → text)", 4, ML_ROW.r3,

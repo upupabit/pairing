@@ -26,6 +26,7 @@ from opentelemetry.trace import SpanKind, Status, StatusCode
 from app.config import EMBEDDING_NUM_CTX
 from app.services import matricxon_http, matricxon_pool, matricxon_telemetry
 from app.services.matricxon_errors import MatricxonError, MatricxonHostError, MatricxonReply
+from app.services.sampling_extras import SamplingExtras
 from app.services.tool_call_sink import add_tools_to_payload, sink_from
 
 logger = logging.getLogger("llama_chat")
@@ -126,6 +127,7 @@ async def chat_stream(model: str, messages: list[dict], params: dict) -> AsyncGe
     }
     if params.get("seed", -1) != -1:
         options["seed"] = params["seed"]
+    options.update(SamplingExtras.of(params))
 
     payload = {"model": model, "messages": messages, "options": options, "stream": True}
     payload["think"] = bool(params.get("think"))  # off unless the chat turned Reasoning on; reasoning stays out of text

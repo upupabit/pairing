@@ -39,6 +39,7 @@ from app.routers import (
     instances_admin,
     llamacpp_admin,
     matricxon_admin,
+    matricxon_api_key_admin,
     matricxon_cache_admin,
     mcp_admin,
     mcp_tools,
@@ -160,6 +161,7 @@ app.include_router(http_proxy_admin.router)
 app.include_router(llamacpp_admin.router)
 app.include_router(matricxon_admin.router)
 app.include_router(matricxon_cache_admin.router)
+app.include_router(matricxon_api_key_admin.router)
 app.include_router(engine_admin.router)
 app.include_router(cluster_admin.router)
 app.include_router(connectors.router)

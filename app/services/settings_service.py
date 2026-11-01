@@ -169,13 +169,18 @@ async def set_llamacpp_server_config(db: AsyncSession, config: LlamaCppServerCon
     await db.commit()
 
 
+# Encrypted at rest in the Matricxon config.
+_MATRICXON_SECRETS = ("admin_secret", "api_key")
+
+
 async def get_matricxon_server_config(db: AsyncSession) -> MatricxonServerConfig:
     """How to run Matricxon (matricxon_process/matricxon_pool); same shape as get_llamacpp_server_config."""
     row = await db.get(AppSetting, (SYSTEM_OWNER_ID, MATRICXON_SERVER_CONFIG_KEY))
     if row:
         value = dict(row.value)
-        if value.get("admin_secret"):
-            value["admin_secret"] = secret_crypto.decrypt(value["admin_secret"])
+        for field in _MATRICXON_SECRETS:
+            if value.get(field):
+                value[field] = secret_crypto.decrypt(value[field])
         return MatricxonServerConfig(**value)
     return MatricxonServerConfig()
 
@@ -183,8 +188,9 @@ async def get_matricxon_server_config(db: AsyncSession) -> MatricxonServerConfig
 async def set_matricxon_server_config(db: AsyncSession, config: MatricxonServerConfig) -> None:
     row = await db.get(AppSetting, (SYSTEM_OWNER_ID, MATRICXON_SERVER_CONFIG_KEY))
     value = config.model_dump()
-    if value.get("admin_secret"):
-        value["admin_secret"] = secret_crypto.encrypt(value["admin_secret"])
+    for field in _MATRICXON_SECRETS:
+        if value.get(field):
+            value[field] = secret_crypto.encrypt(value[field])
     if row is None:
         db.add(AppSetting(owner_id=SYSTEM_OWNER_ID, key=MATRICXON_SERVER_CONFIG_KEY, value=value))
     else:

@@ -89,6 +89,9 @@ class MatricxonServerConfig(BaseModel):
     # Signs pAIring's admin calls to Matricxon (MATRICXON_ADMIN_SECRET on each node). None = nodes are
     # unprotected. Encrypted at rest (settings_service); never sent to the browser.
     admin_secret: str | None = None
+    # Sent as `Authorization: Bearer` on every Matricxon call (MATRICXON_API_KEYS on each node; in local mode written
+    # to Matricxon's .env). None = no key. Encrypted at rest like admin_secret; never sent to the browser.
+    api_key: str | None = None
     # Nodes that only vote (Matricxon node_kind "voter"): listed with the other nodes but never given chats.
     voter_hosts: list[str] = Field(default_factory=list, max_length=MAX_REMOTE_HOSTS)
     # Overrides for matricxon_installer.install_stream; kept for parity with llama.cpp but not functional

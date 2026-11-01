@@ -53,6 +53,7 @@
       {% include "settings/engines_matricxon.html" %}
 
       {% include "_matricxon_cache_persistence.html" %}
+      {% if admin_page %}{% include "_matricxon_api_key.html" %}{% endif %}
       {% if admin_page %}{% include "_connector_summary.html" %}{% endif %}
       </div>
 

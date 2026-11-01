@@ -123,6 +123,11 @@ class GenerationParams(BaseModel):
     top_p: float = Field(0.9, ge=0.0, le=1.0)
     top_k: int = Field(40, ge=1, le=200)
     repeat_penalty: float = Field(1.1, ge=0.0, le=2.0)
+    # Off at 0. min_p keeps tokens at least this share of the top token's chance; the penalties lower a token
+    # once it appeared (presence) and for each use (frequency). Matricxon and llama.cpp only.
+    min_p: float = Field(0.0, ge=0.0, le=1.0)
+    presence_penalty: float = Field(0.0, ge=-2.0, le=2.0)
+    frequency_penalty: float = Field(0.0, ge=-2.0, le=2.0)
     num_ctx: int = Field(4096, ge=256, le=32768)
     num_predict: int = Field(1024, ge=-1, le=8192)
     seed: int = -1

@@ -47,7 +47,8 @@ class _Signer(httpx.Auth):
 
     def auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, httpx.Response, None]:
         key = self._key_of()
-        if key:
+        # A caller may name the key itself (changing the key on a node that still has the old one).
+        if key and "Authorization" not in request.headers:
             request.headers["Authorization"] = f"Bearer {key}"
         secret = self._secret_of()
         if secret:

@@ -23,6 +23,7 @@ from tests.test_reply_generation_service import (
     _build_file_session_factory,
     _drain_background_tasks,
     _make_conversation,
+    _start_and_find_placeholder,
 )
 
 
@@ -53,13 +54,14 @@ async def test_a_reply_deleted_elsewhere_while_only_reasoning_stops_the_engine(m
         async with session_factory() as db:
             conversation = await db.get(Conversation, conversation_id)
             gen = reply_generation_service.stream_reply(db, conversation, [{"role": "user", "content": "hi"}], [])
-            message_id = (await gen.__anext__())["message_id"]
+            first_event, message_id = await _start_and_find_placeholder(gen, session_factory)
             other_instance = session_factory()
             message = await other_instance.get(Message, message_id)
             message.status = "deleted"
             await other_instance.commit()
             await other_instance.close()
             proceed.set()
+            assert (await first_event)["message_id"] == message_id
             await gen.aclose()
         await _drain_background_tasks()
         assert stopped == [message_id]

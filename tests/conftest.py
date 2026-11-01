@@ -10,6 +10,7 @@ from app.database import Base
 from app.models import User
 from app.services import (
     conversation_service,
+    default_model_settings,
     image_generation_service,
     llamacpp_admin,
     llamacpp_models,
@@ -124,6 +125,18 @@ def _model_install_checks_do_not_hit_a_real_engine(monkeypatch):
 
     monkeypatch.setattr(conversation_service, "installed_chat_models", fake_conversation_service_installed)
     monkeypatch.setattr(model_catalog_service, "installed_chat_models", fake_model_catalog_installed)
+
+
+@pytest.fixture(autouse=True)
+def _default_model_lookups_do_not_hit_a_real_engine(monkeypatch):
+    """DefaultModelSettings picks the reranker, embedding and vision models from what the engine lists. Unmocked, a
+    knowledge-base search in a test asked the live Matricxon, found its real reranker and sent it real rerank calls.
+    Here nothing is installed; a test that needs models patches _installed_with_capability itself."""
+
+    async def nothing_installed():
+        return []
+
+    monkeypatch.setattr(default_model_settings, "list_models", nothing_installed)
 
 
 @pytest_asyncio.fixture

@@ -1,21 +1,17 @@
-/* Settings > Matricxon > API key (app/templates/_matricxon_api_key.html): sets or removes the key pAIring sends to
-Matricxon, via /api/settings/matricxon/api-key. The key is never read back, only whether one is set. Uses api from
-app.js. */
+/* Settings > Matricxon > API key (app/templates/_matricxon_api_key.html), and the Cluster page's API key card
+(app/templates/_cluster_api_key_form.html): sets or removes the key pAIring sends to Matricxon. Each server gets it at
+once. The key is never read back, only whether one is set. Uses api from app.js. */
 class MatricxonApiKeyPanel {
-  static URL = "/api/settings/matricxon/api-key";
-
-  constructor(root) {
-    this.current = root.querySelector("#matricxon-api-key-current");
-    this.input = root.querySelector("#matricxon-api-key-input");
-    this.where = root.querySelector("#matricxon-api-key-where");
-    this.saveButton = root.querySelector("#matricxon-api-key-save");
-    this.removeButton = root.querySelector("#matricxon-api-key-remove");
-    this.restartButton = root.querySelector("#matricxon-api-key-restart");
-    this.status = root.querySelector("#matricxon-api-key-status");
-    root.querySelector("#matricxon-api-key-generate").addEventListener("click", () => this.generate());
+  constructor(root, saveUrl) {
+    this.saveUrl = saveUrl;
+    this.current = root.querySelector("[data-key-current]");
+    this.input = root.querySelector("[data-key-input]");
+    this.saveButton = root.querySelector("[data-key-save]");
+    this.removeButton = root.querySelector("[data-key-remove]");
+    this.status = root.querySelector("[data-key-status]");
+    root.querySelector("[data-key-generate]").addEventListener("click", () => this.generate());
     this.saveButton.addEventListener("click", () => this.save(this.input.value.trim()));
     this.removeButton.addEventListener("click", () => this.remove());
-    this.restartButton.addEventListener("click", () => this.restart());
   }
 
   /** 32 random bytes as hex: long enough that guessing is hopeless. */
@@ -26,20 +22,18 @@ class MatricxonApiKeyPanel {
   }
 
   show(state) {
-    this.current.textContent = state.set ? "A key is set: pAIring sends it on every Matricxon call." : "No key: Matricxon answers anyone who can reach it.";
+    this.current.textContent = state.set
+      ? "A key is set: Matricxon serves only callers that send it, and pAIring always does."
+      : "No key: Matricxon answers anyone who can reach it.";
     this.removeButton.classList.toggle("hidden", !state.set);
-    this.where.textContent = state.local
-      ? "Local Matricxon: the key is saved in its .env, so it checks the key from its next start. Other cluster nodes need MATRICXON_API_KEYS set to the same key."
-      : "Remote Matricxon: set MATRICXON_API_KEYS to the same key on each Matricxon server, then restart it.";
-    this.restartButton.classList.toggle("hidden", !state.restart_needed);
-    this.status.textContent = state.restart_needed ? "Saved. Restart Matricxon to apply it (running replies stop)." : "";
   }
 
   async run(request, doneText) {
     this.saveButton.disabled = this.removeButton.disabled = true;
+    this.status.textContent = doneText ? "Sending to every Matricxon…" : "";
     try {
       this.show(await request());
-      if (doneText && !this.status.textContent) this.status.textContent = doneText;
+      this.status.textContent = doneText || "";
     } catch (error) {
       this.status.textContent = error.message;
     } finally {
@@ -48,7 +42,7 @@ class MatricxonApiKeyPanel {
   }
 
   load() {
-    return this.run(() => api(MatricxonApiKeyPanel.URL));
+    return this.run(() => api("/api/settings/matricxon/api-key"));
   }
 
   save(key) {
@@ -57,40 +51,34 @@ class MatricxonApiKeyPanel {
       return;
     }
     return this.run(async () => {
-      const state = await api(MatricxonApiKeyPanel.URL, { method: "PUT", body: JSON.stringify({ key }) });
+      const state = await api(this.saveUrl, { method: "PUT", body: JSON.stringify({ key }) });
       this.input.value = "";
       this.input.type = "password";
       return state;
-    }, "Saved");
+    }, "Saved on every Matricxon.");
   }
 
   remove() {
     if (!confirm("Remove the API key? Anyone who can reach Matricxon will be able to use it.")) return;
-    return this.run(() => api(MatricxonApiKeyPanel.URL, { method: "PUT", body: JSON.stringify({ key: "" }) }), "Removed");
-  }
-
-  async restart() {
-    if (!confirm("Restart Matricxon now? Replies in progress stop.")) return;
-    this.restartButton.disabled = true;
-    this.status.textContent = "Restarting…";
-    try {
-      await api("/api/settings/matricxon/stop", { method: "POST" });
-      await api("/api/settings/matricxon/start", { method: "POST" });
-      this.restartButton.classList.add("hidden");
-      this.status.textContent = "Restarted: Matricxon now checks the key.";
-    } catch (error) {
-      this.status.textContent = error.message;
-    } finally {
-      this.restartButton.disabled = false;
-    }
+    return this.run(() => api(this.saveUrl, { method: "PUT", body: JSON.stringify({ key: "" }) }), "Removed from every Matricxon.");
   }
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
+  const card = document.getElementById("cluster-api-key-form");
+  if (card) {
+    new MatricxonApiKeyPanel(card, "/api/cluster/api-key").load();
+    return;
+  }
   const root = document.getElementById("matricxon-api-key-panel");
   if (!root) return;
   const { active_engine: activeEngine } = await api("/health");
   if (activeEngine !== "matricxon") return;
+  const state = await api("/api/settings/matricxon/api-key").catch(() => null);
+  if (state?.cluster) {
+    document.getElementById("matricxon-api-key-managed").classList.remove("hidden");
+    return;
+  }
   root.classList.remove("hidden");
-  new MatricxonApiKeyPanel(root).load();
+  new MatricxonApiKeyPanel(root, "/api/settings/matricxon/api-key").show(state ?? { set: false });
 });

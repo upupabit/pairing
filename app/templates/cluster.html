@@ -212,6 +212,7 @@
           </div>
           <p id="cluster-secret-note" class="text-xs text-slate-500"></p>
         </form>
+        {% include "_cluster_api_key_form.html" %}
         {% include "_cluster_timers_form.html" %}
 
         {% include "_cluster_cache_form.html" %}
@@ -426,4 +427,5 @@
 <script src="/static/js/cluster_node_reset.js?v={{ static_version }}"></script>
 <script src="/static/js/cluster_cache.js?v={{ static_version }}"></script>
 <script src="/static/js/cluster.js?v={{ static_version }}"></script>
+<script src="/static/js/settings_matricxon_api_key.js?v={{ static_version }}"></script>
 {% endblock %}

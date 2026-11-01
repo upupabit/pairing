@@ -1,0 +1,29 @@
+<!-- Cluster page > API key (settings_matricxon_api_key.js, PUT /api/cluster/api-key): sent to every node at once, all
+     must answer; a node added later gets it while it is set up. -->
+<div id="cluster-api-key-form" class="max-w-2xl space-y-2 rounded-lg border border-slate-800 bg-slate-900 px-4 py-3">
+  <p class="text-sm font-medium text-slate-100">API key</p>
+  <p class="text-xs text-slate-500">
+    Protects what the nodes serve: with a key, a node answers chats, embeddings and reranking only for callers that send
+    it, so other programs on the network can't use your models. pAIring sends it on every call. The admin secret above
+    protects the admin actions; this protects the models.
+  </p>
+  <ul class="list-disc space-y-0.5 pl-5 text-xs text-slate-500">
+    <li><strong>Every node gets it at once</strong>, with no restart. All nodes must answer; if one doesn't, nothing
+      changes.</li>
+    <li><strong>A node you add later</strong> gets it while it is set up.</li>
+    <li><strong>Other programs</strong> that call the nodes (an OpenAI SDK, for example) need the same key. pAIring
+      never shows it again: copy it before you save.</li>
+  </ul>
+  <p data-key-current class="text-xs text-slate-300">Loading…</p>
+  <div class="flex flex-wrap items-center gap-3">
+    <input data-key-input type="password" autocomplete="new-password" maxlength="200" placeholder="New key (no spaces or commas)"
+      class="min-w-0 flex-1 rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
+    <button type="button" data-key-generate title="Fill in a long random key"
+      class="whitespace-nowrap rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800">Generate</button>
+    <button type="button" data-key-save
+      class="whitespace-nowrap rounded-lg bg-brand-500 px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-40">Save key</button>
+    <button type="button" data-key-remove
+      class="hidden whitespace-nowrap rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800 disabled:opacity-40">Remove key</button>
+  </div>
+  <p data-key-status class="text-xs text-slate-500"></p>
+</div>

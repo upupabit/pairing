@@ -58,6 +58,23 @@ async def _make_conversation(session_factory) -> str:
         return conversation.id
 
 
+async def _start_and_find_placeholder(gen, session_factory) -> tuple[asyncio.Task, str]:
+    """Starts the reply stream (which creates the placeholder message) and returns its pending first event plus the
+    placeholder's id, read from the DB. The stream's first event is the reply's first output, so a test that holds the
+    fake model back can't learn the id by waiting for that event: it would wait for itself."""
+    first_event = asyncio.create_task(gen.__anext__())
+    for _ in range(200):
+        async with session_factory() as db:
+            found = (
+                await db.execute(select(Message.id).where(Message.role == "assistant", Message.status == "streaming"))
+            ).scalar()
+        if found:
+            return first_event, found
+        await asyncio.sleep(0.01)
+    first_event.cancel()
+    raise AssertionError("the reply's placeholder message never appeared")
+
+
 async def _drain_background_tasks() -> None:
     """Waits for every tracked background task, including one a cancelled task spawns to persist its final state
     (reply_model_unload_service.schedule_cancelled_write, tracked in a *separate* set) that doesn't exist when the
@@ -425,8 +442,7 @@ async def test_cross_instance_deletion_detected_mid_stream_also_stops_the_model(
     async with session_factory() as db:
         conversation = await db.get(Conversation, conversation_id)
         gen = reply_generation_service.stream_reply(db, conversation, [{"role": "user", "content": "hi"}], [])
-        first_event = await gen.__anext__()
-        message_id = first_event["message_id"]
+        first_event, message_id = await _start_and_find_placeholder(gen, session_factory)
 
         # Simulates delete_message served by a *different* sibling instance: only the shared DB sees it; no
         # mark_message_deleted/cancel_generation reaches this instance's in-process registries.
@@ -438,6 +454,7 @@ async def test_cross_instance_deletion_detected_mid_stream_also_stops_the_model(
         await other_instance_db.close()
 
         proceed.set()
+        assert (await first_event)["message_id"] == message_id
         await gen.aclose()
 
     await _drain_background_tasks()

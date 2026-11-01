@@ -220,6 +220,18 @@ async def test_without_consensus_on_the_seed_the_joiner_gets_only_the_folders(db
 
 
 @pytest.mark.asyncio
+async def test_a_new_node_gets_the_clusters_api_key(db):
+    await _configure(db)
+    config = await settings_service.get_matricxon_server_config(db)
+    config.api_key = "k-7"
+    await settings_service.set_matricxon_server_config(db, config)
+    seen: list = []
+    await ClusterNodes(db, _cluster_node(None, seen=seen)).add(NODE)
+    body = json.loads(next(s for s in seen if s[2] == "/api/cluster/provision")[3])
+    assert body["api_key"] == "k-7"
+
+
+@pytest.mark.asyncio
 async def test_activating_makes_a_restarted_joiner_a_voter_once(db):
     await _configure(db)
     await _join(db, NODE)

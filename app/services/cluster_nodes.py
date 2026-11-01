@@ -138,7 +138,7 @@ class ClusterNodes(VoterChanges):
             await reach.joiner_reaches(host, voters)
         await self._provision(
             host, config.models_path, config.prompt_cache_path, advertise, voters, node_kind, config.admin_secret,
-            join_token,
+            join_token, config.api_key,
         )  # fmt: skip
         listed = listed or host  # a listed plain host keeps its spelling
         config.remote_hosts = [h for h in config.remote_hosts if h != listed]
@@ -226,12 +226,15 @@ class ClusterNodes(VoterChanges):
         node_kind: str = "compute",
         admin_secret: str | None = None,
         join_token: str | None = None,
+        api_key: str | None = None,
     ) -> None:
         body: dict = {"models_dir": models, "prompt_cache_dir": cache, "restart": True}
         if node_kind != "compute":
             body["node_kind"] = node_kind
         if admin_secret:
             body["admin_secret"] = admin_secret
+        if api_key:  # the new node checks the cluster's key from its first start
+            body["api_key"] = api_key
         if voters:  # joiner learns its address and whom to catch up from
             body |= {"advertise_url": advertise, "consensus_seeds": voters}
         headers = {JOIN_TOKEN_HEADER: join_token.strip()} if join_token and join_token.strip() else {}

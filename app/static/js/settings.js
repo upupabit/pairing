@@ -2391,15 +2391,26 @@ function applyActiveEngineVisibility() {
   }
   // A connector engine has no form here; settings_connector_summary.js shows its summary instead.
   document.dispatchEvent(new CustomEvent("active-engine-shown", { detail: selectEl.value }));
-  // The saved-chat-caches box is a Matricxon feature (its API answers 409 for other engines): shown only while
-  // Matricxon is both the picked and the saved engine; hidden at once when another is picked.
-  const cachePanel = document.getElementById("matricxon-cache-panel");
-  if (cachePanel && savedActiveEngine !== null) {
-    const wanted = selectEl.value === "matricxon" && savedActiveEngine === "matricxon";
-    // In cluster mode the Cluster page owns these limits (settings_cache_persistence.js sets the flag).
-    cachePanel.classList.toggle("hidden", !wanted || cachePanel.dataset.clusterManaged === "1");
+  // The saved-chat-caches box and the API key panel are Matricxon features (the cache API answers 409 for other
+  // engines): shown only while Matricxon is both the picked and the saved engine; hidden at once when another is
+  // picked. In cluster mode the Cluster page owns them, so their "managed" note shows instead. The panel's own script
+  // sets data-cluster-owned ("0"/"1") once it knows; until then neither shows.
+  if (savedActiveEngine === null) return;
+  const wanted = selectEl.value === "matricxon" && savedActiveEngine === "matricxon";
+  for (const [panelId, noteId] of MATRICXON_ONLY_PANELS) {
+    const panel = document.getElementById(panelId);
+    if (!panel) continue;
+    const managed = panel.dataset.clusterOwned === "1";
+    panel.classList.toggle("hidden", !wanted || panel.dataset.clusterOwned !== "0");
+    document.getElementById(noteId)?.classList.toggle("hidden", !wanted || !managed);
   }
 }
+
+// [panel id, its cluster-mode note id] for the Matricxon-only boxes on the Inference engines tab.
+const MATRICXON_ONLY_PANELS = [
+  ["matricxon-cache-panel", "matricxon-cache-managed"],
+  ["matricxon-api-key-panel", "matricxon-api-key-managed"],
+];
 
 // The engine saved as of the last load/save, compared with the select's live value on each "change" so the switch note
 // shows only for a pending switch, not on page load.

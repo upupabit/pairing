@@ -1,0 +1,36 @@
+<!-- Cluster page > Non-cluster hosts (cluster_outside_hosts.js, GET/POST /api/cluster/outside-hosts): Matricxon hosts
+     pAIring still keeps that the running cluster does not list. -->
+<div id="cluster-view-outside" class="hidden flex-1 overflow-y-auto p-6 space-y-4">
+  <div>
+    <h2 class="text-lg font-semibold text-slate-100 mb-1">Non-cluster hosts</h2>
+    <p class="text-xs text-slate-500 max-w-2xl">
+      Matricxon hosts pAIring still keeps that are not part of the running cluster: leftovers from switching modes,
+      or old nodes a cluster reset kept as plain hosts. With cluster mode off, this is the engine's remote host list.
+      Remove the ones that are gone, before or after a reset, so they don't come back as nodes.
+    </p>
+  </div>
+  <div class="flex flex-wrap items-center gap-3">
+    <button id="outside-hosts-refresh" type="button"
+      class="rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800">Refresh</button>
+    <button id="outside-hosts-remove" type="button" disabled
+      class="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-40">Remove selected</button>
+    <label class="flex items-center gap-2 text-xs text-slate-400"
+      title="Each reachable host forgets its cluster setup and restarts as a fresh install. Its models and chats stay.">
+      <input id="outside-hosts-reset" type="checkbox" class="rounded border-slate-600 bg-slate-950">
+      Also reset the reachable ones to a fresh install
+    </label>
+  </div>
+  <p id="outside-hosts-summary" class="text-xs text-slate-400"></p>
+  <div class="max-w-4xl overflow-hidden rounded-lg border border-slate-800">
+    <table class="w-full text-left text-xs">
+      <thead class="bg-slate-900 text-slate-500">
+        <tr>
+          <th class="w-8 px-3 py-2"><input id="outside-hosts-all" type="checkbox" title="Select all" class="rounded border-slate-600 bg-slate-950"></th>
+          <th class="px-3 py-2">Host</th><th class="px-3 py-2">Kept in</th><th class="px-3 py-2">State</th>
+        </tr>
+      </thead>
+      <tbody id="outside-hosts-rows" class="divide-y divide-slate-800 text-slate-300"></tbody>
+    </table>
+  </div>
+  <ul id="outside-hosts-resets" class="hidden max-w-4xl space-y-1 text-xs"></ul>
+</div>

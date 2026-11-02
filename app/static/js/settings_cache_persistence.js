@@ -81,9 +81,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   const { active_engine: activeEngine } = await api("/health");
   if (activeEngine !== "matricxon") return;
   const managed = await api("/api/settings/matricxon/config").then((c) => c.cluster_role !== "off", () => false);
+  // settings.js shows the panel or its note only once this is set.
+  root.dataset.clusterOwned = managed ? "1" : "0";
   if (managed) {
-    // The Cluster page owns these limits while cluster mode is on (settings.js keeps the panel hidden too).
-    root.dataset.clusterManaged = "1";
+    // The Cluster page owns these limits while cluster mode is on.
     root.classList.add("hidden");
     document.getElementById("matricxon-cache-managed").classList.remove("hidden");
     return;

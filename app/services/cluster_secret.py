@@ -2,6 +2,7 @@
 
 Nodes check pAIring's signed admin calls against it (../matricxon/app/server/admin_auth.py). Changing it
 needs every node to answer, so none is left on the old secret; a failure part-way puts the old one back.
+A silent host the running cluster does not list (e.g. one kept as a plain host after a reset) is skipped.
 """
 
 import logging
@@ -11,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.services import matricxon_http, matricxon_pool, server_pool_broadcast, settings_service
 from app.services.cluster_errors import NodeNotAllowedError
+from app.services.cluster_members import ClusterMembers
 
 logger = logging.getLogger("llama_chat")
 _TIMEOUT = httpx.Timeout(20.0, connect=5.0)
@@ -29,6 +31,8 @@ class ClusterSecret:
         done: list[str] = []
         async with matricxon_http.client(timeout=_TIMEOUT, transport=self._transport) as client:
             silent = [h for h in hosts if not await self._answers(client, h)]
+            hosts = [h for h in hosts if h not in silent]
+            silent = await ClusterMembers(self._db, self._transport).members(config, silent)
             if silent:
                 raise NodeNotAllowedError(
                     "Every node must answer to change the secret; not answering: " + ", ".join(silent)

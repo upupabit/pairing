@@ -101,3 +101,51 @@ async def test_the_secret_is_stored_encrypted_and_survives_a_round_trip(db):
     ).scalar_one()
     assert "topsecret" not in str(row.value)
     assert (await settings_service.get_matricxon_server_config(db)).admin_secret == "topsecret"
+
+
+def _cluster_handler(puts: list[str], members: dict[str, str]):
+    """a:1 is the running seed listing `members`; every other host is down."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host != "a":
+            raise httpx.ConnectError("down")
+        if request.url.path == "/api/consensus/status":
+            status = {"enabled": True, "is_voter": True, "role": "leader", "has_quorum": True, "nodes": members}
+            return httpx.Response(200, json=status)
+        if request.method == "PUT":
+            puts.append(request.url.host)
+        return httpx.Response(200, json={})
+
+    return handler
+
+
+@pytest.mark.asyncio
+async def test_a_silent_host_outside_the_cluster_is_skipped(db):
+    from app.services import settings_service
+
+    config = MatricxonServerConfig(mode="remote", remote_hosts=["http://a:1", "http://b:2"], cluster_role="seed")
+    await settings_service.set_matricxon_server_config(db, config)
+    matricxon_pool.refresh_from_config(config)
+    puts: list[str] = []
+
+    await ClusterSecret(db, httpx.MockTransport(_cluster_handler(puts, {"id-a": "http://a:1"}))).set("new")
+    assert puts == ["a"]
+    assert (await settings_service.get_matricxon_server_config(db)).admin_secret == "new"
+
+
+@pytest.mark.asyncio
+async def test_a_silent_cluster_member_still_blocks_the_change(db):
+    from app.services import settings_service
+
+    config = MatricxonServerConfig(
+        mode="remote",
+        remote_hosts=["http://a:1", "http://b:2"],
+        cluster_role="seed",
+        known_nodes={"http://b:2": {"node_id": "id-b", "advertise_url": ""}},
+    )
+    await settings_service.set_matricxon_server_config(db, config)
+    matricxon_pool.refresh_from_config(config)
+    members = {"id-a": "http://a:1", "id-b": "http://10.0.0.2:2"}
+
+    with pytest.raises(NodeNotAllowedError, match="b:2"):
+        await ClusterSecret(db, httpx.MockTransport(_cluster_handler([], members))).set("new")

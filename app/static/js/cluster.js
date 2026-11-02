@@ -5,7 +5,7 @@
  * (the form that adds a fresh Matricxon).
  */
 
-const CLUSTER_VIEWS = ["overview", "nodes", "add", "hosts"];
+const CLUSTER_VIEWS = ["overview", "nodes", "add", "hosts", "outside"];
 const CLUSTER_REFRESH_MS = 15000;
 let _clusterTimer = null;
 

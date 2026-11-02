@@ -67,6 +67,10 @@
           class="cluster-nav-btn w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors">
           Cluster host names
         </button>
+        <button type="button" data-view="outside"
+          class="cluster-nav-btn w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors">
+          Non-cluster hosts
+        </button>
       </nav>
     </aside>
 
@@ -341,6 +345,8 @@
         </div>
       </div>
 
+      {% include "_cluster_outside_hosts.html" %}
+
       <!-- Add nodes: the form that adds a fresh Matricxon to the cluster. -->
       <div id="cluster-view-add" class="hidden flex-1 overflow-y-auto p-6 space-y-6">
         <div>
@@ -424,6 +430,7 @@
 <script src="/static/js/cluster_reset.js?v={{ static_version }}"></script>
 <script src="/static/js/cluster_timers.js?v={{ static_version }}"></script>
 <script src="/static/js/cluster_hosts.js?v={{ static_version }}"></script>
+<script src="/static/js/cluster_outside_hosts.js?v={{ static_version }}"></script>
 <script src="/static/js/cluster_node_reset.js?v={{ static_version }}"></script>
 <script src="/static/js/cluster_cache.js?v={{ static_version }}"></script>
 <script src="/static/js/cluster.js?v={{ static_version }}"></script>

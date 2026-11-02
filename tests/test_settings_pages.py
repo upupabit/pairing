@@ -66,7 +66,9 @@ async def test_matricxon_form_has_the_cache_folder_field_and_the_script_keeps_cl
     assert 'data-field="prompt_cache_path"' in html
     script = (Path(__file__).parent.parent / "app" / "static" / "js" / "settings.js").read_text()
     assert "prompt_cache_path:" in script and "cluster_role: section.dataset.clusterRole" in script
-    assert 'getElementById("matricxon-cache-panel")' in script
+    # The Matricxon-only boxes hide when another engine is picked.
+    assert '["matricxon-cache-panel", "matricxon-cache-managed"]' in script
+    assert '["matricxon-api-key-panel", "matricxon-api-key-managed"]' in script
 
 
 @pytest.mark.asyncio

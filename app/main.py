@@ -25,6 +25,7 @@ from app.routers import (
     channels,
     chat,
     cluster_admin,
+    cluster_outside,
     connectors,
     context_window_admin,
     conversations,
@@ -164,6 +165,7 @@ app.include_router(matricxon_cache_admin.router)
 app.include_router(matricxon_api_key_admin.router)
 app.include_router(engine_admin.router)
 app.include_router(cluster_admin.router)
+app.include_router(cluster_outside.router)
 app.include_router(connectors.router)
 app.include_router(channel_history_admin.router)
 app.include_router(workflow_view_admin.router)

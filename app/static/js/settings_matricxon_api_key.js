@@ -75,7 +75,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   const { active_engine: activeEngine } = await api("/health");
   if (activeEngine !== "matricxon") return;
   const state = await api("/api/settings/matricxon/api-key").catch(() => null);
+  // settings.js reads the flag when the Active engine picker changes, and shows nothing before it is set.
+  root.dataset.clusterOwned = state?.cluster ? "1" : "0";
   if (state?.cluster) {
+    root.classList.add("hidden");
     document.getElementById("matricxon-api-key-managed").classList.remove("hidden");
     return;
   }

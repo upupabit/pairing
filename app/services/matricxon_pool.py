@@ -25,6 +25,9 @@ T = TypeVar("T")
 LOCAL_MATRICXON_HOST = "http://localhost:8420"
 
 _HEALTH_CHECK_TIMEOUT = httpx.Timeout(3.0, connect=2.0)
+# Answers at once: /api/tags reads every model header after a Matricxon restart (seconds on NFS), and a busy node
+# would show as down.
+_HEALTH_PATH = "/api/version"
 _COOLDOWN_SECONDS = 30.0
 _AFFINITY_TIMEOUT = httpx.Timeout(1.5, connect=0.5)
 _SPILL_TIMEOUT = httpx.Timeout(15.0, connect=1.0)
@@ -161,11 +164,11 @@ async def spill_chat(host: str, tag: str) -> int:
 
 
 async def check_hosts() -> dict[str, bool]:
-    return await _pool.check_hosts(_HEALTH_CHECK_TIMEOUT, path="/api/tags")
+    return await _pool.check_hosts(_HEALTH_CHECK_TIMEOUT, path=_HEALTH_PATH)
 
 
 async def check_host(host: str) -> bool:
     """Same probe as check_hosts for one arbitrary host, possibly unsaved; Settings > Inference engines verifies a
     remote URL before saving (routers/matricxon_admin.py check_host).
     """
-    return await ping_host(host, _HEALTH_CHECK_TIMEOUT, path="/api/tags")
+    return await ping_host(host, _HEALTH_CHECK_TIMEOUT, path=_HEALTH_PATH)

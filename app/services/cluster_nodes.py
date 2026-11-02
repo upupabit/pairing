@@ -247,7 +247,7 @@ class ClusterNodes(VoterChanges):
             raise NodeNotFreshError(f"{host}: {resp.json().get('detail', 'not a fresh install')}")
         if resp.status_code == 403:
             raise NodeNotAllowedError(
-                f'{host} needs its join token: copy it from the node\'s log (the line with "use this join token").'
+                f"{host} needs its join token: shown when Matricxon starts on that node, also in logs/matricxon.log."
             )
         if resp.is_error:
             detail = resp.json().get("detail", f"HTTP {resp.status_code}") if resp.content else resp.status_code

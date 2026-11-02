@@ -132,3 +132,26 @@ async def test_lease_holder_finds_the_owner_and_knows_whether_consensus_runs(mon
     assert await pool.lease_holder("model_pull") == (True, None)
     statuses.update({"http://a:8420": None, "http://b:8420": None})
     assert await pool.lease_holder("model_pull") == (False, None)
+
+
+@pytest.mark.asyncio
+async def test_health_probes_ask_for_the_version_not_the_model_list(monkeypatch):
+    urls: list[str] = []
+
+    class _FakeResponse:
+        status_code = 200
+
+    class _FakeClient:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *_exc):
+            return False
+
+        async def get(self, url):
+            urls.append(url)
+            return _FakeResponse()
+
+    monkeypatch.setattr(httpx, "AsyncClient", lambda **_kw: _FakeClient())
+    await matricxon_pool.check_host("http://10.9.9.9:8420")
+    assert urls == ["http://10.9.9.9:8420/api/version"]

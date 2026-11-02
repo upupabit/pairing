@@ -21,7 +21,7 @@
             </p>
           </div>
 
-          <div data-mode-section="local" class="space-y-3">
+          <div data-mode-section="local" class="peer space-y-3">
             <p data-field="status-line" class="text-xs text-slate-400 font-mono"></p>
 
             <!-- Its own inner section, set a little apart from the status above: installing is a separate, occasional task. -->
@@ -231,7 +231,8 @@
               + Add host
             </button>
           </div>
-          <div data-field="actions-bar" class="hidden flex items-center gap-3 border-t border-slate-800 px-3 pt-3">
+          <!-- px-3 lines the buttons up with the Local boxes; none in Remote, which has no boxes (peer = the Local section). -->
+          <div data-field="actions-bar" class="hidden flex items-center gap-3 border-t border-slate-800 px-3 pt-3 peer-[.hidden]:px-0">
             <button type="button" data-action="start"
               class="rounded-lg bg-[rgb(var(--solid-emerald))] px-4 py-2 text-sm font-medium text-white hover:bg-[rgb(var(--solid-emerald-hover))] transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
               Start

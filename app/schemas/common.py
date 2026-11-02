@@ -44,6 +44,12 @@ class ActiveEngineConfig(BaseModel):
     active_engine: EngineName = DEFAULT_ENGINE
 
 
+class ActiveEngineUpdate(ActiveEngineConfig):
+    """PUT body: `leave_cluster` confirms moving chats off a Matricxon cluster (services/engine_switch.py)."""
+
+    leave_cluster: bool = False
+
+
 class EngineCapabilitiesOut(BaseModel):
     """Pydantic mirror of engines.base.EngineCapabilities (a dataclass, so services avoid Pydantic), built via
     `EngineCapabilitiesOut(**dataclasses.asdict(engine.capabilities))` for GET /api/settings/engine/options.

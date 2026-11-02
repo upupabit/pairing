@@ -7,7 +7,7 @@ from fastapi import HTTPException
 
 from app.models import SYSTEM_OWNER_ID, AppSetting
 from app.routers import engine_admin
-from app.schemas import ActiveEngineConfig
+from app.schemas import ActiveEngineUpdate
 from app.services import connector_config_cache, engine_service, server_pool_broadcast, settings_service
 
 
@@ -41,7 +41,7 @@ async def test_set_active_engine_persists_and_updates_the_cache(db, monkeypatch)
 
     monkeypatch.setattr(server_pool_broadcast, "broadcast_refresh", fake_broadcast)
 
-    result = await engine_admin.set_active_engine(ActiveEngineConfig(active_engine="llamacpp"), db=db, _admin=None)
+    result = await engine_admin.set_active_engine(ActiveEngineUpdate(active_engine="llamacpp"), db=db, _admin=None)
 
     assert result.active_engine == "llamacpp"
     assert engine_service.current_engine() == "llamacpp"
@@ -65,8 +65,8 @@ async def test_set_active_engine_preserves_each_engines_own_default_independentl
     engine_service._cached_engine = "matricxon"
     await settings_service.set_default_model(db, SYSTEM_OWNER_ID, "matricxon-tag")
 
-    await engine_admin.set_active_engine(ActiveEngineConfig(active_engine="llamacpp"), db=db, _admin=None)
-    await engine_admin.set_active_engine(ActiveEngineConfig(active_engine="matricxon"), db=db, _admin=None)
+    await engine_admin.set_active_engine(ActiveEngineUpdate(active_engine="llamacpp"), db=db, _admin=None)
+    await engine_admin.set_active_engine(ActiveEngineUpdate(active_engine="matricxon"), db=db, _admin=None)
 
     ollama_row = await db.get(AppSetting, (SYSTEM_OWNER_ID, settings_service.default_model_key("llamacpp")))
     matricxon_row = await db.get(AppSetting, (SYSTEM_OWNER_ID, settings_service.default_model_key("matricxon")))
@@ -84,7 +84,7 @@ async def test_set_active_engine_broadcasts_to_other_instances(db, monkeypatch):
 
     monkeypatch.setattr(server_pool_broadcast, "broadcast_refresh", fake_broadcast)
 
-    await engine_admin.set_active_engine(ActiveEngineConfig(active_engine="matricxon"), db=db, _admin=None)
+    await engine_admin.set_active_engine(ActiveEngineUpdate(active_engine="matricxon"), db=db, _admin=None)
 
     assert calls == ["/api/settings/engine/internal-refresh"]
 
@@ -123,7 +123,7 @@ async def test_get_engine_options_reports_runpod_not_ready_until_configured():
 async def test_set_active_engine_rejects_runpod_when_not_ready(db):
     connector_config_cache._cache = {}
     with pytest.raises(HTTPException) as exc_info:
-        await engine_admin.set_active_engine(ActiveEngineConfig(active_engine="runpod"), db=db, _admin=None)
+        await engine_admin.set_active_engine(ActiveEngineUpdate(active_engine="runpod"), db=db, _admin=None)
     assert exc_info.value.status_code == 400
     assert engine_service.current_engine() != "runpod"
 
@@ -138,7 +138,7 @@ async def test_set_active_engine_allows_runpod_once_ready(db, monkeypatch):
         "runpod": {"config": {}, "enabled": True, "configured": True, "last_test_passed": True}
     }
     try:
-        result = await engine_admin.set_active_engine(ActiveEngineConfig(active_engine="runpod"), db=db, _admin=None)
+        result = await engine_admin.set_active_engine(ActiveEngineUpdate(active_engine="runpod"), db=db, _admin=None)
         assert result.active_engine == "runpod"
         assert engine_service.current_engine() == "runpod"
     finally:
@@ -157,9 +157,47 @@ async def test_set_active_engine_clears_browse_more_models_only_on_a_real_change
     await catalog._save([{"tag": "hf.co/a/b:c"}])
 
     await engine_admin.set_active_engine(
-        ActiveEngineConfig(active_engine=engine_service.DEFAULT_ENGINE), db=db, _admin=None
+        ActiveEngineUpdate(active_engine=engine_service.DEFAULT_ENGINE), db=db, _admin=None
     )
     assert len(await catalog.list()) == 1
 
-    await engine_admin.set_active_engine(ActiveEngineConfig(active_engine="llamacpp"), db=db, _admin=None)
+    await engine_admin.set_active_engine(ActiveEngineUpdate(active_engine="llamacpp"), db=db, _admin=None)
     assert await catalog.list() == []
+
+
+async def _cluster_on(db) -> None:
+    from app.schemas import MatricxonServerConfig
+
+    await settings_service.set_matricxon_server_config(db, MatricxonServerConfig(cluster_role="seed"))
+    await engine_service.set_active_engine(db, "matricxon")
+
+
+@pytest.mark.asyncio
+async def test_leaving_a_matricxon_cluster_needs_confirmation(db, monkeypatch):
+    async def fake_broadcast(_path):
+        return []
+
+    monkeypatch.setattr(server_pool_broadcast, "broadcast_refresh", fake_broadcast)
+    await _cluster_on(db)
+
+    with pytest.raises(HTTPException) as caught:
+        await engine_admin.set_active_engine(ActiveEngineUpdate(active_engine="llamacpp"), db=db, _admin=None)
+    assert caught.value.status_code == 409 and "cluster stays on" in caught.value.detail
+    assert await engine_service.get_active_engine(db) == "matricxon"
+
+    await engine_admin.set_active_engine(
+        ActiveEngineUpdate(active_engine="llamacpp", leave_cluster=True), db=db, _admin=None
+    )
+    assert await engine_service.get_active_engine(db) == "llamacpp"
+    # Cluster mode itself is untouched: switching back resumes it.
+    assert (await settings_service.get_matricxon_server_config(db)).cluster_role == "seed"
+
+
+@pytest.mark.asyncio
+async def test_no_confirmation_without_cluster_mode_or_when_staying_on_matricxon(db, monkeypatch):
+    from app.services.engine_switch import EngineSwitch
+
+    await engine_service.set_active_engine(db, "matricxon")
+    await EngineSwitch(db).check("llamacpp", leave_cluster=False)  # cluster mode off
+    await _cluster_on(db)
+    await EngineSwitch(db).check("matricxon", leave_cluster=False)

@@ -94,7 +94,11 @@ function renderCluster(state) {
   _clusterLockPaths();
   document.getElementById("cluster-paths-form").classList.toggle("hidden", !state.supported);
   _clusterSetSwitch(state.enabled, !state.supported);
-  document.getElementById("cluster-unsupported").classList.toggle("hidden", state.supported);
+  const unsupported = document.getElementById("cluster-unsupported");
+  unsupported.classList.toggle("hidden", state.supported);
+  // Cluster mode still on under another engine: paused, not off (services/engine_switch.py).
+  unsupported.querySelector('[data-unsupported="off"]').classList.toggle("hidden", state.enabled);
+  unsupported.querySelector('[data-unsupported="paused"]').classList.toggle("hidden", !state.enabled);
   document.getElementById("cluster-restart-note").classList.toggle("hidden", !state.restart_needed);
   document.getElementById("cluster-quorum").classList.toggle("hidden", state.quorum !== "lost");
   _clusterLockAdd();

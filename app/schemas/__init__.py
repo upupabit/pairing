@@ -7,6 +7,7 @@ from app.schemas.chat import DeleteMessageResponse, MessageOut, MessagesLatestRe
 from app.schemas.common import (
     DEFAULT_ENGINE,
     ActiveEngineConfig,
+    ActiveEngineUpdate,
     AvailableVersions,
     EngineCapabilitiesOut,
     EngineName,
@@ -180,6 +181,7 @@ __all__ = [
     "SdCppConfig",
     "SdCppStatus",
     "ActiveEngineConfig",
+    "ActiveEngineUpdate",
     "AvailableVersions",
     "DEFAULT_ENGINE",
     "EngineCapabilitiesOut",

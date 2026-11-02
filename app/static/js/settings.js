@@ -2479,8 +2479,23 @@ if (activeEngineSaveBtn) {
     const statusEl = document.getElementById("active-engine-status");
     const selectEl = document.getElementById("active-engine-select");
     statusEl.textContent = "Saving…";
+    const put = (leaveCluster) =>
+      api("/api/settings/engine", {
+        method: "PUT",
+        body: JSON.stringify({ active_engine: selectEl.value, leave_cluster: leaveCluster }),
+      });
     try {
-      await api("/api/settings/engine", { method: "PUT", body: JSON.stringify({ active_engine: selectEl.value }) });
+      try {
+        await put(false);
+      } catch (err) {
+        // 409: Matricxon cluster mode is on; the message is the warning to confirm (services/engine_switch.py).
+        if (err.status !== 409) throw err;
+        if (!confirm(`${err.message}\n\nSwitch anyway?`)) {
+          statusEl.textContent = "";
+          return;
+        }
+        await put(true);
+      }
       // A full reload, not a refetch: the Model tab's catalog (currentCatalog) and other model fetches (installed
       // vision/embedding models, RAG availability,...) cache for the page load and go stale on an engine switch. Same
       // reload-instead-of-invalidating pattern as the llama.cpp/Matricxon Start button below. Stays on Inference engines so

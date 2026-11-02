@@ -120,7 +120,10 @@
           All resume when enough voters are back.
         </p>
         <p id="cluster-unsupported" class="hidden max-w-2xl text-xs text-warning-400 bg-slate-900 border border-warning-500/50 rounded-lg px-3 py-2">
-          Cluster mode is a Matricxon feature &mdash; switch the active engine to Matricxon first.
+          <span data-unsupported="off">Cluster mode is a Matricxon feature &mdash; switch the active engine to Matricxon first.</span>
+          <span data-unsupported="paused" class="hidden">Paused: another engine is active, so chats don't use the
+            cluster. Cluster mode stays on and the nodes keep running; switch the active engine back to Matricxon
+            (Admin settings &gt; Inference engines) to manage it again.</span>
         </p>
         <!-- Another pAIring joins a cluster that already exists: the address of any of its nodes and its id. -->
         <div id="cluster-join" class="hidden max-w-2xl space-y-3 rounded-lg border border-slate-800 bg-slate-900 px-4 py-3">

@@ -11,9 +11,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.models import User
-from app.schemas import ActiveEngineConfig, EngineCapabilitiesOut, EngineOption, EngineOptionsResponse, OkResponse
+from app.schemas import (
+    ActiveEngineConfig,
+    ActiveEngineUpdate,
+    EngineCapabilitiesOut,
+    EngineOption,
+    EngineOptionsResponse,
+    OkResponse,
+)
 from app.services import engine_service, server_pool_broadcast
 from app.services.auth_service import get_current_user, require_admin
+from app.services.engine_switch import ClusterSwitchUnconfirmedError, EngineSwitch
 from app.services.engines.registry import registry
 from app.services.extended_model_catalog_service import ExtendedModelCatalog
 
@@ -48,7 +56,7 @@ async def get_engine_options(_user: User = Depends(get_current_user)):
 
 @router.put("", response_model=ActiveEngineConfig)
 async def set_active_engine(
-    body: ActiveEngineConfig, db: AsyncSession = Depends(get_db), _admin: User = Depends(require_admin)
+    body: ActiveEngineUpdate, db: AsyncSession = Depends(get_db), _admin: User = Depends(require_admin)
 ):
     # A Connector-backed engine (e.g. "runpod") may be registered but not ready (InferenceEngine.is_ready), so
     # it cannot be activated until configured and enabled on the Connectors page. llama.cpp/Matricxon are always ready.
@@ -58,6 +66,11 @@ async def set_active_engine(
             status_code=400,
             detail=f"{engine.display_name} isn't configured and enabled yet — set it up on the Connectors page first.",
         )
+    # Leaving a Matricxon cluster needs the admin's confirmation (409 carries the warning).
+    try:
+        await EngineSwitch(db).check(body.active_engine, body.leave_cluster)
+    except ClusterSwitchUnconfirmedError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
     # Each engine keeps its default model under its own key (settings_service.default_model_key), so switching
     # need not touch it (the old shared key had to be wiped on every switch).
     if await engine_service.get_active_engine(db) != body.active_engine:
@@ -66,7 +79,7 @@ async def set_active_engine(
     failures = await server_pool_broadcast.broadcast_refresh("/api/settings/engine/internal-refresh")
     if failures:
         logger.warning("Some instances did not pick up the new active engine: %s", "; ".join(failures))
-    return body
+    return ActiveEngineConfig(active_engine=body.active_engine)
 
 
 @router.post("/internal-refresh", response_model=OkResponse)

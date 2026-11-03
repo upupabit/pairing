@@ -54,6 +54,18 @@ async def test_admin_settings_has_the_admin_tabs_and_the_admin_models_page(db, a
 
 
 @pytest.mark.asyncio
+async def test_the_servers_view_is_on_the_cluster_page_under_a_pairing_heading(db, admin_user):
+    html = (await pages.cluster_page(_request(admin_user.id), db=db)).body.decode()
+
+    views = re.findall(r'data-view="([^"]+)"', html)
+    assert views[-2:] == ["update", "servers"] and 'id="cluster-view-servers"' in html
+    assert 'id="cluster-view-update"' in html
+    matricxon, pairing = html.index("Matricxon\n          </summary>"), html.index("pAIring\n          </summary>")
+    assert matricxon < html.index('data-view="overview"') < pairing
+    assert 'id="servers-checks"' in html and 'id="tab-servers"' not in html
+
+
+@pytest.mark.asyncio
 async def test_a_regular_user_is_sent_back_from_admin_settings(db, user):
     response = await pages.admin_settings_page(_request(user.id), db=db)
 

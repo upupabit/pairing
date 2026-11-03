@@ -1,9 +1,9 @@
 """An MCP (Model Context Protocol) server an admin connected, offering tools to the model."""
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, String, Text
+from sqlalchemy import Boolean, Column, Integer, String, Text
 
 from app.database import Base
-from app.models._base import ID_LEN, new_id, utcnow
+from app.models._base import ID_LEN, Timestamp, new_id, utcnow
 
 
 class McpServer(Base):
@@ -18,4 +18,4 @@ class McpServer(Base):
     enabled = Column(Boolean, nullable=False, default=True)
     # Max seconds per tool call before the model is told it timed out.
     call_timeout_seconds = Column(Integer, nullable=False, default=20, server_default="20")
-    created_at = Column(DateTime(timezone=True), nullable=False, default=utcnow)
+    created_at = Column(Timestamp, nullable=False, default=utcnow)

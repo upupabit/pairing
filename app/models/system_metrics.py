@@ -2,9 +2,10 @@
 samples, not OpenTelemetry spans) and read by system_metrics_service.py for the Stats "System" view.
 """
 
-from sqlalchemy import BigInteger, Column, DateTime, Float, Integer, String
+from sqlalchemy import BigInteger, Column, Float, Integer, String
 
 from app.database import Base
+from app.models._base import Timestamp
 
 
 class SystemMetricSnapshot(Base):
@@ -19,7 +20,7 @@ class SystemMetricSnapshot(Base):
     disk_used_bytes = Column(BigInteger, nullable=False)
     disk_total_bytes = Column(BigInteger, nullable=False)
     load_avg_1m = Column(Float, nullable=True)
-    polled_at = Column(DateTime, nullable=False)
+    polled_at = Column(Timestamp, nullable=False)
 
 
 class GpuMetricSnapshot(Base):
@@ -36,4 +37,4 @@ class GpuMetricSnapshot(Base):
     mem_used_bytes = Column(BigInteger, nullable=False)
     mem_total_bytes = Column(BigInteger, nullable=False)
     temperature_c = Column(Float, nullable=True)
-    polled_at = Column(DateTime, nullable=False)
+    polled_at = Column(Timestamp, nullable=False)

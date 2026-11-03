@@ -68,6 +68,8 @@ class UploadJobStatus(BaseModel):
     done: bool
     files: dict[str, dict]
     result: UploadResult | None = None
+    # Why a job ended without a result (its server restarted or went offline).
+    error: str | None = None
 
 
 class EmbeddingStatus(BaseModel):

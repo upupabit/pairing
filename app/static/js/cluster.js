@@ -2,10 +2,10 @@
  * Cluster page. Three views behind the page-local nav (same convention as stats.js: data-view buttons plus
  * #cluster-view-<name> panels): "overview" (cluster mode on/off, shared folders, and the seed's checklist, from
  * GET/PUT /api/cluster, see app/services/cluster_service.py), "nodes" (the live map, cluster_map.js) and "add"
- * (the form that adds a fresh Matricxon).
+ * (the form that adds a fresh Matricxon); "servers" is several pAIring servers (settings_servers*.js).
  */
 
-const CLUSTER_VIEWS = ["overview", "nodes", "add", "hosts", "outside"];
+const CLUSTER_VIEWS = ["overview", "nodes", "add", "hosts", "outside", "update", "servers"];
 const CLUSTER_REFRESH_MS = 15000;
 let _clusterTimer = null;
 
@@ -55,14 +55,14 @@ function _clusterHostCard(host, enabled) {
   const title = (detail) => `<p class="text-sm font-medium text-slate-100">Matricxon
     <span class="ml-2 text-xs font-normal text-slate-500">${detail}</span></p>`;
   if (!host.reachable) {
-    return `<div class="rounded-lg border border-slate-800 bg-slate-900 px-4 py-3 max-w-2xl">
+    return `<div class="rounded-lg border border-slate-800 bg-slate-900 px-4 py-3">
       ${title(escapeHtml(host.host))}
       <p class="mt-1 text-xs text-red-400">Unreachable: ${escapeHtml(host.error || "")}</p></div>`;
   }
   const state = host.ready
     ? host.active ? "active in the cluster" : enabled ? "ready — the cluster is starting" : "ready — turn cluster mode on"
     : "action needed";
-  return `<div class="rounded-lg border border-slate-800 bg-slate-900 max-w-2xl">
+  return `<div class="rounded-lg border border-slate-800 bg-slate-900">
     <div class="px-4 py-3 border-b border-slate-800">
       ${title(`${escapeHtml(host.host)} · role: ${escapeHtml(host.role)} · ${state}`)}
       <p class="text-xs text-slate-500">${host.nodes.length} node(s) announced in the shared folder</p>

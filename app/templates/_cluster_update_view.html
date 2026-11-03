@@ -1,0 +1,39 @@
+<!-- Cluster > Matricxon > Update nodes: "Update all nodes" one at a time (cluster_update.js, /api/cluster/update-all). -->
+<div id="cluster-view-update" class="cluster-page hidden flex-1 overflow-y-auto py-6">
+  <section id="cluster-update" class="space-y-4">
+    <div class="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <h2 class="text-lg font-semibold text-slate-100 mb-1">Update nodes</h2>
+        <p class="text-xs text-slate-500">
+          Updates Matricxon from GitHub on every node, one at a time, and restarts each. In a cluster the next node
+          starts only when the last one is back with a quorum, and the leader goes last, so the cluster keeps
+          serving. It stops at the first error. A node must be a git checkout; one in a container is skipped.
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" data-action="cancel"
+          class="hidden rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:border-slate-500 hover:text-slate-100 transition-colors">Cancel</button>
+        <button type="button" data-action="update-all"
+          class="whitespace-nowrap rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">Update all nodes</button>
+      </div>
+    </div>
+    {% from "_update_source.html" import update_source %}
+    {{ update_source("matricxon", "Matricxon") }}
+    <p data-field="error" class="hidden text-xs text-red-400"></p>
+    <div data-field="rollout" class="hidden space-y-3 rounded-lg border border-slate-700 bg-slate-900 p-4"></div>
+    <div class="overflow-x-auto rounded-lg border border-slate-800">
+      <table class="w-full text-xs">
+        <thead class="bg-slate-900 text-slate-400">
+          <tr>
+            <th class="px-3 py-2 text-left font-medium">Node</th>
+            <th class="px-3 py-2 text-left font-medium">Version</th>
+            <th class="px-3 py-2 text-left font-medium">Status</th>
+          </tr>
+        </thead>
+        <tbody data-field="nodes" class="divide-y divide-slate-800 text-slate-300">
+          <tr><td colspan="3" class="px-3 py-2 text-slate-500">Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

@@ -132,6 +132,10 @@ class UpdatePanel {
     this.restartInfo = null;
     this.busy = false;
     this.checkButton.addEventListener("click", () => this.refresh());
+    // A new repo or branch changes what "latest" means: check again (settings_update_source.js).
+    document.addEventListener("update-source-saved", () => {
+      if (!document.getElementById("tab-update").classList.contains("hidden")) this.refresh();
+    });
     document.querySelector('[data-tab="update"]')?.addEventListener("click", () => this.refresh());
     if (!document.getElementById("tab-update").classList.contains("hidden")) this.refresh();
   }

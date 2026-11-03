@@ -19,12 +19,28 @@ _REPORT_EVERY = 256 * 1024
 
 
 class ArchiveSource:
-    def __init__(self, path: Path, repo: str, branch: str, preserve: frozenset[str], proxy_url: str | None) -> None:
+    def __init__(
+        self,
+        path: Path,
+        repo: str | None,
+        branch: str,
+        preserve: frozenset[str],
+        proxy_url: str | None,
+        token: str | None = None,
+    ) -> None:
+        """`repo`: owner/name on GitHub (None: a chosen repository elsewhere, which only a git checkout can use).
+        `token`: for a private repository."""
         self.path = path
         self.repo = repo
         self.branch = branch
         self.preserve = preserve | {MARKER, ".git"}
         self._proxy_url = proxy_url
+        self._headers = {"Authorization": f"Bearer {token}"} if token else {}
+
+    def _require_github(self) -> str:
+        if not self.repo:
+            raise RuntimeError("Downloads work only from a GitHub repository: use a git checkout for this one.")
+        return self.repo
 
     def current(self) -> str | None:
         marker = self.path / MARKER
@@ -34,17 +50,23 @@ class ArchiveSource:
         """Newest commit sha (short) on the branch; httpx.HTTPError on failure."""
         async with httpx.AsyncClient(timeout=_API_TIMEOUT, proxy=self._proxy_url) as client:
             resp = await client.get(
-                f"https://api.github.com/repos/{self.repo}/commits/{self.branch}",
-                headers={"Accept": "application/vnd.github.sha"},
+                f"https://api.github.com/repos/{self._require_github()}/commits/{self.branch}",
+                headers={"Accept": "application/vnd.github.sha", **self._headers},
             )
             resp.raise_for_status()
             return resp.text.strip()[:7]
 
     async def download_stream(self, dest: Path) -> AsyncIterator[dict]:
         """Saves the branch tarball to `dest`, yielding byte progress (total is often unknown)."""
-        url = f"https://codeload.github.com/{self.repo}/tar.gz/{self.branch}"
+        repo = self._require_github()
+        # A private repository's archive comes through the API, which redirects to a signed download.
+        url = (
+            f"https://api.github.com/repos/{repo}/tarball/{self.branch}"
+            if self._headers
+            else f"https://codeload.github.com/{repo}/tar.gz/{self.branch}"
+        )
         async with httpx.AsyncClient(timeout=_DOWNLOAD_TIMEOUT, follow_redirects=True, proxy=self._proxy_url) as client:
-            async with client.stream("GET", url) as resp:
+            async with client.stream("GET", url, headers=self._headers) as resp:
                 resp.raise_for_status()
                 total = int(resp.headers.get("content-length", 0)) or None
                 completed = reported = 0

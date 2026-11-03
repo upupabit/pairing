@@ -1,11 +1,11 @@
 """Conversation and Message models, together because a Message never exists without its Conversation."""
 
-from sqlalchemy import JSON, Column, DateTime, ForeignKey, String, Text
+from sqlalchemy import JSON, Column, ForeignKey, String, Text
 from sqlalchemy.orm import relationship
 
 from app.config import DEFAULT_GENERATION_PARAMS
 from app.database import Base
-from app.models._base import ID_LEN, new_id, utcnow
+from app.models._base import ID_LEN, Timestamp, new_id, utcnow
 
 
 class Conversation(Base):
@@ -27,8 +27,8 @@ class Conversation(Base):
     # Adjustable generation parameters (temperature, top_p, rag_top_k,...) as JSON: a copy of the
     # defaults, overwritten when the Settings page is saved for this conversation.
     params = Column(JSON, default=lambda: dict(DEFAULT_GENERATION_PARAMS))
-    created_at = Column(DateTime, default=utcnow)
-    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
+    created_at = Column(Timestamp, default=utcnow)
+    updated_at = Column(Timestamp, default=utcnow, onupdate=utcnow)
 
     # cascade="all, delete-orphan" removes messages with the conversation. lazy="selectin" makes
     # `conversation.messages` safe under the async session (the app's default for accessed relationships).
@@ -69,7 +69,7 @@ class Message(Base):
     # The "user" message this assistant reply answers, set when reply_generation_service.stream_reply
     # creates the placeholder. conversation_service.delete_message uses it to cancel a still-streaming reply
     # (timestamps are fragile when channel members interleave messages, see build_reply_stream's ask_ai=False).
-    reply_to_message_id = Column(String(ID_LEN), ForeignKey("messages.id"), nullable=True)
+    reply_to_message_id = Column(String(ID_LEN), ForeignKey("messages.id", ondelete="SET NULL"), nullable=True)
     # "streaming" while generating in the background (reply_generation_service), "complete" when done (also
     # for all older rows), "error" if it failed partway (`content` keeps what was generated), "deleted" if a
     # channel admin/manager removed it (conversation_service.delete_message). Soft-deleted so open polls can
@@ -87,14 +87,16 @@ class Message(Base):
     # Before this column the text reached only live SSE viewers (reply_broadcast_service.publish_error);
     # MessageOut.error_message now lets a reload show it too.
     error_message = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=utcnow)
+    created_at = Column(Timestamp, default=utcnow)
     # When an assistant reply ended (complete, error or cancelled); shown as its time. created_at is when it
     # started and still orders the messages. Null for user messages and replies still streaming.
-    completed_at = Column(DateTime, nullable=True)
+    completed_at = Column(Timestamp, nullable=True)
+    # config.SERVER_ID of the process writing a "streaming" reply; its own restart sweeps only these.
+    owner_server = Column(String(255), nullable=True)
     # Bumped on every content update, including streaming flushes (reply_generation_service); lets
     # conversation_service.get_messages_since report changes without a change log. Nullable for migrated
     # rows, always set by the ORM default/onupdate.
-    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
+    updated_at = Column(Timestamp, default=utcnow, onupdate=utcnow)
 
     conversation = relationship("Conversation", back_populates="messages")
     # Files on a "user" message: up to MAX_ATTACHMENT_DOCUMENTS documents and MAX_ATTACHMENT_IMAGES images

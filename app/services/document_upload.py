@@ -7,7 +7,6 @@ depends on fetch+ReadableStream behaving the same in every browser; plain POST/G
 """
 
 import re
-import time
 import uuid
 from pathlib import Path
 
@@ -23,6 +22,7 @@ from app.services.document_extract import SUPPORTED_EXTENSIONS
 from app.services.document_ingest import GLOBAL_DIR, user_folder
 from app.services.document_sync import sync_folder_stream
 from app.services.settings_service import get_rag_limits
+from app.services.upload_jobs import ProgressThrottle, upload_jobs
 
 # Client filenames are untrusted, but only path separators (already stripped by Path(name).name) and
 # characters invalid on some filesystem need blocking. Spaces, parentheses, commas and accented or non-Latin
@@ -54,39 +54,8 @@ async def get_knowledge_summary(db: AsyncSession, user: User) -> KnowledgeSummar
     )
 
 
-# Upload jobs
-# In-memory, per-process, not shared across local instances (instance_service.py). A poll on another
-# instance would 404, so start_upload_job prefixes job ids with INSTANCE_INDEX and instance_proxy.py's
-# balancer routes polls back to the right instance. Jobs are small; _prune_old_jobs bounds the dict.
-
-_upload_jobs: dict[str, dict] = {}
-_JOB_TTL_SECONDS = 30 * 60
-
-
-def _prune_old_jobs() -> None:
-    cutoff = time.time() - _JOB_TTL_SECONDS
-    stale = [jid for jid, job in _upload_jobs.items() if job["done"] and job["created_at"] < cutoff]
-    for jid in stale:
-        del _upload_jobs[jid]
-
-
-def get_job(job_id: str) -> dict | None:
-    return _upload_jobs.get(job_id)
-
-
-def get_job_for_user(job_id: str, user: User) -> dict | None:
-    """Like get_job, but None if `user` didn't start it and isn't an admin: a job id is a UUID but visible to the
-    browser (network tab, logs), so it must not let others read upload filenames and error text.
-    routers/documents.py 404s either way.
-    """
-    job = get_job(job_id)
-    if job is None or (job["user_id"] != user.id and user.role != "admin"):
-        return None
-    return job
-
-
-def job_status(job_id: str, job: dict) -> UploadJobStatus:
-    return UploadJobStatus(job_id=job_id, done=job["done"], files=job["files"], result=job["result"])
+# Upload jobs: rows in the database (upload_jobs.py), so any server can answer a poll. Ids keep the
+# INSTANCE_INDEX prefix: instance_proxy.py still routes a poll to the instance that started the job.
 
 
 async def _run_upload_job(
@@ -100,7 +69,9 @@ async def _run_upload_job(
     """The slow chunk + embed work, as a fire-and-forget task after the request returned. Uses its own DB
     session (the request's is closed by then).
     """
-    job = _upload_jobs[job_id]
+    files = {name: {"status": "waiting", "chunk": 0, "chunks_total": None} for name in accepted}
+    files.update({filename: {"status": "error", "error": reason} for filename, reason in rejects})
+    throttle = ProgressThrottle(upload_jobs.PROGRESS_SECONDS)
     accepted_set = set(accepted)
     extra_errors: list[str] = []
     stats_errors: list[str] = []
@@ -115,14 +86,18 @@ async def _run_upload_job(
                     # this job's report.
                     continue
                 elif event["stage"] == "file_start":
-                    job["files"][filename] = {"status": "processing", "chunk": 0, "chunks_total": None}
+                    files[filename] = {"status": "processing", "chunk": 0, "chunks_total": None}
+                    await upload_jobs.save(job_id, files)
                 elif event["stage"] == "chunk_progress":
-                    job["files"][filename].update(chunk=event["chunk"], chunks_total=event["chunks_total"])
+                    files[filename].update(chunk=event["chunk"], chunks_total=event["chunks_total"])
+                    if throttle.due():
+                        await upload_jobs.save(job_id, files)
                 elif event["stage"] == "file_done":
-                    entry = job["files"].setdefault(filename, {})
+                    entry = files.setdefault(filename, {})
                     entry["status"] = event["status"]
                     if event["status"] == "error":
                         entry["error"] = event["error"]
+                    await upload_jobs.save(job_id, files)
         except Exception as exc:  # noqa: BLE001 - a bug here must still resolve the job, not hang it forever
             extra_errors.append(f"Upload job hit an unexpected error partway through: {exc}")
 
@@ -132,8 +107,7 @@ async def _run_upload_job(
             uploaded=accepted,
             errors=[f"{filename}: {reason}" for filename, reason in rejects] + stats_errors + extra_errors,
         )
-        job["result"] = result.model_dump()
-    job["done"] = True
+    await upload_jobs.save(job_id, files, done=True, result=result.model_dump())
 
 
 async def stage_upload(
@@ -203,28 +177,18 @@ async def start_upload_job(
     """Registers a job and, if anything is left to process, schedules run_upload_job. Returns the initial status
     snapshot to poll (see module docstring).
     """
-    _prune_old_jobs()
-    # Prefixed with this process's INSTANCE_INDEX so instance_proxy.py's balancer routes later polls to the
-    # instance holding the job's in-memory _upload_jobs entry (never shared across instances).
     job_id = f"{INSTANCE_INDEX}-{uuid.uuid4().hex}"
     files_state = {name: {"status": "waiting", "chunk": 0, "chunks_total": None} for name in accepted}
     for filename, reason in rejects:
         files_state[filename] = {"status": "error", "error": reason}
-    _upload_jobs[job_id] = {
-        "created_at": time.time(),
-        "done": not accepted,  # nothing to do if every file was rejected
-        "files": files_state,
-        "result": None,
-        # Who started the job; routers/documents.py GET /upload/{job_id} checks it so users can't poll others' jobs.
-        "user_id": user.id,
-    }
-    if accepted:
-        background_tasks.add_task(_run_upload_job, job_id, target_dir, owner_id, accepted, rejects, user.id)
-    else:
-        _upload_jobs[job_id]["result"] = UploadResult(
+    result = None
+    if not accepted:  # every file was rejected: nothing to do
+        result = UploadResult(
             summary=await get_knowledge_summary(db, user),
             uploaded=[],
             errors=[f"{filename}: {reason}" for filename, reason in rejects],
         ).model_dump()
-
-    return job_status(job_id, _upload_jobs[job_id])
+    job = await upload_jobs.create(db, job_id, user.id, files_state, done=not accepted, result=result)
+    if accepted:
+        background_tasks.add_task(_run_upload_job, job_id, target_dir, owner_id, accepted, rejects, user.id)
+    return upload_jobs.status(job)

@@ -14,6 +14,7 @@ import httpx
 from app.database import AsyncSessionLocal
 from app.models import ModelSnapshot
 from app.services import llamacpp_admin, llamacpp_pool, model_snapshot_service
+from app.services.leader_lease import leader_lease
 from app.services.llamacpp_models import LlamaCppModelName
 
 logger = logging.getLogger("llama_chat")
@@ -69,7 +70,8 @@ class LlamaCppPsPoller:
     async def run(self) -> None:
         while True:
             try:
-                await self.poll_once()
+                if leader_lease.is_leader:
+                    await self.poll_once()
             except Exception:
                 # A bad poll (e.g. a transient DB error) must never end the loop.
                 logger.exception("llama.cpp /models poll failed.")
@@ -77,7 +79,7 @@ class LlamaCppPsPoller:
 
 
 def start_llamacpp_ps_poller() -> None:
-    """Called once from startup_service (primary only); keeps a strong reference to the task."""
+    """Called once from startup_service (primary only; works while leader); keeps a strong reference to the task."""
     task = asyncio.create_task(LlamaCppPsPoller().run())
     _background_poller_tasks.add(task)
     task.add_done_callback(_background_poller_tasks.discard)

@@ -40,6 +40,7 @@ from app.services.auth_service import require_admin
 from app.services.cluster_hosts import ClusterHosts
 from app.services.extended_model_catalog_service import ExtendedModelCatalog
 from app.services.matricxon_live_settings import LiveApplyUnsupportedError, MatricxonSettingsPlan, push_live
+from app.services.update_source import UpdateSourceService
 
 logger = logging.getLogger("llama_chat")
 
@@ -205,9 +206,12 @@ async def install_defaults(_admin: User = Depends(require_admin)):
 
 
 @router.get("/available-versions", response_model=AvailableVersions)
-async def available_versions(repo: str | None = None, _admin: User = Depends(require_admin)):
-    """See llamacpp_admin.py's identical endpoint."""
-    return AvailableVersions(versions=await github_releases.list_tags(repo or MATRICXON_GITHUB_REPO))
+async def available_versions(
+    repo: str | None = None, db: AsyncSession = Depends(get_db), _admin: User = Depends(require_admin)
+):
+    """See llamacpp_admin.py's identical endpoint; with the access token, a private repo's tags too."""
+    token = await UpdateSourceService(db).token("matricxon")
+    return AvailableVersions(versions=await github_releases.list_tags(repo or MATRICXON_GITHUB_REPO, token))
 
 
 @router.post("/install")
@@ -215,10 +219,11 @@ async def install(db: AsyncSession = Depends(get_db), _admin: User = Depends(req
     """Same SSE shape as llamacpp_admin's install; matricxon_installer always yields a single {"error":...} today."""
     config = await settings_service.get_matricxon_server_config(db)
     proxy_config = await http_proxy_service.get_http_proxy_config(db)
+    token = await UpdateSourceService(db).token("matricxon")  # read before streaming: the session closes
 
     async def event_stream():
         async for progress in matricxon_installer.install_stream(
-            config.install_repo, config.install_version, proxy_url=proxy_config.proxy_url()
+            config.install_repo, config.install_version, proxy_url=proxy_config.proxy_url(), token=token
         ):
             yield f"data: {json.dumps(progress)}\n\n"
 

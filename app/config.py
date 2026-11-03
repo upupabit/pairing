@@ -6,6 +6,7 @@ Nothing else should read `os.environ` directly. On a real deployment, copy `.env
 import logging
 import os
 import secrets
+import socket
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -40,8 +41,12 @@ APP_PORT = int(os.environ.get("APP_PORT", "8000"))
 INSTANCE_INDEX = int(os.environ.get("PAIRING_INSTANCE_INDEX", "0"))
 IS_PRIMARY = INSTANCE_INDEX == 0
 
+# Names this process in a shared database: owner of its replies, image and upload jobs, and the leader lease.
+# Unique per machine and port; set PAIRING_SERVER_ID where the host name changes on restart (e.g. containers).
+SERVER_ID = os.environ.get("PAIRING_SERVER_ID") or f"{socket.gethostname()}:{APP_PORT}"
+
 # This build's version (a constant); shown in Settings > System and near the logo.
-APP_VERSION = "2.0"  # the one place: login form, chat sidebar and Admin settings > System read it
+APP_VERSION = "2.1"  # the one place: login form, chat sidebar and Admin settings > System read it
 
 # The display name (a constant): single source for UI/API occurrences of "pAIring". Templates read it
 # via `templates.env.globals["app_name"]`, plain JS via base.html's `window.APP_NAME`.
@@ -51,6 +56,8 @@ APP_NAME = "pAIring"
 # Signs the session cookie; anyone knowing it can forge sessions, so set a real secret in .env.
 # The random fallback avoids a shared key but logs everyone out on each restart.
 SECRET_KEY = os.environ.get("SECRET_KEY")
+# False when the random fallback below is used (Cluster > Servers flags it: it differs per server).
+SECRET_KEY_IS_SET = bool(SECRET_KEY)
 if not SECRET_KEY:
     SECRET_KEY = secrets.token_hex(32)
     logging.getLogger("llama_chat").warning(
@@ -127,13 +134,15 @@ LLAMACPP_GITHUB_REPO = "ggml-org/llama.cpp"
 LLAMACPP_PINNED_VERSION = "b11443"
 SDCPP_GITHUB_REPO = "leejet/stable-diffusion.cpp"
 SDCPP_PINNED_VERSION = "master-929-3f8527a"
-MATRICXON_GITHUB_REPO = "upupabit/matricxon"
+# The default repos for installing and updating (Admin settings > Update shows them in "Repository"). Set in .env
+# for a partner's own build, e.g. PAIRING_GITHUB_REPO=partner/pairing; a repo chosen in Settings still wins.
+MATRICXON_GITHUB_REPO = os.environ.get("MATRICXON_GITHUB_REPO", "upupabit/matricxon")
 # Exception: Matricxon is developed alongside this app, so installs default to its newest main branch.
 # A tag or branch can be set in Settings (MatricxonServerConfig.install_version).
-MATRICXON_DEFAULT_VERSION = "main"
+MATRICXON_DEFAULT_VERSION = os.environ.get("MATRICXON_DEFAULT_VERSION", "main")
 # Admin settings > Update: where pAIring updates itself from.
-PAIRING_GITHUB_REPO = "upupabit/pairing"
-PAIRING_DEFAULT_BRANCH = "main"
+PAIRING_GITHUB_REPO = os.environ.get("PAIRING_GITHUB_REPO", "upupabit/pairing")
+PAIRING_DEFAULT_BRANCH = os.environ.get("PAIRING_DEFAULT_BRANCH", "main")
 
 # Where auto-installed engines go; outside BASE_DIR so git status never sees them.
 EXTERNAL_DIR = Path(os.environ.get("EXTERNAL_DIR", BASE_DIR / "external"))

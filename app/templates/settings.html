@@ -56,8 +56,8 @@
 
     {% include "settings/engines.html" %}
 
-    <!-- Update tab: admin-only, updates pAIring and a local Matricxon from GitHub (_update_panel.html). -->
     {% if admin_page %}
+    <!-- Update tab: admin-only, updates pAIring and a local Matricxon from GitHub (_update_panel.html). -->
     <div id="tab-update" class="hidden mx-auto max-w-[55.2rem] px-4 py-8 space-y-8">
       {% include "_update_panel.html" %}
     </div>
@@ -78,6 +78,7 @@
 <script src="/static/js/theme.js?v={{ static_version }}"></script>
 <script src="/static/js/engine_down_reason.js?v={{ static_version }}"></script>
 <script src="/static/js/settings.js?v={{ static_version }}"></script>
+{% if admin_page %}<script src="/static/js/settings_db_copy.js?v={{ static_version }}"></script>{% endif %}
 <script src="/static/js/engine_picker.js?v={{ static_version }}"></script>
 <script src="/static/js/engine_capability_notes.js?v={{ static_version }}"></script>
 <script src="/static/js/settings_cache_persistence.js?v={{ static_version }}"></script>
@@ -89,6 +90,8 @@
 <script src="/static/js/settings_reembed.js?v={{ static_version }}"></script>{% endif %}
 {% if is_admin %}<script src="/static/js/settings_mcp_servers.js?v={{ static_version }}"></script>{% endif %}
 {% if admin_page %}<script src="/static/js/settings_update.js?v={{ static_version }}"></script>{% endif %}
+{% if admin_page %}<script src="/static/js/settings_update_source.js?v={{ static_version }}"></script>{% endif %}
+{% if admin_page %}<script src="/static/js/settings_engine_token.js?v={{ static_version }}"></script>{% endif %}
 {% if admin_page %}<script src="/static/js/settings_rerank.js?v={{ static_version }}"></script>{% endif %}
 {% if admin_page %}<script src="/static/js/settings_rerank_models.js?v={{ static_version }}"></script>{% endif %}
 <script src="/static/js/settings_diffusion_models.js?v={{ static_version }}"></script>

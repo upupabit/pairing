@@ -38,7 +38,7 @@ def is_exempt(path: str) -> bool:
     return path.startswith(EXEMPT_PREFIXES)
 
 
-# A RAG upload job (document_upload.py) lives in the in-memory dict of the instance that started it. Its id
+# A RAG upload job (document_upload.py) runs on the instance that started it; its progress is in the database. Its id
 # is prefixed with that instance's index so a poll routes straight back, with no proxy-side state or body inspection.
 _UPLOAD_JOB_RE = re.compile(r"^/api/documents/upload/(\d+)-[0-9a-f]{32}$")
 

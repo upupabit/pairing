@@ -1,0 +1,35 @@
+<!-- Cluster > Servers > Keys and secrets: what each key is for and where it must match (static). -->
+<section class="space-y-3" id="servers-keys">
+  <h2 class="text-sm font-semibold text-slate-200">Keys and secrets</h2>
+  <p class="text-xs text-slate-500 -mt-2">pAIring and Matricxon use several keys. Each must match on a different set of nodes.</p>
+  <div class="overflow-x-auto rounded-lg border border-slate-800">
+    <table class="w-full text-xs">
+      <thead class="bg-slate-900 text-slate-400">
+        <tr>
+          <th class="px-3 py-2 text-left font-medium">Key</th>
+          <th class="px-3 py-2 text-left font-medium">What it is for</th>
+          <th class="px-3 py-2 text-left font-medium">Same on</th>
+          <th class="px-3 py-2 text-left font-medium">Where it is set</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-800 text-slate-300 align-top">
+        {% for key, purpose, same, where in [
+          ("SECRET_KEY", "pAIring's sign-in cookies", "Every pAIring server", "Each pAIring server's .env (This server, above)"),
+          ("Matricxon admin secret", "Signs pAIring's admin calls to Matricxon", "Every Matricxon node", "Cluster page; pAIring sends it to the nodes"),
+          ("Matricxon API key", "Protects Matricxon's model routes", "Every Matricxon node", "Inference engines, or the Cluster page"),
+          ("Join token", "Adding a new Matricxon node, once", "Only that node", "Shown when that node starts"),
+          ("Cache key", "Encrypts Matricxon's saved chat caches", "Every Matricxon cluster node", "A file in the cluster's shared cache folder, or MATRICXON_CACHE_KEY"),
+          ("Consensus secret", "Signs messages between cluster nodes", "Every Matricxon cluster node", "Optional (MATRICXON_CONSENSUS_SECRET); else the cache key"),
+          ("Connector API keys", "Cloud AI providers", "Stored in the database, so shared", "Connectors page"),
+        ] %}
+        <tr>
+          <td class="px-3 py-2 font-mono whitespace-nowrap">{{ key }}</td>
+          <td class="px-3 py-2">{{ purpose }}</td>
+          <td class="px-3 py-2">{{ same }}</td>
+          <td class="px-3 py-2 text-slate-400">{{ where }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>

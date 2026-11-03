@@ -1,8 +1,9 @@
 """Periodically prunes the four append-only poller-written tables (telemetry_events, model_snapshots,
 system_metric_snapshots, gpu_metric_snapshots; writers: llamacpp_ps_poller, system_metrics_poller,
-llamacpp_telemetry). A prune only at startup bounds growth between restarts; a deployment up for weeks needs
+llamacpp_telemetry), plus old upload jobs (upload_jobs.prune). A prune only at startup bounds growth between
+restarts; a deployment up for weeks needs
 it periodic too, or the tables grow for the whole uptime. Same detached-task/strong-ref-set idiom as the
-two pollers above; primary-gated for the same reason (shared tables).
+two pollers above; runs on the leader only (leader_lease.py), as the tables are shared.
 
 The windows are admin-configurable (Settings > System, retention_settings_service) and read fresh each
 sweep, so a change applies at the next run, not after a restart.
@@ -18,6 +19,8 @@ from app.database import AsyncSessionLocal
 from app.models import GpuMetricSnapshot, ModelSnapshot, SystemMetricSnapshot, TelemetryEvent
 from app.models._base import utcnow
 from app.services import retention_settings_service
+from app.services.leader_lease import leader_lease
+from app.services.upload_jobs import upload_jobs
 
 logger = logging.getLogger("llama_chat")
 
@@ -46,6 +49,9 @@ async def prune_once() -> None:
             await db.execute(delete(GpuMetricSnapshot).where(GpuMetricSnapshot.polled_at < metrics_cutoff))
         ).rowcount
         await db.commit()
+        deleted_uploads = await upload_jobs.prune(db)
+    if deleted_uploads:
+        logger.info("Pruned %d old knowledge upload job(s).", deleted_uploads)
     if deleted_events or deleted_model_snapshots or deleted_metric_snapshots or deleted_gpu_snapshots:
         logger.info(
             "Pruned %d old telemetry event(s), %d old ML engine model snapshot(s), %d old system metric snapshot(s), "
@@ -60,7 +66,8 @@ async def prune_once() -> None:
 async def _run_retention_poller() -> None:
     while True:
         try:
-            await prune_once()
+            if leader_lease.is_leader:
+                await prune_once()
         except Exception:
             # A bad sweep (e.g. a transient DB error) must never kill the loop for good.
             logger.exception("Retention sweep failed.")
@@ -68,8 +75,8 @@ async def _run_retention_poller() -> None:
 
 
 def start_retention_poller() -> None:
-    """Called once from startup_service.run_startup_tasks (primary only): an initial sweep almost at once (before the
-    first sleep), then every SWEEP_INTERVAL_SECONDS.
+    """Called once from startup_service.run_startup_tasks (primary only; works while leader): an initial sweep
+    almost at once (before the first sleep), then every SWEEP_INTERVAL_SECONDS.
     """
     task = asyncio.create_task(_run_retention_poller())
     _background_tasks.add(task)

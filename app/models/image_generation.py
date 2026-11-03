@@ -1,9 +1,9 @@
 """ImageGenerationJob model (lifecycle: app/services/image_generation_service.py; engine calls: sdcpp_client.py)."""
 
-from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import BigInteger, Column, Float, ForeignKey, Integer, String, Text
 
 from app.database import Base
-from app.models._base import ID_LEN, new_id, utcnow
+from app.models._base import ID_LEN, Timestamp, new_id, utcnow
 
 
 class ImageGenerationJob(Base):
@@ -27,7 +27,7 @@ class ImageGenerationJob(Base):
     height = Column(Integer, nullable=False)
     steps = Column(Integer, nullable=False)
     cfg = Column(Float, nullable=False)
-    seed = Column(Integer, nullable=False)
+    seed = Column(BigInteger, nullable=False)  # 0 to 2**32-1: too big for a signed 32-bit INT on MySQL
     # "text_to_image" or "image_to_image"; strength (0-1, distance from the source) only for the latter.
     # The source image is not stored (app.services.image_init).
     mode = Column(String(20), nullable=False, default="text_to_image", server_default="text_to_image")
@@ -37,13 +37,15 @@ class ImageGenerationJob(Base):
     # stable-diffusion.cpp only: log file size at job start, so progress reads only this job's lines
     # (app.services.sdcpp_progress). Null for other engines.
     log_offset = Column(Integer, nullable=True)
+    # config.SERVER_ID of the process running the job; its own restart sweeps only these.
+    owner_server = Column(String(255), nullable=True)
     # Relative to IMAGES_DIR (like ATTACHMENTS_DIR); set when status becomes "complete".
     image_path = Column(String(500), nullable=True)
     image_filename = Column(String(255), nullable=True)
     # Reason shown instead of an image; only for status="error".
     error_message = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=utcnow)
-    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
+    created_at = Column(Timestamp, default=utcnow)
+    updated_at = Column(Timestamp, default=utcnow, onupdate=utcnow)
 
     @property
     def url(self) -> str | None:

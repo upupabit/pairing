@@ -8,9 +8,10 @@ Column names follow Ollama's timing fields, the first engine's; `engine` identif
 the move to llama.cpp keep engine "ollama".
 """
 
-from sqlalchemy import BigInteger, Boolean, Column, DateTime, Float, Integer, String, Text
+from sqlalchemy import BigInteger, Boolean, Column, Float, Integer, String, Text
 
 from app.database import Base
+from app.models._base import Timestamp
 
 
 class TelemetryEvent(Base):
@@ -30,7 +31,7 @@ class TelemetryEvent(Base):
     host = Column(String(255), nullable=False)
     success = Column(Boolean, nullable=False)
     error_message = Column(Text, nullable=True)
-    started_at = Column(DateTime, nullable=False)
+    started_at = Column(Timestamp, nullable=False)
     duration_ms = Column(Float, nullable=False)
     total_duration_ms = Column(Float, nullable=True)
     load_duration_ms = Column(Float, nullable=True)
@@ -57,5 +58,5 @@ class ModelSnapshot(Base):
     model_name = Column(String(255), nullable=False)
     size_bytes = Column(BigInteger, nullable=True)
     size_vram_bytes = Column(BigInteger, nullable=True)
-    expires_at = Column(DateTime, nullable=True)
-    polled_at = Column(DateTime, nullable=False)
+    expires_at = Column(Timestamp, nullable=True)
+    polled_at = Column(Timestamp, nullable=False)

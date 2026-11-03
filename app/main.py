@@ -42,6 +42,7 @@ from app.routers import (
     matricxon_admin,
     matricxon_api_key_admin,
     matricxon_cache_admin,
+    matricxon_update_admin,
     mcp_admin,
     mcp_tools,
     model_capabilities,
@@ -51,6 +52,7 @@ from app.routers import (
     proxy_admin,
     rerank_admin,
     sdcpp_admin,
+    servers_admin,
     settings,
     stats,
     system_metrics,
@@ -180,6 +182,8 @@ app.include_router(telemetry.router)
 app.include_router(system_metrics.router)
 app.include_router(theme.router)
 app.include_router(update_admin.router)
+app.include_router(servers_admin.router)
+app.include_router(matricxon_update_admin.router)
 
 
 @app.on_event("startup")

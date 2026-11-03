@@ -185,6 +185,12 @@ async def get_matricxon_server_config(db: AsyncSession) -> MatricxonServerConfig
     return MatricxonServerConfig()
 
 
+async def has_matricxon_server_config(db: AsyncSession) -> bool:
+    """False when nothing was ever saved here (a fresh database): get_matricxon_server_config then returns only
+    defaults, which must never be written over a real Matricxon's .env."""
+    return await db.get(AppSetting, (SYSTEM_OWNER_ID, MATRICXON_SERVER_CONFIG_KEY)) is not None
+
+
 async def set_matricxon_server_config(db: AsyncSession, config: MatricxonServerConfig) -> None:
     row = await db.get(AppSetting, (SYSTEM_OWNER_ID, MATRICXON_SERVER_CONFIG_KEY))
     value = config.model_dump()

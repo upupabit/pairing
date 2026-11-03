@@ -1,4 +1,4 @@
-"""Mirrors the cluster's own member list into pAIring's node list (primary instance only).
+"""Mirrors the cluster's own member list into pAIring's node list (on the leader only, leader_lease.py).
 
 Each node reports `nodes` (voters plus learners) and `removed` in its consensus status. This adds
 unlisted nodes and drops removed ones. Unanswering listed nodes are kept. Nodes match by id, so
@@ -16,6 +16,7 @@ from app.services import matricxon_pool, server_pool_broadcast, settings_service
 from app.services.cluster_hosts import ClusterHosts
 from app.services.cluster_nodes import ClusterNodes
 from app.services.cluster_settings import ClusterSettings
+from app.services.leader_lease import leader_lease
 
 logger = logging.getLogger("llama_chat")
 INTERVAL = 15.0
@@ -111,15 +112,16 @@ _tasks: set[asyncio.Task] = set()
 async def _run_forever() -> None:
     while True:
         try:
-            async with AsyncSessionLocal() as db:
-                await _membership.sync(db)
+            if leader_lease.is_leader:
+                async with AsyncSessionLocal() as db:
+                    await _membership.sync(db)
         except Exception:  # noqa: BLE001 - one bad look must not end the loop
             logger.exception("cluster: following the cluster's node list failed")
         await asyncio.sleep(INTERVAL)
 
 
 def start_membership_sync() -> None:
-    """Called once from startup_service.run_startup_tasks (primary only)."""
+    """Called once from startup_service.run_startup_tasks (primary only; works while leader)."""
     task = asyncio.create_task(_run_forever())
     _tasks.add(task)
     task.add_done_callback(_tasks.discard)

@@ -34,6 +34,7 @@ from app.config import EXTERNAL_DIR, MATRICXON_DEFAULT_VERSION, MATRICXON_GITHUB
 from app.hardware import local_install_supported
 from app.services import matricxon_process
 from app.services.pip_progress import PipProgressTracker
+from app.services.update_source import GitRemote, explain_git_error
 
 logger = logging.getLogger("llama_chat")
 
@@ -114,14 +115,15 @@ def _proxied_env(proxy_url: str | None) -> dict[str, str] | None:
 
 
 async def install_stream(
-    repo: str | None = None, version: str | None = None, proxy_url: str | None = None
+    repo: str | None = None, version: str | None = None, proxy_url: str | None = None, token: str | None = None
 ) -> AsyncIterator[dict]:
     """Yields progress events like llamacpp_installer ({"status":...}, then {"done": True,...}
     or {"error":...}), relayed by routers/matricxon_admin.py. Cleans up a partial clone on failure.
 
     `repo`/`version` (MatricxonServerConfig.install_repo/install_version) override MATRICXON_GITHUB_REPO/
     MATRICXON_DEFAULT_VERSION; None uses the default. `proxy_url` routes the git clone and pip install
-    through the admin's HTTP proxy.
+    through the admin's HTTP proxy. `token`: the access token for a private repo (update_source.py), sent to
+    git through its environment only, so it never lands in the clone's .git/config.
     """
     repo = repo or MATRICXON_GITHUB_REPO
     version = version or MATRICXON_DEFAULT_VERSION
@@ -161,12 +163,13 @@ async def install_stream(
     try:
         repo_url = f"https://github.com/{repo}.git"
         argv = ["git", "clone", "--branch", version, "--depth", "1", repo_url, str(target_dir)]
-        async for line in _run_streamed(argv, env=proxied_env):
+        clone_env = {**(proxied_env or os.environ), **GitRemote.header_env(repo_url, token)} if token else proxied_env
+        async for line in _run_streamed(argv, env=clone_env):
             yield {**clone_meta, "status": line}
     except RuntimeError as exc:
         shutil.rmtree(target_dir, ignore_errors=True)
         _restore_data_dir(preserved_data_dir, target_dir)
-        yield {"error": f"Could not clone Matricxon: {exc}"}
+        yield {"error": f"Could not clone Matricxon: {explain_git_error(str(exc))}"}
         return
 
     # Restored right away: venv creation and pip never touch "data", so don't leave downloaded models in a temp

@@ -1,0 +1,45 @@
+{#- "Use a different repo or branch": where one product updates from (settings_update_source.js,
+    /api/settings/update/source/<product>). The same setting wherever it shows: Update tab, Cluster > Servers
+    (pAIring) and Cluster > Update nodes (Matricxon). -#}
+{% macro update_source(product, title) %}
+<div data-update-source="{{ product }}" class="space-y-2">
+  <button type="button" data-action="toggle-source"
+    class="text-xs text-slate-500 hover:text-slate-300 underline underline-offset-2 transition-colors">
+    Use a different repo or branch
+  </button>
+  <span data-field="current" class="ml-2 text-xs text-slate-500"></span>
+  <div data-field="panel" class="hidden space-y-2 rounded-md bg-slate-950 border border-slate-800 px-3 py-3">
+    <p class="text-xs text-slate-500">
+      Where {{ title }} updates from, for example a partner's private repository. With the default repository and
+      branch shown here, it updates as installed (the checkout's own origin). Your
+      <span class="font-mono">origin</span> is never changed.
+    </p>
+    <div>
+      <label class="block text-xs font-medium text-slate-400 mb-1">Repository</label>
+      <input data-field="repo" type="text" spellcheck="false"
+        title="owner/name for GitHub, an https:// URL, or an SSH address such as git@host:owner/name.git"
+        class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 font-mono text-sm focus:outline-none focus:border-brand-500">
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-slate-400 mb-1">Branch or tag</label>
+      <input data-field="branch" type="text" spellcheck="false" placeholder="main"
+        class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 font-mono text-sm focus:outline-none focus:border-brand-500">
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-slate-400 mb-1">Access token <span class="font-normal text-slate-500">(private repositories over https)</span></label>
+      <input data-field="token" type="password" autocomplete="new-password" spellcheck="false"
+        class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 font-mono text-sm focus:outline-none focus:border-brand-500">
+      <p class="mt-1 text-[11px] text-slate-500">A private repo needs one to download: on GitHub, Settings → Developer settings → Personal access tokens, with read access to that repo. Stored encrypted and never shown again; also used for a private origin and for installing. For SSH, the machine's own key is used.</p>
+    </div>
+    <div class="flex flex-wrap items-center gap-3">
+      <button type="button" data-action="save"
+        class="rounded-md border border-slate-700 px-2.5 py-1 text-xs text-slate-200 hover:bg-slate-800 transition-colors">Save</button>
+      <button type="button" data-action="clear-token"
+        class="hidden rounded-md border border-slate-700 px-2.5 py-1 text-xs text-slate-300 hover:bg-slate-800 transition-colors">Remove the token</button>
+      <button type="button" data-action="reset"
+        class="text-xs text-slate-500 hover:text-slate-300 underline underline-offset-2">Back to as installed</button>
+      <span data-field="status" class="text-xs text-slate-500"></span>
+    </div>
+  </div>
+</div>
+{% endmacro %}

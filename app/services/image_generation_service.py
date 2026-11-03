@@ -12,11 +12,11 @@ import logging
 import os
 import time
 
-from sqlalchemy import update
+from sqlalchemy import or_, update
 from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import IMAGES_DIR
+from app.config import IMAGES_DIR, SERVER_ID
 from app.database import AsyncSessionLocal
 from app.models import ImageGenerationJob
 from app.schemas import ImageGenerationRequest
@@ -40,6 +40,7 @@ async def create_job(db: AsyncSession, owner_id: str, request: ImageGenerationRe
     job = ImageGenerationJob(
         owner_id=owner_id,
         status="queued",
+        owner_server=SERVER_ID,
         prompt=request.prompt,
         negative_prompt=request.negative_prompt,
         checkpoint=request.checkpoint,
@@ -177,15 +178,16 @@ async def _mark_error(db: AsyncSession, job: ImageGenerationJob, message: str) -
     await db.commit()
 
 
-async def mark_interrupted_jobs_as_errored(db: AsyncSession) -> int:
-    """Marks jobs still "running"/"queued" from before this process started as errors (an asyncio.Task can't
-    survive a restart, else a row stays "generating" forever). Like
-    conversation_service.mark_interrupted_messages_as_errored,
-    called from startup_service.run_startup_tasks (primary only, single-instance restarts).
+async def mark_interrupted_jobs_as_errored(db: AsyncSession, server_id: str = SERVER_ID, unowned: bool = True) -> int:
+    """Marks this server's jobs still "running"/"queued" from before it started as errors (an asyncio.Task can't
+    survive a restart, else a row stays "generating" forever). `unowned` also clears rows from before owners
+    were recorded (the primary only). Like conversation_service.mark_interrupted_messages_as_errored.
     """
+    owner = ImageGenerationJob.owner_server == server_id
     result = await db.execute(
         update(ImageGenerationJob)
         .where(ImageGenerationJob.status.in_(["queued", "running"]))
+        .where(or_(owner, ImageGenerationJob.owner_server.is_(None)) if unowned else owner)
         .values(status="error", error_message="Interrupted by a server restart.")
     )
     await db.commit()

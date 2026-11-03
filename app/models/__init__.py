@@ -11,6 +11,7 @@ from app.models.document import Chunk, Document
 from app.models.image_generation import ImageGenerationJob
 from app.models.mcp_server import McpServer
 from app.models.note import Note, NotePin
+from app.models.server_coordination import LeaderLease, Server, UploadJob
 from app.models.system_metrics import GpuMetricSnapshot, SystemMetricSnapshot
 from app.models.telemetry import ModelSnapshot, TelemetryEvent
 from app.models.user import User
@@ -21,6 +22,7 @@ __all__ = [
     "new_id",
     "utcnow",
     "SYSTEM_OWNER_ID",
+    "Server",
     "AppSetting",
     "Channel",
     "ChannelMember",
@@ -30,11 +32,13 @@ __all__ = [
     "Chunk",
     "Document",
     "ImageGenerationJob",
+    "LeaderLease",
     "Note",
     "NotePin",
     "GpuMetricSnapshot",
     "ModelSnapshot",
     "SystemMetricSnapshot",
     "TelemetryEvent",
+    "UploadJob",
     "User",
 ]

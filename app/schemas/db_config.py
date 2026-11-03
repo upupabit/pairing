@@ -36,6 +36,8 @@ class DbConfigUpdate(BaseModel):
     db_type: Literal["sqlite", "mysql"]
     sqlite: SqliteParams | None = None
     mysql: MysqlParams | None = None
+    # Save only: copy everything from the current database into the new (empty) one (db_data_copy.py).
+    copy_data: bool = False
 
     @model_validator(mode="after")
     def _require_matching_params(self) -> "DbConfigUpdate":
@@ -57,3 +59,15 @@ class InternalSwitchDatabaseRequest(BaseModel):
     """
 
     database_url: str
+
+
+class DbCopyStatus(BaseModel):
+    """Progress of "Copy my data" (db_copy_job.py). `ok`/`message` are set once it finished."""
+
+    running: bool
+    stage: str | None = None
+    table: str | None = None
+    done: int = 0
+    total: int = 0
+    ok: bool | None = None
+    message: str | None = None

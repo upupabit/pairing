@@ -227,36 +227,54 @@ async def test_install_defaults_reflects_the_pinned_config(admin_user):
 
 
 @pytest.mark.asyncio
-async def test_available_versions_falls_back_to_the_pinned_repo_when_none_is_given(admin_user, monkeypatch):
+async def test_available_versions_falls_back_to_the_pinned_repo_when_none_is_given(db, admin_user, monkeypatch):
     from app.config import MATRICXON_GITHUB_REPO
 
     seen = {}
 
-    async def fake_list_tags(repo):
+    async def fake_list_tags(repo, token=None):
         seen["repo"] = repo
         return ["v0.2", "v0.1"]
 
     monkeypatch.setattr(github_releases, "list_tags", fake_list_tags)
 
-    result = await matricxon_admin.available_versions(repo=None, _admin=admin_user)
+    result = await matricxon_admin.available_versions(repo=None, db=db, _admin=admin_user)
 
     assert seen["repo"] == MATRICXON_GITHUB_REPO
     assert result.versions == ["v0.2", "v0.1"]
 
 
 @pytest.mark.asyncio
-async def test_available_versions_uses_a_given_repo_override(admin_user, monkeypatch):
+async def test_available_versions_uses_a_given_repo_override(db, admin_user, monkeypatch):
     seen = {}
 
-    async def fake_list_tags(repo):
+    async def fake_list_tags(repo, token=None):
         seen["repo"] = repo
         return []
 
     monkeypatch.setattr(github_releases, "list_tags", fake_list_tags)
 
-    await matricxon_admin.available_versions(repo="me/fork", _admin=admin_user)
+    await matricxon_admin.available_versions(repo="me/fork", db=db, _admin=admin_user)
 
     assert seen["repo"] == "me/fork"
+
+
+@pytest.mark.asyncio
+async def test_available_versions_of_a_private_repo_use_the_access_token(db, admin_user, monkeypatch):
+    from app.services.update_source import UpdateSourceService
+
+    seen = {}
+
+    async def fake_list_tags(repo, token=None):
+        seen["token"] = token
+        return []
+
+    monkeypatch.setattr(github_releases, "list_tags", fake_list_tags)
+    await UpdateSourceService(db).save_token("matricxon", "tok")
+
+    await matricxon_admin.available_versions(repo="partner/private", db=db, _admin=admin_user)
+
+    assert seen["token"] == "tok"
 
 
 @pytest.mark.asyncio

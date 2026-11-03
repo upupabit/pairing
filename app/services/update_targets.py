@@ -18,6 +18,7 @@ from app.schemas import MatricxonServerConfig
 from app.schemas.update import PairingRestartInfo, SourceUpdateStatus
 from app.services import matricxon_process
 from app.services.source_updater import SourceUpdater, UpdateTarget
+from app.services.update_source import GitRemote
 
 # Never overwritten by a download update: user data, environments, local settings.
 _PAIRING_KEEP = frozenset(
@@ -27,12 +28,19 @@ _MATRICXON_KEEP = frozenset({"data", "logs", "run", ".venv", ".env"})
 
 
 class PairingUpdate:
-    def __init__(self, proxy_url: str | None = None, base_dir: Path = BASE_DIR) -> None:
+    def __init__(
+        self,
+        proxy_url: str | None = None,
+        base_dir: Path = BASE_DIR,
+        remote: GitRemote | None = None,
+        token: str | None = None,
+    ) -> None:
+        """`remote`: a chosen repository (update_source.py); None updates as installed. `token`: its access token."""
         self.base_dir = base_dir
         target = UpdateTarget(
             "pAIring", base_dir, PAIRING_GITHUB_REPO, PAIRING_DEFAULT_BRANCH, Path(sys.executable), _PAIRING_KEEP
         )
-        self.updater = SourceUpdater(target, proxy_url)
+        self.updater = SourceUpdater(target, proxy_url, remote, token)
 
     def in_container(self) -> bool:
         return Path("/.dockerenv").exists()
@@ -81,7 +89,13 @@ class PairingUpdate:
 
 
 class MatricxonUpdate:
-    def __init__(self, config: MatricxonServerConfig, proxy_url: str | None = None) -> None:
+    def __init__(
+        self,
+        config: MatricxonServerConfig,
+        proxy_url: str | None = None,
+        remote: GitRemote | None = None,
+        token: str | None = None,
+    ) -> None:
         self.config = config
         self.proxy_url = proxy_url
         self.project_dir = matricxon_process.resolve_project_dir(config.project_dir) if config.mode == "local" else None
@@ -95,7 +109,7 @@ class MatricxonUpdate:
                 self.project_dir / ".venv" / "bin" / "python",
                 _MATRICXON_KEEP,
             )
-            self.updater = SourceUpdater(target, proxy_url)
+            self.updater = SourceUpdater(target, proxy_url, remote, token)
             self.updater.total_steps = 4
 
     async def status(self) -> SourceUpdateStatus | None:

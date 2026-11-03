@@ -4,12 +4,14 @@ Alembic (alembic/env.py, `_run_migrations`) stays on its own sync engine built f
 """
 
 import asyncio
+from contextlib import nullcontext
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import declarative_base
 
 from app.config import AUTO_MIGRATE, DATABASE_URL
+from app.db_migration_lock import MigrationLock
 
 
 def _async_url(sync_url: str) -> str:
@@ -75,7 +77,7 @@ async def switch_database(database_url: str) -> None:
 _BASELINE_REVISION = "6d4212846f5c"
 
 
-def _run_migrations(database_url: str = DATABASE_URL) -> None:
+def _run_migrations(database_url: str = DATABASE_URL, lock: bool = True) -> None:
     """Brings the schema up to date; safe on every startup:
     - new database: runs every revision from the baseline;
     - pre-Alembic install: stamps the baseline, then applies later revisions;
@@ -94,16 +96,19 @@ def _run_migrations(database_url: str = DATABASE_URL) -> None:
     cfg.set_main_option("script_location", str(BASE_DIR / "alembic"))
     cfg.set_main_option("sqlalchemy.url", database_url)
 
-    sync_engine = create_engine(database_url)
-    try:
-        existing_tables = set(inspect(sync_engine).get_table_names())
-    finally:
-        sync_engine.dispose()
+    # One server at a time: several starting together after an update would otherwise race. `lock=False`: the
+    # caller already holds it (startup_service, around migrations and seeding).
+    with MigrationLock(database_url) if lock else nullcontext():
+        sync_engine = create_engine(database_url)
+        try:
+            existing_tables = set(inspect(sync_engine).get_table_names())
+        finally:
+            sync_engine.dispose()
 
-    if existing_tables and "alembic_version" not in existing_tables:
-        command.stamp(cfg, _BASELINE_REVISION)
+        if existing_tables and "alembic_version" not in existing_tables:
+            command.stamp(cfg, _BASELINE_REVISION)
 
-    command.upgrade(cfg, "head")
+        command.upgrade(cfg, "head")
 
 
 def schema_is_current(database_url: str = DATABASE_URL) -> bool:
@@ -136,7 +141,7 @@ class SchemaNotCurrentError(RuntimeError):
     """Raised by init_db when AUTO_MIGRATE is off and the schema is not at head."""
 
 
-async def init_db():
+async def init_db(lock: bool = True) -> None:
     """Migrates via Alembic (AUTO_MIGRATE, default on); with it off, only verifies the schema is current
     and refuses to start otherwise (concurrent migrations on cold start are unsafe).
     """
@@ -153,4 +158,4 @@ async def init_db():
             )
         return
 
-    await asyncio.to_thread(_run_migrations, DATABASE_URL)
+    await asyncio.to_thread(_run_migrations, DATABASE_URL, lock)

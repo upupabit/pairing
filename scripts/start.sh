@@ -40,6 +40,24 @@ if (exec 3<>"/dev/tcp/127.0.0.1/$PORT") 2>/dev/null; then
     exit 1
 fi
 
+# Rotate on start (nothing writes them now): once a log passes PAIRING_LOG_MAX_MB, keep PAIRING_LOG_KEEP old ones
+# (environment or .env).
+# Covers app.log and the local instances' app-instance-N.log.
+env_value() { grep -E "^$1=" "$APP_DIR/.env" 2>/dev/null | tail -1 | cut -d= -f2 || true; }
+LOG_MAX_MB="${PAIRING_LOG_MAX_MB:-$(env_value PAIRING_LOG_MAX_MB)}"
+LOG_KEEP="${PAIRING_LOG_KEEP:-$(env_value PAIRING_LOG_KEEP)}"
+rotate_log() {
+    local file="$1" max=$(( ${LOG_MAX_MB:-50} * 1024 * 1024 )) keep="${LOG_KEEP:-5}" i
+    [[ -f "$file" && "$(stat -c %s "$file" 2>/dev/null || stat -f %z "$file")" -gt $max ]] || return 0
+    for ((i = keep - 1; i >= 1; i--)); do
+        [[ -f "$file.$i" ]] && mv -f "$file.$i" "$file.$((i + 1))"
+    done
+    mv -f "$file" "$file.1"
+}
+for log in "$LOG_DIR"/app.log "$LOG_DIR"/app-instance-*.log; do
+    rotate_log "$log"
+done
+
 if command -v setsid >/dev/null 2>&1; then
     LAUNCHER=(setsid)
 else

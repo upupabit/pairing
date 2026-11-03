@@ -6,8 +6,9 @@ import logging
 
 from sqlalchemy import select, text
 
-from app.config import AUTO_MIGRATE, IS_PRIMARY
+from app.config import AUTO_MIGRATE, DATABASE_URL, IS_PRIMARY
 from app.database import AsyncSessionLocal, init_db
+from app.db_migration_lock import StartupLock
 from app.models import User
 from app.services import (
     cluster_membership,
@@ -33,9 +34,12 @@ from app.services.conversation_service import mark_interrupted_messages_as_error
 from app.services.document_sync import sync_all_on_startup
 from app.services.image_generation_service import mark_interrupted_jobs_as_errored
 from app.services.inference_client import InferenceError, list_models
+from app.services.leader_lease import leader_lease
 from app.services.matricxon_autostart import matricxon_autostart
 from app.services.note_service import seed_default_notes
+from app.services.server_heartbeat import server_heartbeat
 from app.services.settings_sync import settings_sync
+from app.services.upload_jobs import upload_jobs
 
 logger = logging.getLogger("llama_chat")
 
@@ -52,41 +56,11 @@ async def run_startup_tasks() -> None:
         if AUTO_MIGRATE
         else "schema must already be current (run `.venv/bin/alembic upgrade head` separately if not)",
     )
-    await init_db()
+    async with StartupLock(DATABASE_URL):
+        await init_db(lock=False)
+        await _seed_and_repair()
 
-    # A fresh AsyncSessionLocal, not get_db: this runs outside any request, so we open and close the session
-    # ourselves.
     async with AsyncSessionLocal() as db:
-        admin_user = await seed_default_users(db)
-        # Conversations from before multi-user support have no owner (app/database.py migration): attach them to admin
-        # rather than leave them invisible (deleting history would be a bad surprise). `channel_id IS NULL` is
-        # load-bearing: a channel's shared conversation (models/conversation.py) also has owner_id NULL by design, and
-        # without it this backfill stole every channel's conversation for admin on each restart (see the repair below).
-        result = await db.execute(
-            text("UPDATE conversations SET owner_id = :admin_id WHERE owner_id IS NULL AND channel_id IS NULL"),
-            {"admin_id": admin_user.id},
-        )
-        if result.rowcount:
-            logger.info("Assigned %d pre-existing conversation(s) to admin.", result.rowcount)
-
-        # Self-healing repair on every startup (cheap: a no-op UPDATE of zero rows once fixed): a channel conversation
-        # must never have owner_id (mutually exclusive with channel_id, models/conversation.py), but the backfill above
-        # did that each restart before it excluded channel_id. Stray rows get corrected rather than staying broken
-        # (invisible-but-undeletable in the owner's list).
-        result = await db.execute(
-            text("UPDATE conversations SET owner_id = NULL WHERE owner_id IS NOT NULL AND channel_id IS NOT NULL"),
-        )
-        if result.rowcount:
-            logger.info("Repaired %d channel conversation(s) with a stray owner_id.", result.rowcount)
-        await db.commit()
-
-        # Backfill: every user gets their 3 protected persona/rules/skill notes if missing (seed accounts on a fresh
-        # install and accounts predating the feature). seed_default_notes is idempotent, so no one-time migration flag.
-        for user in (await db.execute(select(User))).scalars().all():
-            await seed_default_notes(db, user)
-
-        await db.commit()
-
         # Primes the engine and image-engine host pools (Settings > Inference engines) from what's saved. Unlike the
         # instance-count/proxy-mode priming below, this runs on *every* instance: each routes its own chat/image
         # requests through these pools (llamacpp_pool/sdcpp_pool) and needs its cache warm before the connectivity check
@@ -122,7 +96,10 @@ async def run_startup_tasks() -> None:
             # write_env_file could resolve the project directory silently no-oped and left.env stale with nothing to
             # retry;
             # a restart is when the directory is most likely resolvable.
-            matricxon_process.write_env_file(matricxon_config)
+            # Only a config saved in this database: a fresh one (a new install, an empty MySQL) has only defaults,
+            # whose "local mode" would rewrite the auto-detected Matricxon's .env and drop its cluster settings.
+            if await settings_service.has_matricxon_server_config(db):
+                matricxon_process.write_env_file(matricxon_config)
 
             # Loaded-model state of llama.cpp/Matricxon, this machine's CPU/RAM/disk, and the retention sweep
             # that bounds all of these (plus telemetry_events) are host-level, not per-instance: starting them on every
@@ -131,42 +108,81 @@ async def run_startup_tasks() -> None:
             # below (same early-return reason as init_llamacpp_telemetry); each tolerates llama.cpp/Matricxon/syscalls
             # being
             # unavailable via its own per-iteration try/except.
+            # Several servers on one database: only the lease holder runs these (each checks leader_lease).
+            await leader_lease.start()
             llamacpp_ps_poller.start_llamacpp_ps_poller()
             matricxon_ps_poller.start_matricxon_ps_poller()
             system_metrics_poller.start_system_metrics_poller()
             retention_poller.start_retention_poller()
             cluster_membership.start_membership_sync()
 
-            # A message left "streaming" (personal or channel) was a generation task in an earlier process; an
-            # asyncio.Task can't survive a restart, so it would show "typing" forever. Single-instance restart only (see
-            # mark_interrupted_messages_as_errored).
-            interrupted = await mark_interrupted_messages_as_errored(db)
-            if interrupted:
-                logger.info(
-                    "Marked %d interrupted repl%s as errored after restart.",
-                    interrupted,
-                    "y" if interrupted == 1 else "ies",
-                )
-
-            # Same restart gap as the reply sweep, for jobs left "queued"/"running" (mark_interrupted_jobs_as_errored).
-            # The image engine itself is NOT stopped (it survives app restarts, see sdcpp_service.py); only this app's
-            # bookkeeping of a job it can no longer track is corrected.
-            interrupted_jobs = await mark_interrupted_jobs_as_errored(db)
-            if interrupted_jobs:
-                logger.info(
-                    "Marked %d interrupted image generation job%s as errored after restart.",
-                    interrupted_jobs,
-                    "" if interrupted_jobs == 1 else "s",
-                )
+        # Every instance: replies and image jobs this server left unfinished can't resume (an asyncio.Task dies with
+        # its process). Other servers' rows are left alone; the primary also clears rows from before owners existed.
+        # The image engine itself keeps running (sdcpp_service.py); only the bookkeeping is corrected.
+        interrupted = await mark_interrupted_messages_as_errored(db, unowned=IS_PRIMARY)
+        if interrupted:
+            logger.info(
+                "Marked %d interrupted repl%s as errored after restart.",
+                interrupted,
+                "y" if interrupted == 1 else "ies",
+            )
+        if interrupted_uploads := await upload_jobs.interrupt(db, unowned=IS_PRIMARY):
+            logger.info("Ended %d interrupted knowledge upload(s) after restart.", interrupted_uploads)
+        interrupted_jobs = await mark_interrupted_jobs_as_errored(db, unowned=IS_PRIMARY)
+        if interrupted_jobs:
+            logger.info(
+                "Marked %d interrupted image generation job%s as errored after restart.",
+                interrupted_jobs,
+                "" if interrupted_jobs == 1 else "s",
+            )
 
     # Every instance (not only the primary): other machines' saves reach this process's caches (settings_sync.py).
     settings_sync.start()
+    # Every instance: its row in the server list (server_registry.py), and its part in "Update all".
+    server_heartbeat.start()
 
     # Matricxon down (restart, reboot): start it in the background, then check the engine and sync knowledge.
     if wanted := await matricxon_autostart.needed():
         matricxon_autostart.schedule(*wanted, then=check_engine_and_sync)
         return
     await check_engine_and_sync()
+
+
+async def _seed_and_repair() -> None:
+    """The starter admin, pre-multi-user backfills and default notes; under StartupLock, so servers starting
+    together don't duplicate them."""
+    # A fresh AsyncSessionLocal, not get_db: this runs outside any request, so we open and close the session
+    # ourselves.
+    async with AsyncSessionLocal() as db:
+        admin_user = await seed_default_users(db)
+        # Conversations from before multi-user support have no owner (app/database.py migration): attach them to admin
+        # rather than leave them invisible (deleting history would be a bad surprise). `channel_id IS NULL` is
+        # load-bearing: a channel's shared conversation (models/conversation.py) also has owner_id NULL by design, and
+        # without it this backfill stole every channel's conversation for admin on each restart (see the repair below).
+        result = await db.execute(
+            text("UPDATE conversations SET owner_id = :admin_id WHERE owner_id IS NULL AND channel_id IS NULL"),
+            {"admin_id": admin_user.id},
+        )
+        if result.rowcount:
+            logger.info("Assigned %d pre-existing conversation(s) to admin.", result.rowcount)
+
+        # Self-healing repair on every startup (cheap: a no-op UPDATE of zero rows once fixed): a channel conversation
+        # must never have owner_id (mutually exclusive with channel_id, models/conversation.py), but the backfill above
+        # did that each restart before it excluded channel_id. Stray rows get corrected rather than staying broken
+        # (invisible-but-undeletable in the owner's list).
+        result = await db.execute(
+            text("UPDATE conversations SET owner_id = NULL WHERE owner_id IS NOT NULL AND channel_id IS NOT NULL"),
+        )
+        if result.rowcount:
+            logger.info("Repaired %d channel conversation(s) with a stray owner_id.", result.rowcount)
+        await db.commit()
+
+        # Backfill: every user gets their 3 protected persona/rules/skill notes if missing (seed accounts on a fresh
+        # install and accounts predating the feature). seed_default_notes is idempotent, so no one-time migration flag.
+        for user in (await db.execute(select(User))).scalars().all():
+            await seed_default_notes(db, user)
+
+        await db.commit()
 
 
 async def check_engine_and_sync() -> None:
@@ -184,6 +200,8 @@ async def check_engine_and_sync() -> None:
         )
         return
 
+    if not leader_lease.is_leader:
+        return  # the leader syncs the shared knowledge folder
     async with AsyncSessionLocal() as db:
         # sync_all_on_startup degrades gracefully (logged as an "error" in its stats, not raised) if no embedding model
         # is available yet.
@@ -205,7 +223,9 @@ async def run_shutdown_tasks() -> None:
     OTel SDK before exit (on a worker thread; see llamacpp_telemetry.shutdown_llamacpp_telemetry).
     """
     await settings_sync.stop()
+    server_heartbeat.stop()
     if IS_PRIMARY:
+        await leader_lease.stop()
         await instance_service.terminate_all_siblings()
     await llamacpp_telemetry.shutdown_llamacpp_telemetry()
     await matricxon_telemetry.shutdown_matricxon_telemetry()

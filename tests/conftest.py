@@ -27,6 +27,14 @@ from app.services import (
     system_metrics_poller,
 )
 from app.services.auth_service import hash_password
+from app.services.leader_lease import LeaderLease
+from app.services.upload_jobs import upload_jobs
+
+
+@pytest.fixture(autouse=True)
+def _this_test_process_is_the_leader(monkeypatch):
+    """Leader-only jobs (leader_lease.py) run in tests as on a single server; tests of LeaderLease use their own."""
+    monkeypatch.setattr(LeaderLease, "is_leader", property(lambda self: True))
 
 
 @pytest.fixture(autouse=True)
@@ -167,6 +175,7 @@ async def db(monkeypatch) -> AsyncSession:
     monkeypatch.setattr(matricxon_ps_poller, "AsyncSessionLocal", session_factory)
     monkeypatch.setattr(system_metrics_poller, "AsyncSessionLocal", session_factory)
     monkeypatch.setattr(retention_poller, "AsyncSessionLocal", session_factory)
+    monkeypatch.setattr(upload_jobs, "_session_factory", session_factory)
     async with session_factory() as session:
         yield session
 

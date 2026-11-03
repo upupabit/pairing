@@ -183,12 +183,12 @@ pAIring is running at:  http://${SERVER_IP:-<this-server>}:${APP_PORT}
 It runs as user ${APP_USER}; to work as it: sudo -iu ${APP_USER}
 
 Log in with the starter admin account:
-    admin / admin   (full access, including the Settings > System tab)
+    admin / admin   (full access, including Admin settings)
 
   ⚠  CHANGE THIS PASSWORD before letting anyone else reach this server —
      it's seeded on first run for convenience, not meant to stay as-is
-     on anything but a private network. Settings > System > Users can
-     reset it (or any other account's) once you're logged in.
+     on anything but a private network. Change it under Settings > Account >
+     Update password; Admin settings > Users resets any other account's.
 
 Useful commands:
     systemctl status ${SERVICE_NAME}          # is the app running?

@@ -21,6 +21,9 @@
   .mx-node:hover .mx-body { filter: brightness(1.25); }
   .mx-dim { opacity: .18; }
   .mx-nomatch { opacity: .12; }
+  /* Every view but the Nodes map: centred at the width of Admin settings (the same left edge as its content). The view
+     itself stays full width, so its scrollbar is at the window's edge. */
+  .cluster-page { padding-inline: max(1.5rem, calc((100% - 53.7rem) / 2)); }
 </style>
 <div class="flex h-full flex-col">
   <header class="flex items-center justify-between gap-3 border-b border-slate-800 px-4 py-3">
@@ -47,38 +50,35 @@
 
   <div class="flex flex-1 min-h-0">
 
-    <!-- Page-local left nav, same layout as stats.html. Extensible: a future cluster option is a new data-view
-         button here plus a matching #cluster-view-<name> panel in <main> (see cluster.js: CLUSTER_VIEWS). -->
+    <!-- Page-local left nav, same layout as stats.html, a tree by product: the Matricxon cluster, then several
+         pAIring servers. A new option is an entry in `tree` plus a #cluster-view-<name> panel (cluster.js: CLUSTER_VIEWS). -->
     <aside class="hidden md:flex w-64 shrink-0 flex-col border-r border-slate-800 bg-slate-900/60">
-      <nav class="flex-1 overflow-y-auto px-2 py-3 space-y-1">
-        <button type="button" data-view="overview"
-          class="cluster-nav-btn w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors">
-          Cluster mode
-        </button>
-        <button type="button" data-view="nodes"
-          class="cluster-nav-btn w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors">
-          Nodes
-        </button>
-        <button type="button" data-view="add"
-          class="cluster-nav-btn w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors">
-          Add nodes
-        </button>
-        <button type="button" data-view="hosts"
-          class="cluster-nav-btn w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors">
-          Cluster host names
-        </button>
-        <button type="button" data-view="outside"
-          class="cluster-nav-btn w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors">
-          Non-cluster hosts
-        </button>
+      <nav class="flex-1 overflow-y-auto px-2 py-3 space-y-2">
+        {% set tree = [("Matricxon", [("overview", "Cluster mode"), ("nodes", "Nodes"), ("add", "Add nodes"), ("hosts", "Cluster host names"), ("outside", "Non-cluster hosts"), ("update", "Update nodes")]), ("pAIring", [("servers", "Servers")])] %}
+        {% for group, views in tree %}
+        <details open class="group">
+          <summary class="flex cursor-pointer list-none items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm font-semibold text-slate-200 hover:bg-slate-800 [&::-webkit-details-marker]:hidden">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 shrink-0 text-slate-500 transition-transform group-open:rotate-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg>
+            {{ group }}
+          </summary>
+          <div class="ml-[0.9rem] mt-1 space-y-1 border-l border-slate-700 pl-2">
+            {% for view, label in views %}
+            <button type="button" data-view="{{ view }}"
+              class="cluster-nav-btn w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors">
+              {{ label }}
+            </button>
+            {% endfor %}
+          </div>
+        </details>
+        {% endfor %}
       </nav>
     </aside>
 
     <main class="relative flex flex-1 flex-col min-w-0 overflow-hidden">
-      <div id="cluster-view-overview" class="flex-1 overflow-y-auto p-6 space-y-6">
+      <div id="cluster-view-overview" class="cluster-page flex-1 overflow-y-auto py-6 space-y-6">
         <div>
           <h2 class="text-lg font-semibold text-slate-100 mb-1">Cluster mode</h2>
-          <p class="text-xs text-slate-500 max-w-2xl">
+          <p class="text-xs text-slate-500">
             Several Matricxon nodes working together on shared storage. A cluster is one existing Matricxon (the
             seed, with its chats and users) that grows with <em>fresh</em> installs only &mdash; two populated
             nodes are never merged.
@@ -86,7 +86,7 @@
             set on your side first.</span>
           </p>
         </div>
-        <div class="flex items-center justify-between gap-4 rounded-lg border border-slate-800 bg-slate-900 px-4 py-3 max-w-2xl">
+        <div class="flex items-center justify-between gap-4 rounded-lg border border-slate-800 bg-slate-900 px-4 py-3">
           <div>
             <p class="text-sm font-medium text-slate-100">Cluster mode</p>
             <p id="cluster-switch-note" class="text-xs text-slate-500">Off &mdash; Matricxon runs standalone.</p>
@@ -98,9 +98,9 @@
           </button>
         </div>
         <p id="cluster-switch-error"
-          class="hidden max-w-2xl rounded-lg border border-red-800/60 bg-red-900/20 px-4 py-2 text-xs text-red-200"></p>
+          class="hidden rounded-lg border border-red-800/60 bg-red-900/20 px-4 py-2 text-xs text-red-200"></p>
         <!-- The cluster's own id (cluster_join.js): shown once the cluster has one; a reset makes a new one. -->
-        <div id="cluster-id-box" class="hidden flex items-center justify-between gap-4 rounded-lg border border-slate-800 bg-slate-900 px-4 py-3 max-w-2xl">
+        <div id="cluster-id-box" class="hidden flex items-center justify-between gap-4 rounded-lg border border-slate-800 bg-slate-900 px-4 py-3">
           <div class="min-w-0">
             <p class="text-sm font-medium text-slate-100">Cluster id</p>
             <p id="cluster-id" class="truncate font-mono text-xs text-slate-400"></p>
@@ -108,25 +108,25 @@
           <button id="cluster-id-copy" type="button" class="shrink-0 rounded-lg border border-slate-700 px-3 py-1 text-xs text-slate-300 hover:bg-slate-800">Copy</button>
         </div>
         <p id="cluster-restart-note"
-          class="hidden max-w-2xl rounded-lg border border-amber-700/60 bg-amber-900/20 px-4 py-2 text-xs text-amber-200">
+          class="hidden rounded-lg border border-amber-700/60 bg-amber-900/20 px-4 py-2 text-xs text-amber-200">
           Saved. Matricxon is restarting itself to apply it; this clears in a few seconds.
         </p>
         <p id="cluster-message"
-          class="hidden max-w-2xl rounded-lg border border-red-800/60 bg-red-900/20 px-4 py-2 text-xs text-red-200"></p>
+          class="hidden rounded-lg border border-red-800/60 bg-red-900/20 px-4 py-2 text-xs text-red-200"></p>
         <p id="cluster-quorum"
-          class="hidden max-w-2xl rounded-lg border border-red-800/60 bg-red-900/20 px-4 py-2 text-xs text-red-200">
+          class="hidden rounded-lg border border-red-800/60 bg-red-900/20 px-4 py-2 text-xs text-red-200">
           No quorum: a majority of the voters is not reachable. Adding, removing and activating nodes, the shared
           folders, the cluster timers and the saved-chat-cache limits are locked, and so are changes to who pulls models. Chats keep working.
           All resume when enough voters are back.
         </p>
-        <p id="cluster-unsupported" class="hidden max-w-2xl text-xs text-warning-400 bg-slate-900 border border-warning-500/50 rounded-lg px-3 py-2">
+        <p id="cluster-unsupported" class="hidden text-xs text-warning-400 bg-slate-900 border border-warning-500/50 rounded-lg px-3 py-2">
           <span data-unsupported="off">Cluster mode is a Matricxon feature &mdash; switch the active engine to Matricxon first.</span>
           <span data-unsupported="paused" class="hidden">Paused: another engine is active, so chats don't use the
             cluster. Cluster mode stays on and the nodes keep running; switch the active engine back to Matricxon
             (Admin settings &gt; Inference engines) to manage it again.</span>
         </p>
         <!-- Another pAIring joins a cluster that already exists: the address of any of its nodes and its id. -->
-        <div id="cluster-join" class="hidden max-w-2xl space-y-3 rounded-lg border border-slate-800 bg-slate-900 px-4 py-3">
+        <div id="cluster-join" class="hidden space-y-3 rounded-lg border border-slate-800 bg-slate-900 px-4 py-3">
           <p class="text-sm font-medium text-slate-100">Join an existing cluster</p>
           <p class="text-xs text-slate-500">Enter the address of any node of the cluster and the cluster id (shown on the Cluster page of the pAIring that set it up). The node must report that id.</p>
           <input id="cluster-join-address" type="text" autocomplete="off" placeholder="http://10.0.0.5:8420"
@@ -140,14 +140,14 @@
             <span id="cluster-join-note" class="text-xs text-slate-400"></span>
           </div>
         </div>
-        <div id="cluster-create-head" class="hidden max-w-2xl">
+        <div id="cluster-create-head" class="hidden">
           <h3 class="text-base font-semibold text-slate-100">Create a new cluster</h3>
           <p class="text-xs text-slate-500">Two steps: choose the first node and the shared folders, then optionally protect the nodes with an admin secret. When the first node's checks are green, turn <strong>Cluster mode</strong> on at the top.</p>
         </div>
 
         <!-- Shared folders: saved into the Matricxon config and its .env; nothing is moved or copied here, that
              is the admin's step (see the checklist). Blank = Matricxon's own default folder. -->
-        <form id="cluster-paths-form" class="max-w-2xl space-y-3 rounded-lg border border-slate-800 bg-slate-900 px-4 py-3">
+        <form id="cluster-paths-form" class="space-y-3 rounded-lg border border-slate-800 bg-slate-900 px-4 py-3">
           <div>
             <p id="cluster-paths-title" class="text-sm font-medium text-slate-100">First node and shared folders</p>
             <p class="text-xs text-slate-500">
@@ -195,7 +195,7 @@
         </form>
         <!-- Admin secret (cluster.js): pAIring signs its admin calls to every node with it; a node with a secret
              refuses unsigned reset/provision/voter/pull/delete calls. Needs every node to answer. -->
-        <form id="cluster-secret-form" class="max-w-2xl space-y-2 rounded-lg border border-slate-800 bg-slate-900 px-4 py-3">
+        <form id="cluster-secret-form" class="space-y-2 rounded-lg border border-slate-800 bg-slate-900 px-4 py-3">
           <p class="text-sm font-medium text-slate-100"><span id="cluster-step2" class="hidden">Step 2 (optional) &middot; </span>Admin secret
             <span id="cluster-secret-state" class="ml-2 text-xs font-normal text-slate-500"></span></p>
           <p class="text-xs text-slate-500">
@@ -226,7 +226,7 @@
 
         <!-- Setting up, first node saved (cluster_init.js): what to do while its card turns green. Same look as the
              reset box below. -->
-        <div id="cluster-first-ready" class="hidden max-w-2xl space-y-1 rounded-lg border border-red-900/60 bg-slate-900 px-4 py-3">
+        <div id="cluster-first-ready" class="hidden space-y-1 rounded-lg border border-red-900/60 bg-slate-900 px-4 py-3">
           <p class="text-sm font-medium text-slate-100">Next: turn cluster mode on</p>
           <p class="text-xs text-slate-400">
             Please wait a few seconds until every check of <span id="cluster-first-ready-host" class="font-mono"></span>
@@ -236,7 +236,7 @@
 
         <div id="cluster-hosts" class="space-y-6"></div>
         <p id="cluster-error" class="hidden text-sm text-red-400"></p>
-        <div id="cluster-reset" class="hidden max-w-2xl space-y-2 rounded-lg border border-red-900/60 bg-slate-900 px-4 py-3">
+        <div id="cluster-reset" class="hidden space-y-2 rounded-lg border border-red-900/60 bg-slate-900 px-4 py-3">
           <p class="text-sm font-medium text-slate-100">Reset cluster</p>
           <p class="text-xs text-slate-500">
             Every node forgets the cluster (its setup, history and node identity) and its own saved chat caches, and
@@ -315,10 +315,10 @@
 
       <!-- Cluster host names: one node's address book (who it reaches, where), paged and searchable. A debugging aid that
            also takes the lists too long for the node panel (cluster_hosts.js, GET /api/cluster/peers). -->
-      <div id="cluster-view-hosts" class="hidden flex-1 overflow-y-auto p-6 space-y-4">
+      <div id="cluster-view-hosts" class="cluster-page hidden flex-1 overflow-y-auto py-6 space-y-4">
         <div>
           <h2 class="text-lg font-semibold text-slate-100 mb-1">Cluster host names</h2>
-          <p class="text-xs text-slate-500 max-w-2xl">
+          <p class="text-xs text-slate-500">
             Every peer one node knows how to reach, and the address it uses. Each node has its own list; pick the
             node. Voters come first. Useful when nodes cannot see each other.
           </p>
@@ -351,23 +351,23 @@
       {% include "_cluster_outside_hosts.html" %}
 
       <!-- Add nodes: the form that adds a fresh Matricxon to the cluster. -->
-      <div id="cluster-view-add" class="hidden flex-1 overflow-y-auto p-6 space-y-6">
+      <div id="cluster-view-add" class="cluster-page hidden flex-1 overflow-y-auto py-6 space-y-6">
         <div>
           <h2 class="text-lg font-semibold text-slate-100 mb-1">Add nodes</h2>
-          <p class="text-xs text-slate-500 max-w-2xl">
+          <p class="text-xs text-slate-500">
             Bring another Matricxon into the cluster. It must be a fresh install; pAIring checks that, gives it the
             cluster's settings, and it joins. Watch it appear on the Nodes map.
           </p>
         </div>
         <p id="cluster-add-quorum"
-          class="hidden max-w-2xl rounded-lg border border-red-800/60 bg-red-900/20 px-4 py-2 text-xs text-red-200">
+          class="hidden rounded-lg border border-red-800/60 bg-red-900/20 px-4 py-2 text-xs text-red-200">
           No quorum: a new node becomes a voter, which needs a majority of the voters. Adding is locked until the
           cluster has one again.
         </p>
         <p id="cluster-add-off" class="hidden text-sm text-slate-400">Turn cluster mode on first (Cluster mode).</p>
         <!-- Add a node: the address of a FRESH Matricxon install. It is checked first; Add then pushes the cluster
              configuration to it (role, shared folders), it restarts itself, and it joins the host pool. -->
-        <form id="cluster-node-form" class="max-w-2xl space-y-3 rounded-lg border border-slate-800 bg-slate-900 px-4 py-3">
+        <form id="cluster-node-form" class="space-y-3 rounded-lg border border-slate-800 bg-slate-900 px-4 py-3">
           <div>
             <p class="text-sm font-medium text-slate-100">Add a node</p>
             <p class="text-xs text-slate-500">
@@ -410,6 +410,9 @@
           </div>
         </form>
       </div>
+
+      {% include "_cluster_update_view.html" %}
+      {% include "_cluster_servers_view.html" %}
     </main>
   </div>
 </div>
@@ -437,5 +440,10 @@
 <script src="/static/js/cluster_node_reset.js?v={{ static_version }}"></script>
 <script src="/static/js/cluster_cache.js?v={{ static_version }}"></script>
 <script src="/static/js/cluster.js?v={{ static_version }}"></script>
+<script src="/static/js/settings_servers_rollout.js?v={{ static_version }}"></script>
+<script src="/static/js/settings_servers.js?v={{ static_version }}"></script>
+<script src="/static/js/settings_servers_checks.js?v={{ static_version }}"></script>
+<script src="/static/js/cluster_update.js?v={{ static_version }}"></script>
+<script src="/static/js/settings_update_source.js?v={{ static_version }}"></script>
 <script src="/static/js/settings_matricxon_api_key.js?v={{ static_version }}"></script>
 {% endblock %}

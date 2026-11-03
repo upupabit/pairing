@@ -20,6 +20,7 @@ from app.services import document_sync, document_upload
 from app.services.auth_service import get_current_user, require_admin
 from app.services.document_embedding_status import DocumentEmbeddingStatus
 from app.services.document_ingest import MAX_UPLOAD_FILES
+from app.services.upload_jobs import upload_jobs
 
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
@@ -94,14 +95,16 @@ async def upload_documents(
 
 
 @router.get("/upload/{job_id}", response_model=UploadJobStatus)
-def get_upload_job(job_id: str, user: User = Depends(get_current_user)):
+async def get_upload_job(
+    job_id: str, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
+) -> UploadJobStatus:
     """Polled every second or two while a job runs (settings.js); a side-effect-free snapshot.
-    Ownership check: document_upload.get_job_for_user.
+    Ownership check: upload_jobs.get_for_user.
     """
-    job = document_upload.get_job_for_user(job_id, user)
+    job = await upload_jobs.get_for_user(db, job_id, user)
     if job is None:
         raise HTTPException(status_code=404, detail="Unknown or expired upload job.")
-    return document_upload.job_status(job_id, job)
+    return upload_jobs.status(job)
 
 
 @router.delete("/{document_id}", response_model=OkResponse)

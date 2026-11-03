@@ -1,9 +1,9 @@
 """The login account model (logic: app/services/auth_service.py)."""
 
-from sqlalchemy import Column, DateTime, String
+from sqlalchemy import Column, String
 
 from app.database import Base
-from app.models._base import ID_LEN, new_id, utcnow
+from app.models._base import ID_LEN, Timestamp, new_id, utcnow
 
 DEFAULT_TIMEZONE = "UTC"
 
@@ -32,7 +32,7 @@ class User(Base):
     # IANA timezone (e.g. "Asia/Jerusalem") for message timestamps (app/static/js/timezone.js). Starts as
     # DEFAULT_TIMEZONE; changed in Settings > Account.
     timezone = Column(String(64), nullable=False, default=DEFAULT_TIMEZONE, server_default=DEFAULT_TIMEZONE)
-    created_at = Column(DateTime, default=utcnow)
+    created_at = Column(Timestamp, default=utcnow)
 
     @property
     def avatar_url(self) -> str | None:

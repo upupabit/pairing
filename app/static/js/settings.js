@@ -1354,7 +1354,7 @@ async function uploadFiles(formData, onUpdate) {
     }
   }
 
-  if (!job.result) throw new Error("Upload job finished without a result.");
+  if (!job.result) throw new Error(job.error || "Upload job finished without a result.");
   return job.result;
 }
 
@@ -1760,7 +1760,7 @@ if (dbTypeSelect) {
   dbTypeSelect.addEventListener("change", () => showDbFieldsForType(dbTypeSelect.value));
 }
 
-async function loadDbConfigIntoEditor() {
+async function loadDbConfigIntoEditor({ keepStatus = false } = {}) {
   if (!dbTypeSelect) return;
   const cfg = await api("/api/settings/database");
   dbTypeSelect.value = cfg.db_type;
@@ -1780,7 +1780,7 @@ async function loadDbConfigIntoEditor() {
     document.getElementById("db-mysql-database").value = cfg.mysql.database;
   }
   dbRestartBannerEl.classList.toggle("hidden", !cfg.restart_required);
-  dbStatusEl.textContent = "";
+  if (!keepStatus) dbStatusEl.textContent = ""; // after a save its result stays on screen
 }
 
 // Mirrors DbConfigUpdate (app/schemas/db_config.py): the same body for save/test-connection/build-schema, so the three
@@ -1818,11 +1818,20 @@ function wireDbAction(buttonId, path, { onSuccess, confirmMessage } = {}) {
   const btn = document.getElementById(buttonId);
   if (!btn) return;
   btn.addEventListener("click", async () => {
-    if (confirmMessage && !confirm(confirmMessage)) return;
+    const message = typeof confirmMessage === "function" ? confirmMessage() : confirmMessage;
+    if (message && !confirm(message)) return;
+    // "Copy my data" runs as a job with its own progress bar (settings_db_copy.js).
+    if (path === "/api/settings/database" && document.getElementById("db-copy-data").checked) {
+      setDbStatus("", "muted");
+      await dbCopyPanel.run(readDbConfigForm(), btn);
+      return;
+    }
     btn.disabled = true;
     setDbStatus("Working…", "muted");
     try {
-      const result = await api(path, { method: path === "/api/settings/database" ? "PUT" : "POST", body: JSON.stringify(readDbConfigForm()) });
+      const isSave = path === "/api/settings/database";
+      const body = { ...readDbConfigForm(), copy_data: isSave && document.getElementById("db-copy-data").checked };
+      const result = await api(path, { method: isSave ? "PUT" : "POST", body: JSON.stringify(body) });
       setDbStatus(result.message, result.ok ? "ok" : "error");
       if (result.ok && onSuccess) onSuccess();
     } catch (err) {
@@ -1836,11 +1845,13 @@ function wireDbAction(buttonId, path, { onSuccess, confirmMessage } = {}) {
 wireDbAction("db-test-btn", "/api/settings/database/test-connection");
 wireDbAction("db-build-schema-btn", "/api/settings/database/build-schema");
 wireDbAction("db-save-btn", "/api/settings/database", {
-  onSuccess: loadDbConfigIntoEditor,
-  confirmMessage:
-    "Switching does not move anything from the current database — every existing conversation, message, " +
-    "channel, non-admin user, document, and admin setting stays behind and won't be visible here anymore. " +
-    "The new database only gets fresh starter data. Continue?",
+  onSuccess: () => loadDbConfigIntoEditor({ keepStatus: true }),
+  confirmMessage: () =>
+    document.getElementById("db-copy-data").checked
+      ? "Copy all data from the current database into the new one, then switch to it? The new database must be empty."
+      : "Switching does not move anything from the current database — every existing conversation, message, " +
+        "channel, non-admin user, document, and admin setting stays behind and won't be visible here anymore. " +
+        "The new database only gets fresh starter data. Continue?",
 });
 
 // Local instances (admin only)
@@ -2166,7 +2177,7 @@ function collectServerConfig(server, section) {
     mode: section.querySelector('[data-field="mode"]').value,
     remote_hosts: collectRemoteHosts(section),
     // Empty means "use the built-in pinned default" (as LlamaCppServerConfig in app.schemas.llamacpp_server_config).
-    install_repo: section.querySelector('[data-field="install_repo"]')?.value.trim() || null,
+    install_repo: installRepoValue(section),
     install_version: section.querySelector('[data-field="install_version"]')?.value.trim() || null,
   };
   // Local-mode-only fields live in inputs that stay in the DOM, hidden (applyServerVisibility), after switching to
@@ -2264,12 +2275,23 @@ async function populateSdcppModels(section, savedPath) {
   hint.classList.toggle("hidden", models.length > 0 || !!savedPath);
 }
 
+// The repo field's value, or null for the default (shown in the field for Matricxon, see renderInstallSource).
+function installRepoValue(section) {
+  const input = section.querySelector('[data-field="install_repo"]');
+  const value = input?.value.trim();
+  return value && value !== input.dataset.default ? value : null;
+}
+
 function renderInstallSource(section, config, defaults) {
   const repoInput = section.querySelector('[data-field="install_repo"]');
   const versionInput = section.querySelector('[data-field="install_version"]');
+  // Matricxon shows its default repo in the field (like Admin settings > Update); collectServerConfig saves it as
+  // "default" again, so a new default in .env (MATRICXON_GITHUB_REPO) still applies.
+  const showDefault = section.dataset.server === "matricxon";
   if (repoInput) {
-    repoInput.value = config.install_repo ?? "";
+    repoInput.value = config.install_repo ?? (showDefault ? defaults.repo : "");
     repoInput.placeholder = defaults.repo;
+    repoInput.dataset.default = defaults.repo;
   }
   if (versionInput) {
     versionInput.value = config.install_version ?? "";

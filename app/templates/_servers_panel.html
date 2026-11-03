@@ -1,0 +1,37 @@
+<!-- Cluster > Servers > Server list: every pAIring server on this database and "Update all servers". Wired by app/static/js/settings_servers.js to /api/settings/servers (app/routers/servers_admin.py). -->
+<section class="space-y-3" id="servers-panel">
+  <div class="flex items-center justify-between gap-3">
+    <h2 class="text-sm font-semibold text-slate-200">Server list</h2>
+    <div class="flex items-center gap-2">
+      <button type="button" data-action="cancel"
+        class="hidden rounded-lg border border-slate-700 px-3 py-1.5 text-sm text-slate-300 hover:border-slate-500 hover:text-slate-100 transition-colors">Cancel</button>
+      <button type="button" data-action="update-all"
+        class="rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">Update all servers</button>
+    </div>
+  </div>
+  <p data-field="intro" class="text-xs text-slate-500 -mt-2">
+    Every pAIring server using this database. "Update all servers" updates pAIring from GitHub one server at a
+    time and restarts it, so the others keep serving. It stops at the first error.
+  </p>
+  {% from "_update_source.html" import update_source %}
+  <div data-field="source-wrap">{{ update_source("pairing", "pAIring") }}</div>
+  <p data-field="single" class="hidden rounded-md border border-amber-700/50 bg-amber-900/20 px-3 py-2 text-xs text-amber-200">This server uses SQLite, which only one machine can use, so
+    these are its own processes. Update it on the Update tab. With MySQL, every server on the database shows here.</p>
+  <!-- "Update all servers" progress, drawn by settings_servers_rollout.js. -->
+  <div data-field="rollout" class="hidden space-y-3 rounded-lg border border-slate-700 bg-slate-900 p-4"></div>
+  <p data-field="error" class="hidden text-xs text-red-400"></p>
+  <div class="overflow-x-auto rounded-lg border border-slate-800">
+    <table class="w-full text-xs">
+      <thead class="bg-slate-900 text-slate-400">
+        <tr>
+          <th class="px-3 py-2 text-left font-medium">Server</th>
+          <th class="px-3 py-2 text-left font-medium">Version</th>
+          <th class="px-3 py-2 text-left font-medium">Status</th>
+          <th class="px-3 py-2 text-left font-medium">Update</th>
+          <th class="px-3 py-2"></th>
+        </tr>
+      </thead>
+      <tbody data-field="rows" class="divide-y divide-slate-800 text-slate-300"></tbody>
+    </table>
+  </div>
+</section>

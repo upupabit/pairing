@@ -10,8 +10,10 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from app import database
 from app.models import User
 from app.schemas import DbActionResult, DbConfig, DbConfigUpdate, InternalSwitchDatabaseRequest, OkResponse
+from app.schemas.db_config import DbCopyStatus
 from app.services import db_config_service, db_config_url
 from app.services.auth_service import require_admin
+from app.services.db_copy_job import CopyJobBusyError, database_copy_job
 
 router = APIRouter(prefix="/api/settings/database", tags=["database"])
 
@@ -24,6 +26,20 @@ async def get_database_config(_admin: User = Depends(require_admin)) -> DbConfig
 @router.put("", response_model=DbActionResult)
 async def save_database_config(update: DbConfigUpdate, _admin: User = Depends(require_admin)) -> DbActionResult:
     return await db_config_service.save_and_apply(update)
+
+
+@router.post("/copy", response_model=DbCopyStatus)
+async def start_copy(update: DbConfigUpdate, _admin: User = Depends(require_admin)) -> DbCopyStatus:
+    """Copies the current data into `update`'s database, then switches to it; poll GET /copy for progress."""
+    try:
+        return database_copy_job.start(update)
+    except CopyJobBusyError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+
+
+@router.get("/copy", response_model=DbCopyStatus)
+async def copy_status(_admin: User = Depends(require_admin)) -> DbCopyStatus:
+    return database_copy_job.status()
 
 
 @router.post("/test-connection", response_model=DbActionResult)

@@ -54,9 +54,16 @@ cp .env.example .env   # then set a real SECRET_KEY — see README.md
 
 Or just run `bash scripts/install.sh` (Linux/macOS) — same steps with extra validations.
 
-Open **http://localhost:8000**, log in with the starter account, and
-**change that password immediately** (Settings → Users) — whether
-you're about to invite three friends or roll this out to a whole team.
+Open **http://localhost:8000** and log in with the starter account, which
+pAIring creates the first time it starts:
+
+| Username | Password |
+| --- | --- |
+| `admin` | `admin` |
+
+**Change that password immediately** (Settings → Account → Update password) —
+whether you're about to invite three friends or roll this out to a whole team.
+Other people's accounts are created under Admin settings → Users.
 
 Configure it as a system service: `scripts/pairing.service` is a
 systemd unit template (Linux) — edit a couple of values and

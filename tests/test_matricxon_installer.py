@@ -366,3 +366,23 @@ async def test_run_streamed_kills_the_subprocess_if_torn_down_early(monkeypatch)
     await gen.aclose()
 
     assert fake_process.killed is True
+
+
+@pytest.mark.asyncio
+async def test_a_private_repo_clone_gets_the_token_through_git_s_environment_only(monkeypatch, tmp_path):
+    monkeypatch.setattr(matricxon_installer, "EXTERNAL_DIR", tmp_path)
+    monkeypatch.setattr(shutil, "which", lambda _name: "/usr/bin/git")
+    clone = {}
+
+    async def fake_create_subprocess_exec(*argv, **kwargs):
+        if argv[0] == "git":
+            clone.update(argv=argv, env=kwargs.get("env") or {})
+        return await _fake_clone_and_venv(tmp_path)(*argv, **kwargs)
+
+    monkeypatch.setattr(matricxon_installer.asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+
+    events = [e async for e in matricxon_installer.install_stream("partner/private", "main", token="tok-123")]
+
+    assert events[-1]["done"] is True
+    assert clone["env"]["GIT_CONFIG_KEY_0"] == "http.https://github.com/partner/private.git.extraHeader"
+    assert not any("tok-123" in part for part in clone["argv"])

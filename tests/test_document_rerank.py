@@ -125,6 +125,7 @@ class _NullCtx:
 @pytest.mark.asyncio
 async def test_matricxon_client_returns_scores_in_input_order(monkeypatch):
     calls: list = []
+
     async def on_one_host(make_call, retry_on=()):
         return await make_call("http://mx:8420")
 

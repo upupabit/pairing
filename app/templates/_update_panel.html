@@ -17,6 +17,7 @@
     <span data-field="loading-text">Checking for updates…</span>
   </p>
 
+  {% from "_update_source.html" import update_source %}
   {% for key, title in [("pairing", "pAIring"), ("matricxon", "Matricxon")] %}
   <div data-update="{{ key }}" class="hidden rounded-lg bg-slate-900 border border-slate-800 px-4 py-3 space-y-3">
     <div class="flex items-start justify-between gap-3">
@@ -30,6 +31,7 @@
       <button type="button" data-action="update"
         class="shrink-0 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">Update</button>
     </div>
+    {{ update_source(key, title) }}
     <p data-field="note" class="hidden text-xs text-warning-400"></p>
     <ul data-field="changes" class="hidden max-h-40 overflow-y-auto space-y-0.5 text-[11px] font-mono text-slate-400"></ul>
     <div data-field="install-progress-panel" class="hidden space-y-2 rounded-md bg-slate-950 border border-slate-800 px-3 py-3">

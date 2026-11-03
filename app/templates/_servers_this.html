@@ -1,0 +1,38 @@
+<!-- Cluster > Servers > This server: its shared folders and SECRET_KEY, saved into its own .env. Wired by app/static/js/settings_servers_checks.js to /api/settings/servers/this (app/services/this_server_settings.py). -->
+<section class="space-y-3" id="servers-this">
+  <h2 class="text-sm font-semibold text-slate-200">This server <span data-field="server-id" class="ml-1 font-mono text-xs font-normal text-slate-400"></span></h2>
+  <p class="text-xs text-slate-500 -mt-2">
+    Saved into this server's own <span class="font-mono">.env</span> and used after a restart. Every server has its
+    own, so do the same on each of them (a load balancer decides which one you are on).
+  </p>
+  <div class="rounded-lg bg-slate-900 border border-slate-800 px-4 py-3 space-y-3">
+    <div class="space-y-1.5">
+      <label class="block text-xs font-medium text-slate-400">Shared folder <span class="font-normal text-slate-500">(optional: fills the 4 folders below)</span></label>
+      <div class="flex gap-2">
+        <input data-field="base" type="text" spellcheck="false" placeholder="/mnt/pairing"
+          class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 font-mono text-xs focus:outline-none focus:border-brand-500">
+        <button type="button" data-action="fill"
+          class="shrink-0 rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-800 transition-colors">Fill the 4 folders</button>
+      </div>
+    </div>
+    <div data-field="folder-inputs" class="space-y-2 border-t border-slate-800 pt-3"></div>
+    <p class="text-[11px] text-slate-500">Existing files are not moved. Copy the current folders' contents into the new ones before restarting, or chats lose their attachments and pictures.</p>
+    <div class="space-y-1.5 border-t border-slate-800 pt-3">
+      <label class="block text-xs font-medium text-slate-400">SECRET_KEY <span data-field="secret-state" class="font-normal text-slate-500"></span></label>
+      <div class="flex gap-2">
+        <input data-field="secret" type="text" autocomplete="off" spellcheck="false" placeholder="Leave empty to keep the current key"
+          class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 font-mono text-xs focus:outline-none focus:border-brand-500">
+        <button type="button" data-action="generate"
+          class="shrink-0 rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-200 hover:bg-slate-800 transition-colors">Generate</button>
+      </div>
+      <p class="text-[11px] text-slate-500">The current key is never shown. To share one key: generate it here, copy it, and paste the same key on every other server. Changing it logs everyone out once.</p>
+    </div>
+    <div class="flex items-center gap-3 border-t border-slate-800 pt-3">
+      <button type="button" data-action="save"
+        class="rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-500 transition-colors">Save</button>
+      <button type="button" data-action="restart"
+        class="hidden rounded-lg border border-brand-500/60 px-4 py-2 text-sm text-slate-200 hover:bg-slate-800 transition-colors">Restart this server</button>
+      <span data-field="status" class="text-xs text-slate-500"></span>
+    </div>
+  </div>
+</section>

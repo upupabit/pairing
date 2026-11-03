@@ -231,7 +231,7 @@ echo
 echo "pAIring is installed at: $APP_DIR"
 echo "Log in with the starter admin account: admin / admin — change that"
 echo "password before this server is reachable by anyone else (Settings >"
-echo "System > Users)."
+echo "Account > Update password)."
 
 START_NOW=false
 if [ "$INTERACTIVE" = true ]; then

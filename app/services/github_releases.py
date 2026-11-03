@@ -23,9 +23,9 @@ _CACHE_TTL_SECONDS = 600.0
 _cache: dict[str, tuple[float, list[str]]] = {}
 
 
-async def list_tags(repo: str) -> list[str]:
+async def list_tags(repo: str, token: str | None = None) -> list[str]:
     """Up to the most recent `_PER_PAGE` tag names for `repo` (e.g. "ggml-org/llama.cpp"), newest first (GitHub's
-    /tags order). Empty for a blank repo or any failure.
+    /tags order). Empty for a blank repo or any failure. `token`: for a private repo.
     """
     if not repo:
         return []
@@ -38,7 +38,10 @@ async def list_tags(repo: str) -> list[str]:
             resp = await client.get(
                 f"https://api.github.com/repos/{repo}/tags",
                 params={"per_page": _PER_PAGE},
-                headers={"Accept": "application/vnd.github+json"},
+                headers={
+                    "Accept": "application/vnd.github+json",
+                    **({"Authorization": f"Bearer {token}"} if token else {}),
+                },
             )
             resp.raise_for_status()
             tags = [entry["name"] for entry in resp.json()]

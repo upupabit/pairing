@@ -1,10 +1,10 @@
 """Document and Chunk models for the RAG knowledge base (logic: app/services/document_service.py)."""
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, LargeBinary, String, Text
+from sqlalchemy import Column, ForeignKey, Integer, LargeBinary, String, Text
 from sqlalchemy.orm import relationship
 
 from app.database import Base
-from app.models._base import ID_LEN, new_id, utcnow
+from app.models._base import ID_LEN, Timestamp, new_id, utcnow
 
 
 class Document(Base):
@@ -30,7 +30,7 @@ class Document(Base):
     # The embedding model its chunks were embedded with; NULL = embedded before this was recorded. Search uses only
     # chunks from the current model (document_retrieval), and sync re-embeds the others (document_sync).
     embedding_model = Column(String(255), nullable=True)
-    created_at = Column(DateTime, default=utcnow)
+    created_at = Column(Timestamp, default=utcnow)
 
     # lazy="selectin" (see Conversation.messages); cascade delete and document.chunks rely on it.
     chunks = relationship(

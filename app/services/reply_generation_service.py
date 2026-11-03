@@ -18,6 +18,7 @@ from collections.abc import AsyncIterator
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import SERVER_ID
 from app.database import AsyncSessionLocal
 from app.models import Conversation, Message
 from app.models._base import utcnow
@@ -79,6 +80,7 @@ async def stream_reply(
         content="",
         status="streaming",
         reply_to_message_id=reply_to_message_id,
+        owner_server=SERVER_ID,
     )
     db.add(message)
     await db.commit()

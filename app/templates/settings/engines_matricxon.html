@@ -51,6 +51,17 @@
                       class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
                     <datalist id="matricxon-version-options" data-field="install-version-datalist"></datalist>
                   </div>
+                  <!-- Matricxon's access token (settings_engine_token.js): the same one updates use. -->
+                  <div data-engine-token="matricxon">
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Access token <span class="font-normal text-slate-500">(only for a private repo)</span></label>
+                    <input data-field="engine-token" type="password" autocomplete="new-password" spellcheck="false"
+                      class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 font-mono text-sm focus:outline-none focus:border-brand-500">
+                    <p class="mt-1 text-[11px] text-slate-500">
+                      A private repo needs one to download: on GitHub, Settings → Developer settings → Personal access
+                      tokens, with read access to that repo. Stored encrypted and never shown again; updates use it too.
+                      <button type="button" data-action="remove-engine-token" class="hidden underline underline-offset-2 hover:text-slate-300">Remove the token</button>
+                    </p>
+                  </div>
                   <div class="flex items-center gap-3">
                     <button type="button" data-action="save-install-source"
                       class="rounded-md border border-slate-700 px-2.5 py-1 text-xs text-slate-200 hover:bg-slate-800 transition-colors">

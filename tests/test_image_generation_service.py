@@ -50,8 +50,8 @@ async def test_create_job_keeps_an_explicit_non_negative_seed(db, user, monkeypa
 
 
 @pytest.mark.asyncio
-async def test_run_job_returns_quietly_if_the_row_was_deleted():
-    # No row exists for this id: must not raise.
+async def test_run_job_returns_quietly_if_the_row_was_deleted(db):
+    # No row exists for this id: must not raise. `db` points the job's session at the test database.
     await image_generation_service._run_job("does-not-exist")
 
 

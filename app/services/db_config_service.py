@@ -16,6 +16,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from app import database
 from app.config import APP_NAME, BASE_DIR
 from app.database import _async_url, _run_migrations, switch_database
 from app.schemas import DbActionResult, DbConfigUpdate, SqliteParams
@@ -26,6 +27,7 @@ from app.services.db_config_url import (
     _short_error,
     _write_env_database_url,
 )
+from app.services.db_data_copy import CopyProgress, DatabaseCopier, DataCopyError
 from app.services.db_schema_check import IncompatibleSchemaError, classify_schema, connection_result_with_schema_status
 from app.services.instance_db_broadcast import broadcast_database_switch
 from app.services.note_service import seed_default_notes
@@ -66,7 +68,7 @@ async def _ensure_schema_and_seed(url: str, update: DbConfigUpdate) -> None:
     await _seed_defaults(url)
 
 
-async def save_and_apply(update: DbConfigUpdate) -> DbActionResult:
+async def save_and_apply(update: DbConfigUpdate, progress: CopyProgress | None = None) -> DbActionResult:
     """Saves and switches the live app over, no restart. The schema/seed step and live switch must both succeed
     before .env is touched, so a failure leaves the app and .env as they were.
 
@@ -80,10 +82,16 @@ async def save_and_apply(update: DbConfigUpdate) -> DbActionResult:
     except ValueError as exc:
         return DbActionResult(ok=False, message=str(exc))
 
+    copied = None
+    progress = progress or CopyProgress()
     try:
+        progress.stage = "Building the schema"
         await _ensure_schema_and_seed(url, update)
+        if update.copy_data:
+            copied = await asyncio.to_thread(DatabaseCopier(database.live_database_url, url).copy, progress)
+        progress.stage, progress.table = "Switching to the new database", None
         await switch_database(url)
-    except IncompatibleSchemaError as exc:
+    except (IncompatibleSchemaError, DataCopyError) as exc:
         return DbActionResult(ok=False, message=f"{exc} Nothing changed.")
     except ModuleNotFoundError as exc:
         return DbActionResult(
@@ -103,6 +111,8 @@ async def save_and_apply(update: DbConfigUpdate) -> DbActionResult:
     # answer, since the switch that matters (this process) succeeded.
     failures = await broadcast_database_switch(url)
     message = f"Saved and switched — {APP_NAME} is now running on this database. You'll need to log in again."
+    if copied is not None:
+        message = f"Copied {copied:,} rows and switched — {APP_NAME} is now running on this database, with your data."
     if failures:
         message += " Some other local instances didn't switch (" + "; ".join(failures) + ") — restart them."
     return DbActionResult(ok=True, message=message)

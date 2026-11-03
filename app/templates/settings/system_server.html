@@ -78,12 +78,10 @@
           {{ app_name }} over immediately — no restart needed.
         </p>
         <div class="rounded-lg border border-warning-500/50 bg-slate-900 px-3 py-2 text-xs text-warning-400">
-          <strong>Switching does not move anything from the current database.</strong> The new database only
-          ever gets the same starter data a fresh install gets (one admin account, 3 default notes) — every
-          existing conversation, message, channel, non-admin user, and document, plus every admin setting on
-          this page and elsewhere (RAG limits, model visibility, channel delivery mode, and so on), stays
-          behind in the old database and won't be visible here anymore. Nothing is deleted, but nothing is
-          copied over either.
+          <strong>Without "Copy my data" below, switching moves nothing from the current database.</strong> The new
+          database then gets only the starter data of a fresh install (one admin account, 3 default notes): every
+          existing conversation, message, channel, non-admin user and document, and every admin setting (Matricxon,
+          cluster, keys, RAG limits and so on), stays behind in the old database. Nothing is deleted either way.
         </div>
         <div id="db-restart-banner" class="hidden rounded-lg border border-warning-500/50 bg-slate-900 px-3 py-2 text-xs text-warning-400">
           The <span class="font-mono">.env</span> file was edited by hand and doesn't match what's
@@ -149,6 +147,11 @@
             </p>
           </div>
         </div>
+        <label class="flex items-start gap-2 text-xs text-slate-300">
+          <input id="db-copy-data" type="checkbox" class="mt-0.5 accent-brand-500">
+          <span>Copy my data into the new database when saving: users, chats, channels, documents and every setting
+            (Matricxon, cluster, keys). The new database must be empty. You stay signed in.</span>
+        </label>
         <div class="flex flex-wrap items-center gap-3">
           <button id="db-test-btn" type="button"
             class="rounded-lg border border-slate-700 px-4 py-2 text-sm font-medium text-slate-200 hover:bg-slate-800 transition-colors">
@@ -164,4 +167,13 @@
           </button>
         </div>
         <p id="db-status" class="text-xs text-slate-500"></p>
+        <!-- "Copy my data" progress (settings_db_copy.js): stays on screen with the result when it ends. -->
+        <div id="db-copy-progress" class="hidden space-y-2 rounded-md bg-slate-950 border border-slate-800 px-3 py-3">
+          <div class="flex items-center justify-between gap-3">
+            <span data-field="label" class="text-xs font-medium text-slate-300"></span>
+            <span data-field="count" class="text-xs text-slate-500"></span>
+          </div>
+          <progress data-field="bar" class="w-full h-1.5 accent-brand-500" max="100" value="0"></progress>
+          <p data-field="result" class="hidden text-xs"></p>
+        </div>
       </section>

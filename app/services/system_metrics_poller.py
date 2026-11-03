@@ -22,6 +22,7 @@ import psutil
 from app.config import BASE_DIR
 from app.database import AsyncSessionLocal
 from app.models import GpuMetricSnapshot, SystemMetricSnapshot
+from app.services.leader_lease import leader_lease
 
 logger = logging.getLogger("llama_chat")
 
@@ -166,7 +167,9 @@ async def _poll_once() -> None:
 async def _run_system_metrics_poller() -> None:
     while True:
         try:
-            await _poll_once()
+            # The leader's machine only: the rows carry no machine name, so several would mix in one chart.
+            if leader_lease.is_leader:
+                await _poll_once()
         except Exception:
             # A bad poll (e.g. a transient DB error) must never kill the loop for good.
             logger.exception("System metrics poll failed.")
@@ -174,7 +177,7 @@ async def _run_system_metrics_poller() -> None:
 
 
 def start_system_metrics_poller() -> None:
-    """Called once from startup_service.run_startup_tasks (primary only); see module docstring."""
+    """Called once from startup_service.run_startup_tasks (primary only; works while leader); see module docstring."""
     task = asyncio.create_task(_run_system_metrics_poller())
     _background_poller_tasks.add(task)
     task.add_done_callback(_background_poller_tasks.discard)

@@ -1,6 +1,6 @@
 """Polls Matricxon's GET /api/ps ("what's loaded now") on every host and appends a snapshot row per (host,
-model): the twin of llamacpp_ps_poller (see its docstring for why a poller, primary-gated). Field-compatible
-with../matricxon/app/schemas/ps.py (name/size/size_vram/expires_at, as _poll_host parses): /api/ps is
+model): the twin of llamacpp_ps_poller (see its docstring for why a poller); runs on the leader only.
+Field-compatible with../matricxon/app/schemas/ps.py (name/size/size_vram/expires_at, as _poll_host parses): /api/ps is
 Ollama-compatible like every endpoint matricxon_client.py uses.
 """
 
@@ -13,6 +13,7 @@ import httpx
 from app.database import AsyncSessionLocal
 from app.models import ModelSnapshot
 from app.services import matricxon_pool
+from app.services.leader_lease import leader_lease
 
 logger = logging.getLogger("llama_chat")
 
@@ -70,7 +71,8 @@ async def _poll_once() -> None:
 async def _run_matricxon_ps_poller() -> None:
     while True:
         try:
-            await _poll_once()
+            if leader_lease.is_leader:
+                await _poll_once()
         except Exception:
             # A bad poll (e.g. a transient DB error) must never kill the loop for good.
             logger.exception("Matricxon /api/ps poll failed.")
@@ -78,7 +80,7 @@ async def _run_matricxon_ps_poller() -> None:
 
 
 def start_matricxon_ps_poller() -> None:
-    """Called once from startup_service.run_startup_tasks (primary only); see llamacpp_ps_poller."""
+    """Called once from startup_service.run_startup_tasks (primary only; works while leader); see llamacpp_ps_poller."""
     task = asyncio.create_task(_run_matricxon_ps_poller())
     _background_poller_tasks.add(task)
     task.add_done_callback(_background_poller_tasks.discard)

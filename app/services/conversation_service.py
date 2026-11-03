@@ -8,9 +8,10 @@ import logging
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlalchemy import select, update
+from sqlalchemy import or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import SERVER_ID
 from app.models import Conversation, Message, User
 from app.models._base import utcnow
 from app.schemas import ConversationCreate, ConversationUpdate, MessagesLatestResponse
@@ -206,17 +207,18 @@ async def delete_message(db: AsyncSession, conversation: Conversation, message: 
     return deleted_ids
 
 
-async def mark_interrupted_messages_as_errored(db: AsyncSession) -> int:
-    """Marks messages still "streaming" from before this process started as errors (an asyncio.Task can't survive
-    a restart; otherwise they'd show a permanent "typing" state). Already-flushed content is kept.
-
-    Single-instance restarts only: a sibling recycling while others (instance_count > 1) generate would need a
-    per-message owning-instance lease, not worth it while instance_count defaults to 1. Called once from
-    startup_service.run_startup_tasks, IS_PRIMARY-gated like its other startup repairs.
+async def mark_interrupted_messages_as_errored(
+    db: AsyncSession, server_id: str = SERVER_ID, unowned: bool = True
+) -> int:
+    """Marks this server's replies still "streaming" from before it started as errors (an asyncio.Task can't
+    survive a restart; else they show "typing" forever). Already-flushed content is kept. Other servers'
+    replies are left alone. `unowned` also clears rows from before owners were recorded (the primary only).
     """
+    owner = Message.owner_server == server_id
     result = await db.execute(
         update(Message)
         .where(Message.status == "streaming")
+        .where(or_(owner, Message.owner_server.is_(None)) if unowned else owner)
         .values(status="error", error_message="Interrupted by a server restart.")
     )
     await db.commit()

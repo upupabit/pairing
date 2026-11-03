@@ -1,10 +1,10 @@
 """Note and NotePin models (injection into the system prompt: app/services/note_service.py)."""
 
-from sqlalchemy import Column, DateTime, ForeignKey, String, Text, UniqueConstraint
+from sqlalchemy import Column, ForeignKey, String, Text, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from app.database import Base
-from app.models._base import ID_LEN, new_id, utcnow
+from app.models._base import ID_LEN, Timestamp, new_id, utcnow
 
 
 class Note(Base):
@@ -19,8 +19,8 @@ class Note(Base):
     # "persona" | "rules" | "skill" for the 3 notes note_service.seed_default_notes creates per user; NULL for
     # regular notes. Those 3 are delete-protected (app/routers/notes.py).
     default_type = Column(String(20), nullable=True)
-    created_at = Column(DateTime, default=utcnow)
-    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
+    created_at = Column(Timestamp, default=utcnow)
+    updated_at = Column(Timestamp, default=utcnow, onupdate=utcnow)
 
     # lazy="selectin" (see Conversation.messages).
     pins = relationship("NotePin", back_populates="note", cascade="all, delete-orphan", lazy="selectin")
@@ -40,7 +40,7 @@ class NotePin(Base):
     conversation_id = Column(String(ID_LEN), ForeignKey("conversations.id"), nullable=False)
     # "persona" | "rules" | "skill" (phrased differently in the system prompt, see note_service.py).
     pin_type = Column(String(20), nullable=False)
-    created_at = Column(DateTime, default=utcnow)
+    created_at = Column(Timestamp, default=utcnow)
 
     # lazy="selectin" on both sides: app/routers/notes.py reads pin.note and pin.conversation.
     note = relationship("Note", back_populates="pins", lazy="selectin")

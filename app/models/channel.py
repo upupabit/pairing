@@ -3,11 +3,11 @@
 (any member reads/chats; admins and is_manager members change model/persona/rules/skill).
 """
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, UniqueConstraint
+from sqlalchemy import Boolean, Column, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from app.database import Base
-from app.models._base import ID_LEN, new_id, utcnow
+from app.models._base import ID_LEN, Timestamp, new_id, utcnow
 
 
 class Channel(Base):
@@ -17,7 +17,7 @@ class Channel(Base):
 
     id = Column(String(ID_LEN), primary_key=True, default=new_id)
     name = Column(String(255), nullable=False, unique=True)
-    created_at = Column(DateTime, default=utcnow)
+    created_at = Column(Timestamp, default=utcnow)
 
     # uselist=False: one shared Conversation per channel. delete-orphan cascade removes its thread and messages.
     conversation = relationship(
@@ -49,7 +49,7 @@ class ChannelMember(Base):
     channel_id = Column(String(ID_LEN), ForeignKey("channels.id"), nullable=False)
     user_id = Column(String(ID_LEN), ForeignKey("users.id"), nullable=False)
     is_manager = Column(Boolean, nullable=False, default=False)
-    created_at = Column(DateTime, default=utcnow)
+    created_at = Column(Timestamp, default=utcnow)
 
     channel = relationship("Channel", back_populates="members", lazy="selectin")
     # lazy="selectin": channel_service.to_channel_out reads member.user.username.

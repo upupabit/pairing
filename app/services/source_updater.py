@@ -17,6 +17,7 @@ from app.services.archive_source import ArchiveSource
 from app.services.git_source import GitSource
 from app.services.pip_progress import PipProgressTracker
 from app.services.update_process import UpdateProcess
+from app.services.update_source import GitRemote
 
 
 @dataclass(frozen=True)
@@ -32,11 +33,21 @@ class UpdateTarget:
 class SourceUpdater:
     _locks: dict[Path, asyncio.Lock] = {}
 
-    def __init__(self, target: UpdateTarget, proxy_url: str | None = None) -> None:
+    def __init__(
+        self,
+        target: UpdateTarget,
+        proxy_url: str | None = None,
+        remote: GitRemote | None = None,
+        token: str | None = None,
+    ) -> None:
+        """`remote`: a chosen repository; `token`: the product's access token (update_source.py)."""
         self.target = target
+        self.remote = remote
         self._process = UpdateProcess(proxy_url)
-        self._git = GitSource(target.path, self._process)
-        self._archive = ArchiveSource(target.path, target.repo, target.branch, target.preserve, proxy_url)
+        self._git = GitSource(target.path, self._process, remote, token)
+        repo, branch = (remote.github_repo, remote.branch) if remote else (target.repo, target.branch)
+        token = remote.token if remote else token
+        self._archive = ArchiveSource(target.path, repo, branch, target.preserve, proxy_url, token)
         self._lock = self._locks.setdefault(target.path, asyncio.Lock())
         self.total_steps = 3
 
@@ -45,7 +56,8 @@ class SourceUpdater:
         return "git" if GitSource.usable(self.target.path) else "download"
 
     async def status(self) -> SourceUpdateStatus:
-        base = SourceUpdateStatus(name=self.target.name, path=str(self.target.path), method=self.method)
+        source = f"{self.remote.url} · {self.remote.branch}" if self.remote else None
+        base = SourceUpdateStatus(name=self.target.name, path=str(self.target.path), method=self.method, source=source)
         try:
             return await (self._git_status(base) if base.method == "git" else self._archive_status(base))
         except (RuntimeError, httpx.HTTPError) as exc:
@@ -56,9 +68,10 @@ class SourceUpdater:
         try:
             await self._git.upstream()
         except RuntimeError:
-            return base.model_copy(
-                update={"current": current, "note": "This checkout has no upstream branch to update from."}
-            )
+            if self.remote is None:
+                return base.model_copy(
+                    update={"current": current, "note": "This checkout has no upstream branch to update from."}
+                )
         await self._git.fetch()
         latest = await self._git.upstream()
         behind, ahead = await self._git.counts()

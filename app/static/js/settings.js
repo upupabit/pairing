@@ -1643,7 +1643,7 @@ const knowledgeBaseSectionEl = document.getElementById("knowledge-base-section")
 // Knowledge tab.
 const saveBarHomeParent = saveBarEl?.parentNode;
 const saveBarHomeNextSibling = saveBarEl?.nextSibling;
-const TAB_CONTENT_IDS = ["model", "behavior", "knowledge", "account", "system", "external-servers", "mcp-servers", "users", "channels", "update"];
+const TAB_CONTENT_IDS = ["model", "behavior", "knowledge", "my-skills", "account", "system", "external-servers", "mcp-servers", "users", "channels", "skills", "update"];
 
 let activeTabName = "model";
 
@@ -4222,6 +4222,8 @@ if (addChannelBtn) {
   } catch (_err) {
     // Storage blocked: falls back to the default tab.
   }
+  // Or a link to one tab, such as the chat's "My skills" (/settings#my-skills).
+  savedTab = savedTab || decodeURIComponent(location.hash.slice(1));
   if (savedTab && document.querySelector(`[data-tab="${savedTab}"]`)) {
     activateTab(savedTab);
     loadTabData(savedTab);

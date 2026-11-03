@@ -1,4 +1,4 @@
-"""Tests for services/note_service.py: prompt building from active persona/rules/skill notes. The chat page's
+"""Tests for services/note_service.py: prompt building from active persona/rules notes. The chat page's
 one-slot resolve/edit logic (resolve_slot, update_slot_content, save_disabled_slots) is in note_slot_service.py,
 tested in tests/test_note_slot_service.py.
 """
@@ -18,7 +18,6 @@ def test_build_pinned_system_prompt_orders_persona_first():
         {
             "persona": [persona_note],
             "rules": [rules_note],
-            "skill": [],
         }
     )
     assert prompt.index("Persona") < prompt.index("Rules")

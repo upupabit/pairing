@@ -1,11 +1,11 @@
-"""A user's Notes (models/note.py: Note, NotePin): seeding and looking up each user's 3 protected default notes
-(persona/rules/skill), resolving active notes per conversation, turning them into part of the engine's system
-prompt, and the pin-syncing/CRUD behind routers/notes.py. The chat page's one-slot view is
-note_slot_service.py (split for the file-size rule). Unrelated to document_ingest.py (embeddings/retrieval).
+"""A user's Notes (models/note.py: Note, NotePin): seeding and looking up each user's 2 protected default notes
+(persona/rules; skills are their own feature, conversation_skills.py), resolving active notes per conversation, turning
+them into part of the engine's system prompt, and the pin-syncing/CRUD behind routers/notes.py. The chat page's one-slot
+view is note_slot_service.py (split for the file-size rule). Unrelated to document_ingest.py (embeddings/retrieval).
 
 seed_initial_disabled_notes turns the per-user "default notes enabled" preference (the Notes page, in
-default_notes_setting.py) into a new chat/channel's initial disabled_default_notes. The getter/setter live
-there only to avoid a circular import (this module imports channel_service).
+default_notes_setting.py) into a new chat/channel's initial disabled_default_notes. The getter/setter live there only to
+avoid a circular import (this module imports channel_service).
 """
 
 from fastapi import HTTPException
@@ -19,8 +19,8 @@ from app.services import channel_service
 from app.services.default_notes_setting import get_default_notes_enabled
 
 # Slot types in fixed order, a tuple (not a set) so persona comes first in the prompt (build_pinned_system_prompt)
-# and the chat page's 3 icons keep their order.
-NOTE_SLOTS: tuple[str, ...] = ("persona", "rules", "skill")
+# and the chat page's icons keep their order.
+NOTE_SLOTS: tuple[str, ...] = ("persona", "rules")
 
 # Usable starting points per slot: editable but un-deletable from account creation, so Notes and the chat icons are
 # never empty.
@@ -33,15 +33,11 @@ DEFAULT_NOTE_SEEDS: dict[str, tuple[str, str]] = {
         "Rules",
         "Never make up facts; say so if unsure.",
     ),
-    "skill": (
-        "Skill",
-        "Writing, summarizing, brainstorming, general Q&A.",
-    ),
 }
 
 
 async def seed_default_notes(db: AsyncSession, user: User) -> None:
-    """Creates whichever of `user`'s 3 protected default notes are missing. Idempotent: safe for a new user
+    """Creates whichever of `user`'s 2 protected default notes are missing. Idempotent: safe for a new user
     (settings_service.create_user, auth_service.seed_default_users) and, at every startup, a backfill for
     pre-existing users (app/main.py on_startup). Doesn't commit.
     """
@@ -61,7 +57,7 @@ async def seed_default_notes(db: AsyncSession, user: User) -> None:
 
 async def seed_initial_disabled_notes(db: AsyncSession, user: User, params: dict) -> dict:
     """Mutates and returns `params` (a new conversation's/channel's initial GenerationParams from
-    settings_service.get_default_params) to start with all 3 default notes off when `user`'s
+    settings_service.get_default_params) to start with both default notes off when `user`'s
     default_notes_setting.get_default_notes_enabled is off; untouched (every slot on) when on.
 
     Seeds `disabled_default_notes` once at creation rather than having resolve_conversation_notes check this
@@ -174,19 +170,15 @@ async def resolve_conversation_notes(
 
 
 def build_pinned_system_prompt(notes_by_type: dict[str, list[Note]]) -> str:
-    """Assembles the system prompt from active persona/rules/skill notes; the only source (the free-text
+    """Assembles the notes' part of the system prompt from active persona/rules notes (the free-text
     per-conversation system prompt was dropped when Notes covered it). Persona first, as identity and tone
-    frame the rest; rules and skills follow as situational guidance.
+    frame the rest; rules follow. The chat's skills come after (conversation_skills.build_skills_prompt).
     """
     parts = []
     if notes_by_type.get("persona"):
         parts.append("Persona:\n" + "\n\n".join(n.content for n in notes_by_type["persona"]))
     if notes_by_type.get("rules"):
         parts.append("Rules you must always follow:\n" + "\n\n".join(f"- {n.content}" for n in notes_by_type["rules"]))
-    if notes_by_type.get("skill"):
-        parts.append(
-            "Skills available for this conversation:\n" + "\n\n".join(n.content for n in notes_by_type["skill"])
-        )
     return "\n\n".join(parts)
 
 

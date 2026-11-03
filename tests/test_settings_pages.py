@@ -32,7 +32,7 @@ async def test_user_settings_has_only_user_tabs_even_for_an_admin(db, user, admi
     for who in (user, admin_user):
         response = await pages.settings_page(_request(who.id), db=db)
         html = response.body.decode()
-        assert _tabs(response) == ["model", "behavior", "knowledge", "account"]
+        assert _tabs(response) == ["model", "behavior", "knowledge", "my-skills", "account"]
         assert "will not affect other users" in html
         assert 'id="hf-search-input"' not in html and 'id="mcp-panel"' not in html
         for admin_only in ("tab-system", "tab-external-servers", "tab-mcp-servers", "tab-users", "tab-channels"):
@@ -45,7 +45,8 @@ async def test_admin_settings_has_the_admin_tabs_and_the_admin_models_page(db, a
     response = await pages.admin_settings_page(_request(admin_user.id), db=db)
     html = response.body.decode()
 
-    assert _tabs(response) == ["model", "system", "external-servers", "mcp-servers", "users", "channels", "update"]
+    admin_tabs = ["model", "system", "external-servers", "mcp-servers", "users", "channels", "skills", "update"]
+    assert _tabs(response) == admin_tabs
     assert 'id="hf-search-input"' in html and 'id="mcp-panel"' in html
     assert "will not affect other users" not in html
     # truly separate: none of the user-level panels or controls are in this page
@@ -90,3 +91,20 @@ async def test_both_pages_list_their_tabs_in_a_left_sidebar_like_stats(db, admin
         sidebar = html.split("<aside", 1)[1].split("</aside>", 1)[0]
         assert re.findall(r'data-tab="([^"]+)"', sidebar) == re.findall(r'data-tab="([^"]+)"', html)
         assert "bg-slate-800 text-slate-100" in sidebar  # the first tab starts active
+
+
+@pytest.mark.asyncio
+async def test_the_empty_chat_says_local_only_for_a_self_hosted_engine(db, user):
+    from app.services import engine_service
+
+    try:
+        await engine_service.set_active_engine(db, "matricxon")
+        local = (await pages.chat_page(_request(user.id), db=db)).body.decode()
+        await engine_service.set_active_engine(db, "openrouter")
+        cloud = (await pages.chat_page(_request(user.id), db=db)).body.decode()
+    finally:
+        await engine_service.set_active_engine(db, engine_service.DEFAULT_ENGINE)
+
+    assert "Everything here runs locally" in local
+    assert "Everything here runs locally" not in cloud
+    assert "Answers come from OpenRouter, a cloud service" in cloud

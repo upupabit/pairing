@@ -16,8 +16,8 @@ class Note(Base):
     owner_id = Column(String(ID_LEN), ForeignKey("users.id"), nullable=False)
     title = Column(String(255), nullable=False, default="Untitled note")
     content = Column(Text, nullable=False, default="")
-    # "persona" | "rules" | "skill" for the 3 notes note_service.seed_default_notes creates per user; NULL for
-    # regular notes. Those 3 are delete-protected (app/routers/notes.py).
+    # "persona" | "rules" for the 2 notes note_service.seed_default_notes creates per user; NULL for regular
+    # notes. Those 2 are delete-protected (app/routers/notes.py). Skills are models/skill.py.
     default_type = Column(String(20), nullable=True)
     created_at = Column(Timestamp, default=utcnow)
     updated_at = Column(Timestamp, default=utcnow, onupdate=utcnow)
@@ -38,7 +38,7 @@ class NotePin(Base):
     id = Column(String(ID_LEN), primary_key=True, default=new_id)
     note_id = Column(String(ID_LEN), ForeignKey("notes.id"), nullable=False)
     conversation_id = Column(String(ID_LEN), ForeignKey("conversations.id"), nullable=False)
-    # "persona" | "rules" | "skill" (phrased differently in the system prompt, see note_service.py).
+    # "persona" | "rules" (phrased differently in the system prompt, see note_service.py).
     pin_type = Column(String(20), nullable=False)
     created_at = Column(Timestamp, default=utcnow)
 

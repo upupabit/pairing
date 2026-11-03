@@ -38,7 +38,7 @@ _PIP_INSTALL_HINT = ".venv/bin/pip install -r requirements.txt"
 
 async def _seed_defaults(url: str) -> None:
     """Brings a database to a fresh install's starting point: seed accounts (auth_service.seed_default_users)
-    and each account's default persona/rules/skill notes (note_service.seed_default_notes).
+    and each account's default persona/rules notes (note_service.seed_default_notes).
 
     Reuses those functions rather than a SQL fixture so the note content has one definition and cannot drift.
     Runs through the ORM on a throwaway async engine, independent of the live engine and the sync one Alembic

@@ -46,6 +46,13 @@ class Conversation(Base):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
+    # Skills chosen for this chat (models/skill.py), deleted with it.
+    skill_choices = relationship(
+        "ConversationSkill",
+        back_populates="conversation",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
     # The owning channel, if any. No cascade: Channel.conversation owns delete-orphan.
     channel = relationship("Channel", back_populates="conversation", lazy="selectin")
 

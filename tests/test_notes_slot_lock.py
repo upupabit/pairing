@@ -1,4 +1,4 @@
-"""Persona/rules/skill of a chat can change only before its first message (routers/notes.py)."""
+"""Persona/rules of a chat can change only before its first message (routers/notes.py)."""
 
 import pytest
 from fastapi import HTTPException

@@ -21,6 +21,8 @@ fi
 
 APP_PORT="${APP_PORT:-8000}"
 PID_FILE="${PAIRING_PID_FILE:-$APP_DIR/run/pairing.pid}"
+# shellcheck source=own_processes.sh
+source "$APP_DIR/scripts/own_processes.sh"
 
 info "--- Python environment ---"
 VENV_PYTHON="$APP_DIR/.venv/bin/python"
@@ -35,8 +37,8 @@ fi
 info "--- pAIring (port $APP_PORT) ---"
 if [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
     PID="$(cat "$PID_FILE")"
-elif pgrep -x "pAIring-server" > /dev/null 2>&1; then
-    PID="$(pgrep -x "pAIring-server" | head -1)"
+elif [ -n "$(own_pairing_pids)" ]; then
+    PID="$(own_pairing_pids | head -1)"
     info "no PID file (started by an older script) - using the running process"
 else
     err "pAIring: stopped — start with: bash scripts/start.sh"

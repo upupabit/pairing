@@ -125,10 +125,18 @@ It is also important not to expose more models to users than the system RAM/VRAM
 - Per-channel managers — trusted members who can steer that channel's model/settings and pinned notes, without
   needing full admin rights over the whole system.
 
-**Notes — persona / rules / skill**
+**Notes — persona / rules**
 - Reusable, pinnable notes that shape the system prompt per
-  conversation — who the model is, what it must follow, what it's
-  helping with — editable right from the chat header.
+  conversation — who the model is and what it must follow — editable
+  right from the chat header.
+
+**Skills**
+- Task instructions chosen per chat from the 🛠️ icon: summarize,
+  review code, analyze a threat report, write a cover letter...
+- Admins manage a shared library under Admin settings → Skills, with a
+  gallery of 239 ready-made skills from
+  [Fabric](https://github.com/danielmiessler/fabric) (MIT License); users
+  can also write private skills of their own.
 
 **Knowledge base (RAG)**
 - Drop in `.txt`/`.md`/`.pdf`/`.docx`/`.odt`/`.rtf`/`.html`/`.csv`/`.json`

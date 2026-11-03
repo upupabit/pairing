@@ -1,0 +1,31 @@
+{#- The skill form (settings_skills_editor.js), shared by Admin settings > Skills and Settings > Skills. -#}
+<div data-skill-editor class="hidden space-y-3 rounded-lg border border-slate-700 bg-slate-900 p-4">
+  <p data-field="title" class="text-sm font-semibold text-slate-100"></p>
+  <div class="grid gap-3 sm:grid-cols-2">
+    <label class="block text-xs font-medium text-slate-400">Name
+      <input data-field="name" type="text" maxlength="255"
+        class="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+    </label>
+    <label class="block text-xs font-medium text-slate-400">Category
+      <input data-field="category" type="text" maxlength="100" list="skill-editor-categories" placeholder="Other"
+        class="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+      <datalist id="skill-editor-categories" data-field="categories"></datalist>
+    </label>
+  </div>
+  <label class="block text-xs font-medium text-slate-400">Short description <span class="font-normal text-slate-500">(shown in the chat's picker)</span>
+    <input data-field="description" type="text" maxlength="500"
+      class="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+  </label>
+  <label class="block text-xs font-medium text-slate-400">Instructions <span class="font-normal text-slate-500">(what the model follows when this skill is on)</span>
+    <textarea data-field="content" rows="12" maxlength="20000" dir="auto" spellcheck="false"
+      class="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 font-mono text-xs focus:outline-none focus:border-brand-500"></textarea>
+  </label>
+  <label data-field="enabled-wrap" class="flex items-center gap-2 text-xs text-slate-300">
+    <input data-field="enabled" type="checkbox" class="accent-brand-500"> Enabled: users can choose it in their chats
+  </label>
+  <div class="flex items-center gap-3">
+    <button type="button" data-action="save" class="rounded-md bg-brand-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-brand-500">Save</button>
+    <button type="button" data-action="cancel" class="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800">Cancel</button>
+    <span data-field="status" class="text-xs text-red-400"></span>
+  </div>
+</div>

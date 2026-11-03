@@ -40,13 +40,21 @@ async def chat_page(request: Request, db: AsyncSession = Depends(get_db)):
     auth = await PageAuth(request, db).resolve()
     if isinstance(user := auth.require_login(), RedirectResponse):
         return user
-    context = {"is_admin": auth.is_admin, "user_id": user.id, **await _profile_context(db, user)}
+    engine = registry.active()
+    context = {
+        "is_admin": auth.is_admin,
+        "user_id": user.id,
+        # The empty chat's privacy line: on own servers (llama.cpp, Matricxon) or sent to a cloud connector.
+        "engine_self_hosted": engine.capabilities.local_process,
+        "engine_name": engine.display_name,
+        **await _profile_context(db, user),
+    }
     return templates.TemplateResponse(request, "chat.html", context)
 
 
 @router.get("/notes", response_class=HTMLResponse)
 async def notes_page(request: Request, db: AsyncSession = Depends(get_db)):
-    """The Notes screen: create/edit notes and pin them as persona/rules/skill (routers/notes.py, note_service.py)."""
+    """The Notes screen: create/edit notes and pin them as persona/rules (routers/notes.py, note_service.py)."""
     auth = await PageAuth(request, db).resolve()
     if isinstance(user := auth.require_login(), RedirectResponse):
         return user

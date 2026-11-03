@@ -1,4 +1,4 @@
-/* Notes page > Rule notes: whether saved persona/rules/skill notes are added to new chats/channels (every user). A plain
+/* Notes page > Rule notes: whether saved persona/rules notes are added to new chats/channels (every user). A plain
 on/off toggle, not a Save button: flipping it saves at once, and only affects chats/channels started afterward
 (note_service.seed_initial_disabled_notes). Uses `api` from app.js. */
 

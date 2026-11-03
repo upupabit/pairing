@@ -158,7 +158,7 @@ attachmentInput.addEventListener("change", () => {
 });
 
 // Whether the user is an admin (data attribute on <body>, see base.html and settings.js). With a channel's is_manager
-// flag (channelsByConversationId) it decides whether the active chat's model/persona/rules/skill controls are editable
+// flag (channelsByConversationId) it decides whether the active chat's model/persona/rules/skills controls are editable
 // or read-only. The server enforces the rule (channel_service.can_manage_channel_conversation); this only avoids
 // showing a control that would 403.
 const isAdmin = document.body.dataset.isAdmin === "true";
@@ -183,7 +183,7 @@ const currentInitials = (() => {
 // channel from personal chats and whether this viewer can manage it. Filled by loadChannelList.
 let channelsByConversationId = {};
 
-// Whether this viewer can change the active conversation's model/persona/rules/skill: always for a personal chat, only
+// Whether this viewer can change the active conversation's model/persona/rules/skills: always for a personal chat, only
 // admins or the channel's manager in a channel. Read fresh by the badge click handlers, as it changes on each
 // selectConversation.
 let canManageActive = true;
@@ -802,6 +802,7 @@ function clearMainPane() {
   closeModelPicker();
   conversationTitleEl.textContent = "";
   pinnedBadgesEl.innerHTML = "";
+  if (typeof chatSkills !== "undefined") chatSkills.render(null, false);
   modelBadgeEl.textContent = "";
   modelBadgeEl.classList.add("hidden");
   thinkingChip.hide();
@@ -823,8 +824,8 @@ function setModelBadgeManageable(manageable) {
 }
 
 // Same icons as the Notes page pin chips (notes.js), copied since these static files share no module system.
-const PIN_TYPE_ICONS = { persona: "🎭", rules: "📏", skill: "🛠️" };
-const PIN_TYPE_LABELS = { persona: "Persona", rules: "Rules", skill: "Skill" };
+const PIN_TYPE_ICONS = { persona: "🎭", rules: "📏" };
+const PIN_TYPE_LABELS = { persona: "Persona", rules: "Rules" };
 
 const slotEditorEl = document.getElementById("slot-editor");
 const slotEditorTitleEl = document.getElementById("slot-editor-title");
@@ -1050,7 +1051,7 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !userProfileModalEl.classList.contains("hidden")) closeUserProfileModal();
 });
 
-/* Shows one clickable icon per persona/rules/skill slot (GET /api/notes/slots/{id}), always all 3 in the same order so the row doesn't jump; an off slot fades but stays clickable to turn it back on (openSlotEditor's "Enable"). Best-effort: a failed lookup shows no icons. */
+/* Shows one clickable icon per persona/rules slot (GET /api/notes/slots/{id}), always both in the same order so the row doesn't jump; an off slot fades but stays clickable to turn it back on (openSlotEditor's "Enable"). Best-effort: a failed lookup shows no icons. */
 let pinnedSlots = [];
 let activeHasMessages = false;
 
@@ -1068,7 +1069,7 @@ async function loadPinnedBadges(conversationId) {
   renderPinnedBadges();
 }
 
-/* Draws the 3 badges from `pinnedSlots`; clickable only for someone who can manage the chat, and only while it has no messages. */
+/* Draws the badges from `pinnedSlots`, then the Skills badge (chat_skills.js); clickable only for someone who can manage the chat, and only while it has no messages. */
 function renderPinnedBadges() {
   const editable = canManageActive && !activeHasMessages;
   const conversationId = activeConversationId;
@@ -1094,6 +1095,7 @@ function renderPinnedBadges() {
     });
     pinnedBadgesEl.appendChild(badge);
   }
+  if (typeof chatSkills !== "undefined") chatSkills.render(conversationId, editable);
 }
 
 // Sidebar / conversation list

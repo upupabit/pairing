@@ -12,6 +12,7 @@ from app.models.image_generation import ImageGenerationJob
 from app.models.mcp_server import McpServer
 from app.models.note import Note, NotePin
 from app.models.server_coordination import LeaderLease, Server, UploadJob
+from app.models.skill import ConversationSkill, Skill
 from app.models.system_metrics import GpuMetricSnapshot, SystemMetricSnapshot
 from app.models.telemetry import ModelSnapshot, TelemetryEvent
 from app.models.user import User
@@ -35,6 +36,8 @@ __all__ = [
     "LeaderLease",
     "Note",
     "NotePin",
+    "Skill",
+    "ConversationSkill",
     "GpuMetricSnapshot",
     "ModelSnapshot",
     "SystemMetricSnapshot",

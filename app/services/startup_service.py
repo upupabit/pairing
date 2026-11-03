@@ -177,7 +177,7 @@ async def _seed_and_repair() -> None:
             logger.info("Repaired %d channel conversation(s) with a stray owner_id.", result.rowcount)
         await db.commit()
 
-        # Backfill: every user gets their 3 protected persona/rules/skill notes if missing (seed accounts on a fresh
+        # Backfill: every user gets their 2 protected persona/rules notes if missing (seed accounts on a fresh
         # install and accounts predating the feature). seed_default_notes is idempotent, so no one-time migration flag.
         for user in (await db.execute(select(User))).scalars().all():
             await seed_default_notes(db, user)

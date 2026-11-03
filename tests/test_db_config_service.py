@@ -199,7 +199,7 @@ async def test_seed_defaults_creates_the_admin_account_and_default_notes(tmp_pat
             note_types = set(
                 (await db.execute(select(Note.default_type).where(Note.owner_id == admin.id))).scalars().all()
             )
-            assert note_types == {"persona", "rules", "skill"}
+            assert note_types == {"persona", "rules"}
     finally:
         await engine.dispose()
 

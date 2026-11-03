@@ -1,4 +1,4 @@
-"""The chat page's 3 persona/rules/skill icons: resolving and editing one slot of one conversation. A narrower
+"""The chat page's persona/rules icons: resolving and editing one slot of one conversation. A narrower
 view than note_service.py's CRUD/pin-syncing/prompt-building, split for the file-size rule. Shares
 DEFAULT_NOTE_SEEDS and get_default_note with note_service.
 """

@@ -1,0 +1,39 @@
+    <!-- Admin settings > Skills: the shared skill library and the template gallery (settings_skills_admin.js,
+         /api/admin/skills, services/skill_library.py). Users choose enabled skills per chat (chat_skills.js). -->
+    <section id="skills-admin" class="space-y-8">
+      <div class="space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-sm font-semibold text-slate-200">Skills</h2>
+            <p class="text-xs text-slate-500">
+              What users can choose for a chat with its 🛠️ icon. A skill's instructions join the chat's system
+              prompt, after its persona and rules. Add ready-made ones from the gallery below, or write your own.
+            </p>
+          </div>
+          <button type="button" data-action="new" class="shrink-0 rounded-lg bg-brand-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-500">New skill</button>
+        </div>
+        {% include "_skill_editor.html" %}
+        <div class="flex flex-wrap gap-2">
+          <input data-field="search" type="search" placeholder="Search your skills…" spellcheck="false"
+            class="min-w-0 flex-1 rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+          <select data-field="filter-category" class="rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm"></select>
+        </div>
+        <p data-field="summary" class="text-xs text-slate-500"></p>
+        <div data-field="list" class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"></div>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <h2 class="text-sm font-semibold text-slate-200">Template gallery</h2>
+          <p data-field="credit" class="text-xs text-slate-500"></p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <input data-field="gallery-search" type="search" placeholder="Search templates…" spellcheck="false"
+            class="min-w-0 flex-1 rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+          <select data-field="gallery-category" class="rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm"></select>
+          <button type="button" data-action="add-category" class="hidden rounded-md border border-slate-700 px-3 py-1.5 text-sm text-slate-200 hover:bg-slate-800"></button>
+        </div>
+        <p data-field="gallery-status" class="text-xs text-slate-500"></p>
+        <div data-field="gallery" class="max-h-[40rem] overflow-y-auto grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 items-start"></div>
+      </div>
+    </section>

@@ -51,7 +51,7 @@ async def test_create_channel_starts_its_shared_conversation_with_notes_disabled
 
     channel = await channel_service.create_channel(db, body, admin_user)
 
-    assert set(channel.conversation.params["disabled_default_notes"]) == {"persona", "rules", "skill"}
+    assert set(channel.conversation.params["disabled_default_notes"]) == {"persona", "rules"}
 
 
 @pytest.mark.asyncio

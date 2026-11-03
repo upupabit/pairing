@@ -14,6 +14,8 @@ info() { printf '%sINFO:%s %s\n' "$G" "$N" "$*"; }
 err() { printf '%sERROR:%s %s\n' "$R" "$N" "$*"; }
 
 PID_FILE="${PAIRING_PID_FILE:-$APP_DIR/run/pairing.pid}"
+# shellcheck source=own_processes.sh
+source "$APP_DIR/scripts/own_processes.sh"
 LOG_DIR="$APP_DIR/data/logs"
 LOG_FILE="$LOG_DIR/app.log"
 PORT="$(grep -E '^APP_PORT=' "$APP_DIR/.env" 2>/dev/null | tail -1 | cut -d= -f2 || true)"
@@ -30,8 +32,8 @@ fi
 
 rm -f "$PID_FILE"
 
-if pgrep -x "pAIring-server" > /dev/null 2>&1; then
-    err "a pAIring server is running without a PID file (started by an older script) - run scripts/stop.sh first"
+if [ -n "$(own_pairing_pids)" ]; then
+    err "this pAIring is running without a PID file (started by an older script) - run scripts/stop.sh first"
     exit 1
 fi
 

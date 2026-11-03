@@ -1,6 +1,6 @@
 /* Notes page controller: list/create/edit/delete the user's notes and, in the same Create/Save action, choose which conversations the note is pinned to and under which role (see app/notes.py + app/routers/chat.py for how a pin reaches the model). Uses the inline view/edit row pattern of settings.js's Users tab; the app has no modals. */
 
-const PIN_TYPE_LABELS = { persona: "🎭 Persona", rules: "📏 Rules", skill: "🛠️ Skill" };
+const PIN_TYPE_LABELS = { persona: "🎭 Persona", rules: "📏 Rules" };
 
 const notesListEl = document.getElementById("notes-list");
 const notesEmptyEl = document.getElementById("notes-empty");
@@ -59,7 +59,6 @@ function renderPinPickerRows(conversations, pinsByConversationId) {
             data-conv-id="${conversation.id}" ${checked ? "" : "disabled"}>
             <option value="persona" ${type === "persona" ? "selected" : ""}>Persona</option>
             <option value="rules" ${type === "rules" ? "selected" : ""}>Rules</option>
-            <option value="skill" ${type === "skill" ? "selected" : ""}>Skill</option>
           </select>
         </label>`;
     })
@@ -110,7 +109,7 @@ function renderNoteRow(note) {
           ${
             // Same pill style as the model cards' "In use" / "+Vision" badges (settings.js).
             note.is_default
-              ? '<span class="ml-1.5 inline-flex items-center rounded-full bg-[rgb(var(--color-brand-500)/0.15)] border border-[rgb(var(--color-brand-500)/0.4)] px-1.5 py-0.5 text-[10px] font-medium text-brand-500 align-middle" title="One of your 3 default notes: it can be edited but not deleted">Default</span>'
+              ? '<span class="ml-1.5 inline-flex items-center rounded-full bg-[rgb(var(--color-brand-500)/0.15)] border border-[rgb(var(--color-brand-500)/0.4)] px-1.5 py-0.5 text-[10px] font-medium text-brand-500 align-middle" title="One of your 2 default notes: it can be edited but not deleted">Default</span>'
               : ""
           }
         </p>
@@ -175,13 +174,18 @@ function renderNoteRow(note) {
     `;
     row.appendChild(form);
     attachPinPickerHandlers(form.querySelector(".pin-picker"));
+    watchNoteField(form.querySelector(".edit-title"), form.querySelector(".save-note-status"));
+    watchNoteField(form.querySelector(".edit-content"), form.querySelector(".save-note-status"));
 
     form.querySelector(".cancel-note-btn").addEventListener("click", renderView);
     form.querySelector(".save-note-btn").addEventListener("click", async () => {
-      const title = form.querySelector(".edit-title").value.trim() || "Untitled note";
-      const content = form.querySelector(".edit-content").value;
-      const pins = collectPins(form.querySelector(".pin-picker"));
+      const titleEl = form.querySelector(".edit-title");
       const statusEl = form.querySelector(".save-note-status");
+      const contentEl = form.querySelector(".edit-content");
+      if (!checkNoteTitle(titleEl, statusEl, note) || !checkNoteContent(contentEl, statusEl)) return;
+      const title = titleEl.value.trim();
+      const content = contentEl.value;
+      const pins = collectPins(form.querySelector(".pin-picker"));
       statusEl.textContent = "Saving…";
       try {
         const updated = await api(`/api/notes/${note.id}`, {
@@ -257,9 +261,16 @@ async function loadNotes() {
 }
 
 function resetNewNoteForm() {
-  document.getElementById("new-note-title").value = "";
-  document.getElementById("new-note-content").value = "";
+  const titleEl = document.getElementById("new-note-title");
+  titleEl.value = "";
+  titleEl.classList.remove(...NOTE_TITLE_ERROR_CLASSES);
+  titleEl.setAttribute("aria-invalid", "false");
+  const contentEl = document.getElementById("new-note-content");
+  contentEl.value = "";
+  contentEl.classList.remove(...NOTE_TITLE_ERROR_CLASSES);
+  contentEl.setAttribute("aria-invalid", "false");
   addNoteStatusEl.textContent = "";
+  addNoteStatusEl.classList.remove("text-red-400");
 }
 
 function showNewNoteForm(open) {
@@ -283,8 +294,11 @@ addNoteBtn.addEventListener("click", async () => {
 document.getElementById("cancel-add-note-btn").addEventListener("click", () => showNewNoteForm(false));
 
 document.getElementById("create-note-btn").addEventListener("click", async () => {
-  const title = document.getElementById("new-note-title").value.trim() || "Untitled note";
-  const content = document.getElementById("new-note-content").value;
+  const titleEl = document.getElementById("new-note-title");
+  const contentEl = document.getElementById("new-note-content");
+  if (!checkNoteTitle(titleEl, addNoteStatusEl) || !checkNoteContent(contentEl, addNoteStatusEl)) return;
+  const title = titleEl.value.trim();
+  const content = contentEl.value;
   const pins = collectPins(document.getElementById("new-note-pin-picker"));
   const btn = document.getElementById("create-note-btn");
 
@@ -301,4 +315,6 @@ document.getElementById("create-note-btn").addEventListener("click", async () =>
   }
 });
 
+watchNoteField(document.getElementById("new-note-title"), addNoteStatusEl);
+watchNoteField(document.getElementById("new-note-content"), addNoteStatusEl);
 loadNotes();

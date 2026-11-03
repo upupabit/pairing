@@ -1,4 +1,4 @@
-"""Whether a user's persona/rules/skill default notes are active on every new chat/channel (the Notes
+"""Whether a user's persona/rules default notes are active on every new chat/channel (the Notes
 page's "Rule notes" switch, above the notes list). Its own tiny file because note_service.py and
 settings_service.py are at the line cap (like theme_service.py); same get_x/set_x per-user shape.
 

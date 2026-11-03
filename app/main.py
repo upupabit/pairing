@@ -54,6 +54,8 @@ from app.routers import (
     sdcpp_admin,
     servers_admin,
     settings,
+    skills,
+    skills_admin,
     stats,
     system_metrics,
     telemetry,
@@ -183,6 +185,8 @@ app.include_router(system_metrics.router)
 app.include_router(theme.router)
 app.include_router(update_admin.router)
 app.include_router(servers_admin.router)
+app.include_router(skills.router)
+app.include_router(skills_admin.router)
 app.include_router(matricxon_update_admin.router)
 
 

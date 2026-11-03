@@ -134,8 +134,10 @@
       <div class="flex items-center gap-3 text-xs text-slate-400 min-w-0">
         <!-- Hidden for now (kept so chat.js's title tracking has somewhere to write); the header shows just the pinned-note/model badges below it. -->
         <span id="conversation-title" dir="auto" class="hidden truncate text-slate-400"></span>
-        <!-- Persona/rules/skill slots for this conversation (GET /api/notes/slots/{id}): one clickable icon per active slot, to view/edit its content without leaving the chat (chat.js loadPinnedBadges/openSlotEditor). -->
+        <!-- Persona/rules slots for this conversation (GET /api/notes/slots/{id}): one clickable icon per active slot, to view/edit its content without leaving the chat (chat.js loadPinnedBadges/openSlotEditor). -->
         <span id="pinned-badges" class="shrink-0 flex items-center gap-1"></span>
+        <!-- This chat's skills (chat_skills.js): opens the picker below. -->
+        <button id="skills-badge" type="button" class="hidden shrink-0 rounded-full px-1.5 py-0.5"></button>
         <!-- Starts hidden: an empty badge with no conversation open looks like a glitch. chat.js un-hides it once a conversation's model is known (selectConversation) and re-hides it on the empty-state screen (clearMainPane). -->
         <button id="model-badge" type="button"
           class="hidden shrink-0 rounded-full bg-slate-800 px-2.5 py-1 font-mono hover:bg-slate-700 transition-colors"
@@ -178,6 +180,29 @@
     </div>
 
     <!-- Slot editor: the panel opened from one of #pinned-badges' icons, or by picking a missing type from the "+" menu. One open at a time (chat.js openSlotEditor/closeSlotEditor). -->
+    <!-- Skills for this chat (chat_skills.js): the chosen ones, a search and the skills it can use, by category. -->
+    <div id="skills-picker" class="hidden absolute right-4 top-14 z-20 w-96 max-w-[calc(100%-2rem)] space-y-2 rounded-lg border border-slate-700 bg-slate-900 p-3 shadow-xl">
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-semibold text-slate-200">Skills for this chat</p>
+        <a href="/settings#my-skills" class="text-[11px] text-slate-500 underline underline-offset-2 hover:text-slate-300">My skills</a>
+      </div>
+      <!-- Like #model-picker-warning: shown once the chat has messages (chat_skills.js). -->
+      <p data-field="locked" class="hidden rounded-md border border-red-500/40 bg-red-500/10 px-2 py-1.5 text-xs font-medium leading-snug text-red-400">
+        This chat already has messages, so its skills can't change any more. Skills open the conversation, so changing
+        them would mean reading the whole chat again. Start a new chat to use other skills.
+      </p>
+      <div data-field="chosen" class="flex flex-wrap gap-1"></div>
+      <p data-field="note" class="text-xs text-warning-400"></p>
+      <input data-field="search" type="search" placeholder="Search skills…" spellcheck="false"
+        class="w-full rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm focus:outline-none focus:border-brand-500">
+      <div data-field="list" class="max-h-72 overflow-y-auto rounded-md border border-slate-800 bg-slate-950"></div>
+      <div class="flex items-center gap-2">
+        <button type="button" data-action="save" class="rounded-md bg-brand-600 px-3 py-1 text-xs font-medium text-white hover:bg-brand-500">Save</button>
+        <button type="button" data-action="close" class="rounded-md border border-slate-700 px-3 py-1 text-xs text-slate-300 hover:bg-slate-800">Close</button>
+        <span data-field="status" class="text-xs text-red-400"></span>
+      </div>
+    </div>
+
     <div id="slot-editor" class="hidden absolute right-4 top-14 z-20 w-80 max-w-[calc(100%-2rem)] space-y-2
                                   rounded-lg border border-slate-700 bg-slate-900 p-3 shadow-lg">
       <p id="slot-editor-title" class="text-xs font-semibold text-slate-200"></p>
@@ -224,7 +249,11 @@
           </svg>
         </div>
         <h2 class="text-lg font-semibold text-slate-100">{{ app_name }}</h2>
+        {% if engine_self_hosted %}
         <p class="mt-1 text-sm text-slate-400">Everything here runs locally. Ask anything to get started.</p>
+        {% else %}
+        <p class="mt-1 text-sm text-slate-400">Answers come from {{ engine_name }}, a cloud service: your messages, and any files or knowledge-base text they use, are sent to it. Ask anything to get started.</p>
+        {% endif %}
       </div>
     </div>
 
@@ -306,4 +335,5 @@
 <script src="/static/js/chat_tables.js?v={{ static_version }}"></script>
 <script src="/static/js/chat_scroll.js?v={{ static_version }}"></script>
 <script src="/static/js/chat.js?v={{ static_version }}"></script>
+<script src="/static/js/chat_skills.js?v={{ static_version }}"></script>
 {% endblock %}

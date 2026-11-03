@@ -140,7 +140,9 @@ async def test_watch_for_deletion_cancels_when_the_row_is_gone_entirely(db, user
     await db.commit()
     message_id = message.id
     # See test_refresh_or_none_returns_none_for_a_hard_deleted_row on why this is needed before the cascade delete.
-    await db.refresh(conversation, attribute_names=["messages"])
+    # skill_choices too: loading it during the delete would let the watchdog's session, on the same in-memory
+    # connection, roll the unfinished delete back.
+    await db.refresh(conversation, attribute_names=["messages", "skill_choices"])
 
     async def stuck_forever():
         await asyncio.Event().wait()

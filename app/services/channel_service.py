@@ -1,6 +1,6 @@
 """Logic for app/routers/channels.py: admin CRUD for channels and membership, plus
 can_manage_channel_conversation, which conversation_service.py and note_service.py use to restrict a
-channel's model/persona/rules/skill to admins and its managers.
+channel's model/persona/rules to admins and its managers.
 """
 
 from fastapi import HTTPException

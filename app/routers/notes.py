@@ -1,4 +1,4 @@
-"""CRUD for a user's own Notes, including which conversations each is pinned to as persona/rules/skill
+"""CRUD for a user's own Notes, including which conversations each is pinned to as persona/rules
 (app/services/note_service.py, chat_service.py).
 
 A note's text and pins save together in one request (note_service.sync_pins): the Notes page's single
@@ -20,7 +20,14 @@ from app.schemas import (
     NoteUpdate,
     OkResponse,
 )
-from app.services import channel_service, conversation_service, default_notes_setting, note_service, note_slot_service
+from app.services import (
+    channel_service,
+    conversation_service,
+    default_notes_setting,
+    note_service,
+    note_slot_service,
+    note_titles,
+)
 from app.services.auth_service import get_current_user
 
 router = APIRouter(prefix="/api/notes", tags=["notes"])
@@ -39,22 +46,20 @@ async def _get_owned_note_or_404(db: AsyncSession, note_id: str, user: User) -> 
 async def _require_slot_edit_rights(conversation, user: User) -> None:
     """Slot edits need more than read access: a personal chat's owner has full rights; a channel's slots
     change only by an admin or its manager (members can read via get_slots). Nobody can once the chat has a
-    message: persona/rules/skill start the prompt, so changing them re-reads the whole conversation.
+    message: persona/rules start the prompt, so changing them re-reads the whole conversation.
     """
     if conversation_service.visible_messages(conversation):
-        raise HTTPException(
-            status_code=409, detail="Persona, rules and skill can only change before the first message."
-        )
+        raise HTTPException(status_code=409, detail="Persona and rules can only change before the first message.")
     if conversation.channel_id is not None and not channel_service.can_manage_channel_conversation(conversation, user):
         raise HTTPException(
             status_code=403,
-            detail="Only admins and this channel's managers can change its persona/rules/skill.",
+            detail="Only admins and this channel's managers can change its persona/rules.",
         )
 
 
 @router.get("/default-notes-enabled", response_model=DefaultNotesEnabledConfig)
 async def get_default_notes_enabled_setting(db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
-    """The user's own preference (Settings > Account) for whether new chats/channels start with persona/rules/skill
+    """The user's own preference (Settings > Account) for whether new chats/channels start with persona/rules
     defaults on. Open to all users; it only affects their own chats.
     """
     return DefaultNotesEnabledConfig(enabled=await default_notes_setting.get_default_notes_enabled(db, user))
@@ -86,7 +91,7 @@ async def list_notes(db: AsyncSession = Depends(get_db), user: User = Depends(ge
 
 @router.get("/slots/{conversation_id}", response_model=list[NoteSlotOut])
 async def get_slots(conversation_id: str, db: AsyncSession = Depends(get_db), user: User = Depends(get_current_user)):
-    """The 3 persona/rules/skill slots of a conversation in fixed order, for chat.js's icons
+    """The 3 persona/rules slots of a conversation in fixed order, for chat.js's icons
     (loadPinnedBadges/openSlotEditor). `active: false` = no icon.
     """
     conversation = await conversation_service.get_accessible_conversation_or_404(db, conversation_id, user)
@@ -189,6 +194,7 @@ async def create_note(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
+    await note_titles.ensure_unique_title(db, user.id, body.title)
     note = Note(owner_id=user.id, title=body.title, content=body.content)
     db.add(note)
     await db.flush()  # assigns note.id for sync_pins
@@ -207,6 +213,7 @@ async def update_note(
 ):
     note = await _get_owned_note_or_404(db, note_id, user)
     if body.title is not None:
+        await note_titles.ensure_unique_title(db, user.id, body.title, note)
         note.title = body.title
     if body.content is not None:
         note.content = body.content

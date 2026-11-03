@@ -51,7 +51,7 @@ async def test_create_conversation_starts_with_notes_disabled_by_default(db, use
 
     conversation = await conversation_service.create_conversation(db, ConversationCreate(), user)
 
-    assert set(conversation.params["disabled_default_notes"]) == {"persona", "rules", "skill"}
+    assert set(conversation.params["disabled_default_notes"]) == {"persona", "rules"}
 
 
 @pytest.mark.asyncio

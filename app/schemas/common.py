@@ -3,9 +3,9 @@ either."""
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
-PinType = Literal["persona", "rules", "skill"]
+PinType = Literal["persona", "rules"]  # skills: models/skill.py, chosen per chat
 
 # Shared by LlamaCppServerConfig, MatricxonServerConfig and SdCppConfig: "local" = this app owns the process
 # (llamacpp_process.py/sdcpp_process.py); "remote" = 1-12 external hosts, load-balanced (server_pool.HostPool).
@@ -144,10 +144,19 @@ class GenerationParams(BaseModel):
     # Independent of the chat `model`: all models share the knowledge base and retrieval settings
     # (document_service.py). Only the generation knobs above vary per model.
     rag_top_k: int = Field(4, ge=1, le=10)
-    # Persona/rules/skill slots turned off from the chat page (GET/DELETE /api/notes/slots/{conversation_id}/...):
+    # Persona/rules slots turned off from the chat page (GET/DELETE /api/notes/slots/{conversation_id}/...):
     # no icon, nothing in the prompt (note_service.resolve_conversation_notes). A real field so a Settings save,
     # which rebuilds `params` from this model, does not wipe it.
     disabled_default_notes: list[PinType] = []
+
+    @field_validator("disabled_default_notes", mode="before")
+    @classmethod
+    def _known_slots_only(cls, value: object) -> object:
+        """Drops a retired slot ("skill", before skills had their own feature): older chats still list it."""
+        if isinstance(value, list):
+            return [slot for slot in value if slot in ("persona", "rules")]
+        return value
+
     # Offer the admin-connected MCP tools in this conversation (tool_loop_service).
     use_tools: bool = False
     # Tool definitions this chat offers, saved at first use (chat_tool_set). Server-managed: client updates

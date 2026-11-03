@@ -8,6 +8,7 @@ from app.services import matricxon_pool
 from app.services.cluster_known_nodes import KnownNodes
 from app.services.cluster_map_consensus import ConsensusLinks, short_address
 from app.services.cluster_map_storage import StorageNode
+from app.services.cluster_map_version import NodeVersionReader
 from app.services.cluster_nodes import ClusterNodes
 from app.services.cluster_replay import LogReplay
 from app.services.cluster_service import ClusterService
@@ -50,7 +51,10 @@ class ClusterMapBuilder:
             # Removal depends on the whole cluster's size.
             size = len(matricxon_pool.get_effective_hosts())
             log_total = await self._leader_total(host.consensus)
-            return self._matricxon_node(host, state, host.consensus, cluster_size=size, log_total=log_total)
+            node = self._matricxon_node(host, state, host.consensus, cluster_size=size, log_total=log_total)
+            if version := await NodeVersionReader(self._transport).read(node_id):
+                node.details = {"Address": node.details.pop("Address"), "Version": version, **node.details}
+            return node
         full = await self.build()
         return next((n for n in full.nodes if n.id == node_id), None)
 

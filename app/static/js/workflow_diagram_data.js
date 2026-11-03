@@ -131,7 +131,7 @@ const WORKFLOW_NODES = [
       server: APP_NAME,
       title: "Assembling what the model actually sees",
       location: "app/services/chat_prompt_service.py — build_system_prompt",
-      body: "Layers the system prompt in order: (1) any pinned persona/rules/skill notes, (2) RAG retrieval (see the branch below), (3) any ad-hoc text-attachment content folded in last. The result plus the trimmed history becomes chat_messages. If the message has an image attachment, its vision-model override is also applied here (see the Attachments branch) before handing off to generation.",
+      body: "Layers the system prompt in order: (1) any pinned persona/rules notes and the chat's skills, (2) RAG retrieval (see the branch below), (3) any ad-hoc text-attachment content folded in last. The result plus the trimmed history becomes chat_messages. If the message has an image attachment, its vision-model override is also applied here (see the Attachments branch) before handing off to generation.",
     },
   },
   {

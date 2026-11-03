@@ -1,6 +1,6 @@
 """Channel and ChannelMember: a named group chat whose members share one Conversation
 (Conversation.channel_id). Logic: app/services/channel_service.py; gating: conversation_service.py
-(any member reads/chats; admins and is_manager members change model/persona/rules/skill).
+(any member reads/chats; admins and is_manager members change model/persona/rules).
 """
 
 from sqlalchemy import Boolean, Column, ForeignKey, String, UniqueConstraint
@@ -38,7 +38,7 @@ class Channel(Base):
 
 
 class ChannelMember(Base):
-    """One user's membership in a channel. is_manager allows changing the conversation's model/persona/rules/skill;
+    """One user's membership in a channel. is_manager allows changing the conversation's model/persona/rules;
     only users with the "channel_manager" role may be flagged (enforced in channel_service).
     """
 

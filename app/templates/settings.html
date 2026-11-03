@@ -24,8 +24,8 @@
     </div>
   </header>
 
-  <!-- Left sidebar, like stats.html: /settings (every account, admins too) has Models, Behavior, Knowledge and Account; /admin-settings (admins only) has Models, System, Inference engines, MCP servers, Users, Channels and Update. Panels not listed for a page stay in the DOM, hidden and unreachable, so settings.js still finds the elements it binds. On narrow screens the sidebar is a scrolling row above the content. -->
-  {% set tabs = [("model", "Models")] + ([("system", "System"), ("external-servers", "Inference engines"), ("mcp-servers", "MCP servers"), ("users", "Users"), ("channels", "Channels"), ("update", "Update")] if admin_page else [("behavior", "Behavior"), ("knowledge", "Knowledge"), ("account", "Account")]) %}
+  <!-- Left sidebar, like stats.html: /settings (every account, admins too) has Models, Behavior, Knowledge, Skills and Account; /admin-settings (admins only) has Models, System, Inference engines, MCP servers, Users, Channels, Skills and Update. Panels not listed for a page stay in the DOM, hidden and unreachable, so settings.js still finds the elements it binds. On narrow screens the sidebar is a scrolling row above the content. -->
+  {% set tabs = [("model", "Models")] + ([("system", "System"), ("external-servers", "Inference engines"), ("mcp-servers", "MCP servers"), ("users", "Users"), ("channels", "Channels"), ("skills", "Skills"), ("update", "Update")] if admin_page else [("behavior", "Behavior"), ("knowledge", "Knowledge"), ("my-skills", "Skills"), ("account", "Account")]) %}
   <div class="flex flex-1 min-h-0 flex-col md:flex-row">
     <aside class="shrink-0 border-b md:border-b-0 md:border-r border-slate-800 bg-slate-900/60 md:w-64">
       <nav class="flex md:flex-col gap-1 overflow-x-auto md:overflow-y-auto px-2 py-2 md:py-3">
@@ -47,6 +47,11 @@
 
     {% include "settings/knowledge.html" %}
 
+    <!-- Skills: the user's private skills (settings_skills_user.js). -->
+    <div id="tab-my-skills" class="hidden mx-auto max-w-[55.2rem] px-4 py-8 space-y-8">
+      {% include "settings/skills_user.html" %}
+    </div>
+
     {% include "settings/account.html" %}
 
     {% endif %}
@@ -57,6 +62,11 @@
     {% include "settings/engines.html" %}
 
     {% if admin_page %}
+    <!-- Skills tab: admin-only, the shared skill library and the template gallery (settings_skills_admin.js). -->
+    <div id="tab-skills" class="hidden mx-auto max-w-[55.2rem] px-4 py-8 space-y-8">
+      {% include "settings/skills_admin.html" %}
+    </div>
+
     <!-- Update tab: admin-only, updates pAIring and a local Matricxon from GitHub (_update_panel.html). -->
     <div id="tab-update" class="hidden mx-auto max-w-[55.2rem] px-4 py-8 space-y-8">
       {% include "_update_panel.html" %}
@@ -91,6 +101,8 @@
 {% if is_admin %}<script src="/static/js/settings_mcp_servers.js?v={{ static_version }}"></script>{% endif %}
 {% if admin_page %}<script src="/static/js/settings_update.js?v={{ static_version }}"></script>{% endif %}
 {% if admin_page %}<script src="/static/js/settings_update_source.js?v={{ static_version }}"></script>{% endif %}
+<script src="/static/js/settings_skills_editor.js?v={{ static_version }}"></script>
+{% if admin_page %}<script src="/static/js/settings_skills_admin.js?v={{ static_version }}"></script>{% else %}<script src="/static/js/settings_skills_user.js?v={{ static_version }}"></script>{% endif %}
 {% if admin_page %}<script src="/static/js/settings_engine_token.js?v={{ static_version }}"></script>{% endif %}
 {% if admin_page %}<script src="/static/js/settings_rerank.js?v={{ static_version }}"></script>{% endif %}
 {% if admin_page %}<script src="/static/js/settings_rerank_models.js?v={{ static_version }}"></script>{% endif %}

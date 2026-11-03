@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.schemas.common import PinType
 
@@ -16,10 +16,34 @@ class NotePinCreate(BaseModel):
     pin_type: PinType
 
 
+NOTE_TITLE_MAX = 200
+
+
+def _clean_title(title: str | None) -> str | None:
+    """Trimmed; a title that is empty or only spaces is refused (the Notes page checks the same, notes_titles.js)."""
+    if title is None:
+        return None
+    title = title.strip()
+    if not title:
+        raise ValueError("A note needs a title.")
+    return title
+
+
+def _require_content(content: str | None) -> str | None:
+    """Content that is empty or only spaces is refused (the Notes page checks the same, notes_titles.js). Kept as
+    written otherwise: its line breaks and indents are the note."""
+    if content is not None and not content.strip():
+        raise ValueError("A note needs some content.")
+    return content
+
+
 class NoteCreate(BaseModel):
-    title: str = Field("Untitled note", max_length=200)
-    content: str = ""
+    title: str = Field("Untitled note", max_length=NOTE_TITLE_MAX)
+    content: str
     pins: list[NotePinCreate] = []
+
+    _title = field_validator("title")(_clean_title)
+    _content = field_validator("content")(_require_content)
 
 
 class NoteUpdate(BaseModel):
@@ -27,9 +51,12 @@ class NoteUpdate(BaseModel):
     (omit to leave untouched; the Notes page always sends it).
     """
 
-    title: str | None = Field(None, max_length=200)
+    title: str | None = Field(None, max_length=NOTE_TITLE_MAX)
     content: str | None = None
     pins: list[NotePinCreate] | None = None
+
+    _title = field_validator("title")(_clean_title)
+    _content = field_validator("content")(_require_content)
 
 
 class NotePinOut(BaseModel):
@@ -52,7 +79,7 @@ class NoteOut(BaseModel):
     created_at: datetime
     updated_at: datetime
     pins: list[NotePinOut] = []
-    # True for the 3 notes note_service.seed_default_notes creates (persona/rules/skill); the Notes page
+    # True for the 2 notes note_service.seed_default_notes creates (persona/rules); the Notes page
     # disables Delete for them (guard in DELETE /api/notes/{note_id}).
     is_default: bool = False
 
@@ -79,7 +106,7 @@ class DefaultNotesEnabledConfig(BaseModel):
 
 
 class NoteSlotOut(BaseModel):
-    """One of a conversation's 3 persona/rules/skill slots for the chat page icons (GET/PUT/DELETE
+    """One of a conversation's 2 persona/rules slots for the chat page icons (GET/PUT/DELETE
     /api/notes/slots/{conversation_id}/...). Simpler than NoteOut.pins: one primary note per slot, vs. the
     many-per-type pinning used for prompt building (note_service.resolve_conversation_notes).
     """

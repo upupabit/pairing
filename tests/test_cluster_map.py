@@ -214,6 +214,8 @@ def _slow_transport(hosts: list[str], delay: float = 0.05, seen: list | None = N
         await asyncio.sleep(delay)
         if request.url.path == "/api/cluster/readiness":
             return httpx.Response(200, json=_readiness())
+        if request.url.path == "/api/version":
+            return httpx.Response(200, json={"version": "2.1", "commit": "f854f64"})
         return httpx.Response(200, json={"enabled": False})
 
     return httpx.MockTransport(handler)
@@ -251,7 +253,7 @@ async def test_a_compact_map_drops_details_and_checklists(db):
 
 
 @pytest.mark.asyncio
-async def test_one_nodes_full_record_costs_two_calls_not_the_whole_cluster(db):
+async def test_one_nodes_full_record_costs_three_calls_not_the_whole_cluster(db):
     hosts = _many(40)
     seen: list = []
     transport = _slow_transport(hosts, delay=0, seen=seen)
@@ -265,8 +267,9 @@ async def test_one_nodes_full_record_costs_two_calls_not_the_whole_cluster(db):
     finally:
         monkey.undo()
     assert node.id == hosts[7] and node.details["Address"] == hosts[7] and node.checks
+    assert list(node.details)[:2] == ["Address", "Version"] and node.details["Version"] == "2.1 (f854f64)"
     assert {host for host, _ in seen} == {hosts[7]}
-    assert len(seen) == 2
+    assert len(seen) == 3  # readiness, consensus and the version: only for the panel, not on every map refresh
 
 
 @pytest.mark.asyncio
@@ -626,3 +629,26 @@ async def test_storage_is_green_when_no_node_is_drawn_and_ignores_hosts_outside_
     await settings_service.set_matricxon_server_config(db, config)
     nodes = _by_id(await _build(db, [A, B], {A: _readiness(), B: _readiness(ready=False)}))
     assert nodes["storage"].status == "up" and B not in nodes
+
+
+@pytest.mark.asyncio
+async def test_the_map_itself_reads_no_versions(db):
+    seen: list = []
+    transport = _slow_transport([A], delay=0, seen=seen)
+    await ClusterMapBuilder(db, ClusterService(db, [A], transport), transport).build()
+
+    assert not any(path == "/api/version" for _host, path in seen)
+
+
+@pytest.mark.asyncio
+async def test_an_older_or_silent_node_shows_no_version():
+    from app.services.cluster_map_version import NodeVersionReader
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "old":
+            return httpx.Response(200, json={"version": "2.0"})  # before the commit was reported
+        raise httpx.ConnectError("down")
+
+    reader = NodeVersionReader(httpx.MockTransport(handler))
+    assert await reader.read("http://old:8420") == "2.0"
+    assert await reader.read("http://down:8420") is None

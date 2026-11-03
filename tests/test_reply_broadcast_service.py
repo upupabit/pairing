@@ -34,7 +34,7 @@ async def test_publish_done_is_delivered_and_marks_the_topic_complete():
     reply_broadcast_service.publish_done("conv-2", ["a.txt"])
 
     event = await asyncio.wait_for(queue.get(), timeout=1)
-    assert event == {"done": True, "sources": ["a.txt"], "message_id": "msg-2"}
+    assert event == {"done": True, "sources": ["a.txt"], "stats": None, "message_id": "msg-2"}
 
 
 @pytest.mark.asyncio
@@ -137,7 +137,7 @@ async def test_subscriber_survives_across_multiple_messages_in_the_same_conversa
 
     reply_broadcast_service.publish_done("conv-8", None)
     first = await asyncio.wait_for(queue.get(), timeout=1)
-    assert first == {"done": True, "sources": None, "message_id": "msg-8a"}
+    assert first == {"done": True, "sources": None, "stats": None, "message_id": "msg-8a"}
 
     # A second message in the same conversation, the same subscriber still connected (chat.js never reopens the
     # connection): it must see this one too.

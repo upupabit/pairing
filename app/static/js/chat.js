@@ -524,6 +524,7 @@ function addMessageBubble(
     attachDeleteButtonIfEligible(wrapper, messageId);
   }
   setBubbleTime(wrapper, messageTime(attachmentSource));
+  ReplyStatsLine.show(wrapper, attachmentSource && attachmentSource.stats);
   // A finished private-chat message can be shared to a channel; a message shared into this channel carries a "Shared
   // from a private chat" remark (chat_share.js).
   if (messageId && (!status || status === "complete")) ChannelShare.decorate(wrapper, messageId, role);
@@ -757,6 +758,7 @@ async function runChannelPoll(conversationId) {
       senderId
     );
     setBubbleTime(bubble.closest("[data-message-id]"), messageTime(message));
+    ReplyStatsLine.show(bubble.closest("[data-message-id]"), message.stats);
     // A message another member shared in from a private chat also arrives here while this tab is open.
     ChannelShare.remark(bubble.closest("[data-message-id]"), message.shared_from, message.sender_display_name);
     bubble._toolEvents = message.tool_events;
@@ -803,6 +805,7 @@ function clearMainPane() {
   conversationTitleEl.textContent = "";
   pinnedBadgesEl.innerHTML = "";
   if (typeof chatSkills !== "undefined") chatSkills.render(null, false);
+  if (typeof chatExport !== "undefined") chatExport.render(null);
   modelBadgeEl.textContent = "";
   modelBadgeEl.classList.add("hidden");
   thinkingChip.hide();
@@ -843,7 +846,18 @@ function closeSlotEditor() {
   slotEditorEl.classList.add("hidden");
 }
 
-function openSlotEditor(conversationId, slot) {
+/* Opening one header popup closes the others: `keep` names the one being opened. */
+function closeHeaderPopups(keep) {
+  if (keep !== "slot") closeSlotEditor();
+  if (keep !== "model") closeModelPicker();
+  if (keep !== "skills" && typeof chatSkills !== "undefined") chatSkills.close();
+  if (keep !== "export" && typeof chatExport !== "undefined") chatExport.closeMenu();
+  if (keep !== "thinking" && typeof thinkingChip !== "undefined") thinkingChip.closeConfirm();
+}
+
+/* `lockedReason`: shows the note read-only, with why it can't change now. */
+function openSlotEditor(conversationId, slot, lockedReason = "") {
+  closeHeaderPopups("slot");
   editingSlot = { conversationId, pinType: slot.pin_type };
   const state = !slot.active ? " (off)" : slot.is_override ? " (customized)" : " (default)";
   slotEditorTitleEl.textContent = `${PIN_TYPE_LABELS[slot.pin_type] || slot.pin_type} for this chat${state}`;
@@ -859,8 +873,17 @@ function openSlotEditor(conversationId, slot) {
   // "Turn off" applies only to a slot that is on.
   slotEditorTurnOffBtn.classList.toggle("hidden", !slot.active);
   slotEditorStatusEl.textContent = "";
+  const locked = Boolean(lockedReason);
+  const lockedEl = document.getElementById("slot-editor-locked");
+  lockedEl.textContent = lockedReason;
+  lockedEl.classList.toggle("hidden", !locked);
+  slotEditorContentEl.readOnly = locked;
+  document.getElementById("slot-editor-only-this-chat-row").classList.toggle("hidden", locked);
+  document.getElementById("slot-editor-save").classList.toggle("hidden", locked);
+  if (locked) [slotEditorUseDefaultBtn, slotEditorTurnOffBtn].forEach((b) => b.classList.add("hidden"));
+  document.getElementById("slot-editor-cancel").textContent = locked ? "Close" : "Cancel";
   slotEditorEl.classList.remove("hidden");
-  slotEditorContentEl.focus();
+  if (!locked) slotEditorContentEl.focus();
 }
 
 document.getElementById("slot-editor-cancel").addEventListener("click", closeSlotEditor);
@@ -924,7 +947,7 @@ function closeModelPicker() {
 /* Fetches the installed models into the picker opened from the model badge: a plain name list (no install here), only to change an existing conversation's model. */
 async function openModelPicker() {
   if (!activeConversationId || !canManageActive) return;
-  closeSlotEditor();
+  closeHeaderPopups("model");
   modelPickerListEl.innerHTML = "";
   modelPickerStatusEl.textContent = "Loading…";
   modelPickerConfirmEl.classList.add("hidden");
@@ -1077,11 +1100,8 @@ function renderPinnedBadges() {
   for (const slot of pinnedSlots) {
     const badge = document.createElement("button");
     badge.type = "button";
-    const look = !editable
-      ? "bg-slate-800/60 opacity-60 cursor-not-allowed"
-      : slot.active
-        ? "bg-slate-800" + (editable ? " hover:bg-slate-700" : " cursor-default")
-        : "bg-slate-800/40 opacity-40" + (editable ? " hover:opacity-70" : " cursor-default");
+    // Never faded, on or off or locked; a locked one opens read-only (see openSlotEditor).
+    const look = "bg-slate-800 hover:bg-slate-700";
     badge.className = "rounded-full px-1.5 py-0.5 transition-colors " + look;
     const state = !slot.active ? " (off)" : slot.is_override ? " (customized)" : "";
     const readOnlyNote = !canManageActive
@@ -1091,11 +1111,16 @@ function renderPinnedBadges() {
     badge.textContent = PIN_TYPE_ICONS[slot.pin_type] || "📌";
     // Reads canManageActive at click time, not render time (see its declaration).
     badge.addEventListener("click", () => {
-      if (canManageActive && !activeHasMessages) openSlotEditor(conversationId, slot);
+      if (canManageActive && !activeHasMessages) return openSlotEditor(conversationId, slot);
+      const reason = !canManageActive
+        ? "Read-only: only admins and this channel's managers can change it."
+        : "Locked: notes can only change before the first message.";
+      openSlotEditor(conversationId, slot, reason);
     });
     pinnedBadgesEl.appendChild(badge);
   }
   if (typeof chatSkills !== "undefined") chatSkills.render(conversationId, editable);
+  if (typeof chatExport !== "undefined") chatExport.render(conversationId);
 }
 
 // Sidebar / conversation list
@@ -1693,6 +1718,7 @@ async function readAssistantReplyStream(
         if (bubble) renderReplyBody(bubble, fullText, "complete", payload.sources);
         // The reply's time is when it finished, not when its bubble appeared.
         if (wrapper) setBubbleTime(wrapper, new Date().toISOString());
+        ReplyStatsLine.show(wrapper, payload.stats);
         if (bubble && wrapper.dataset.messageId) ChannelShare.decorate(wrapper, wrapper.dataset.messageId, "assistant");
         if (isChannel && askAi) {
           channelReplyInFlight = false;

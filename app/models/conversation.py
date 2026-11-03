@@ -94,6 +94,8 @@ class Message(Base):
     # Before this column the text reached only live SSE viewers (reply_broadcast_service.publish_error);
     # MessageOut.error_message now lets a reload show it too.
     error_message = Column(Text, nullable=True)
+    # A finished reply's speed (services/reply_stats.py): first_token_ms, total_ms, tokens; null otherwise.
+    stats = Column(JSON, nullable=True)
     created_at = Column(Timestamp, default=utcnow)
     # When an assistant reply ended (complete, error or cancelled); shown as its time. created_at is when it
     # started and still orders the messages. Null for user messages and replies still streaming.

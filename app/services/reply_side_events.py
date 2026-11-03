@@ -1,7 +1,7 @@
-"""A reply stream's non-text chunks, split from reply_generation_service for the file-size rule: MCP tool calls
-({"tool": event}) and reasoning ({"reasoning": text}, params["reasoning_ticks"]). Reasoning text isn't kept or shown,
-only its stages (reasoning_stages.py), broadcast as they appear; and since a long reasoning phase has no reply text, the
-cross-instance delete check runs on these chunks too (else a deleted reply would generate on, unwatched)."""
+"""A reply stream's non-text chunks (split from reply_generation_service): MCP tool calls ({"tool": event}),
+engine token counts ({"usage": ...}, into `stats`) and reasoning ({"reasoning": text}). Reasoning text isn't
+kept, only its stages (reasoning_stages.py); the cross-instance delete check runs on these chunks too, as a
+long reasoning phase has no reply text."""
 
 import time
 
@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import Message
 from app.services import reply_broadcast_service, reply_cross_instance_service, tool_event_service
 from app.services.reasoning_stages import ReasoningStages
+from app.services.reply_stats import ReplyStats
 
 
 class ReplySideEvents:
@@ -21,11 +22,15 @@ class ReplySideEvents:
         self._conversation_id = conversation_id
         self._stages = ReasoningStages()
         self._last_check = time.monotonic()
+        self.stats = ReplyStats()
 
     async def handle(self, chunk: dict) -> bool:
         """True when the reply must stop: deleted, possibly through another instance."""
         if "tool" in chunk:
             await tool_event_service.record(self._db, self._message, chunk["tool"], self._conversation_id)
+            return False
+        if "usage" in chunk:
+            self.stats.usage(chunk["usage"])
             return False
         text = chunk.get("reasoning")
         if isinstance(text, str) and self._stages.feed(text):

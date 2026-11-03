@@ -2,8 +2,7 @@
 "global" scope only admins add to. Upload orchestration: app/services/document_upload.py; chunk+embed:
 document_ingest.py.
 
-Files placed on the server filesystem are picked up at next start
-(document_ingest.sync_all_on_startup), not live.
+Files placed on the server filesystem are picked up within a minute (services/knowledge_watcher.py).
 """
 
 from pathlib import Path

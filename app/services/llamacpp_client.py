@@ -17,6 +17,7 @@ from app.services import llamacpp_admin, llamacpp_pool, llamacpp_telemetry
 from app.services.llamacpp_errors import LlamaCppError
 from app.services.llamacpp_messages import OpenAIMessages, ToolCallCollector
 from app.services.llamacpp_models import LlamaCppCatalog, LlamaCppModelName
+from app.services.reply_stats import ReplyStats
 from app.services.sampling_extras import SamplingExtras
 from app.services.tool_call_sink import add_tools_to_payload, sink_from
 
@@ -169,6 +170,8 @@ async def chat_stream(model: str, messages: list[dict], params: dict) -> AsyncGe
         try:
             async for chunk in _stream_with_one_reload(_chunks_from):
                 yield chunk
+            if params.get("usage_events") and call_state["timings"]:
+                yield {"usage": ReplyStats.from_llamacpp(call_state["timings"])}  # reply_stats.py
         except (httpx.HTTPError, LlamaCppError) as exc:
             llamacpp_telemetry.record_chat_error(span, call_state.get("host", ""), call_state["attempts"], exc)
             if isinstance(exc, LlamaCppError):

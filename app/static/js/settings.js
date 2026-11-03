@@ -3680,7 +3680,8 @@ function validPassword(value) {
 function focusListRow(listEl, row, ...chrome) {
   if (!listEl) return;
   for (const child of listEl.children) child.style.display = row && child !== row ? "none" : "";
-  for (const el of chrome) if (el) el.style.display = row ? "none" : "";
+  // Hidden but keeping its space, so nothing above or below the list moves.
+  for (const el of chrome) if (el) el.style.visibility = row ? "hidden" : "";
 }
 
 const userListEl = document.getElementById("system-user-list");
@@ -3712,10 +3713,15 @@ function renderUserRow(user) {
         <span class="text-xs text-slate-500 uppercase tracking-wide">${escapeHtml(user.role)}</span>
         <span class="text-xs uppercase tracking-wide ${user.status === "active" ? "text-emerald-400" : "text-slate-500"}">${escapeHtml(user.status)}</span>
         <button type="button" class="edit-user-btn rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800 transition-colors">Edit</button>
+        ${user.role === "admin" ? "" : '<button type="button" class="limits-user-btn rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800 transition-colors" title="Daily limits and use (settings_usage_limits.js)">Limits</button>'}
         ${user.username === "admin" ? "" : '<button type="button" class="delete-user-btn rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-400 hover:border-red-500 hover:text-red-400 transition-colors">Delete</button>'}
       </span>
     `;
     wrap.querySelector(".edit-user-btn").addEventListener("click", renderEdit);
+    wrap.querySelector(".limits-user-btn")?.addEventListener("click", () => {
+      focusListRow(row.parentElement, row, ...userChrome());
+      new UserLimitsPanel(row, user, renderView).open();
+    });
 
     // In the main list, no need to open Edit. Permanent and cascading (DELETE /api/settings/users/{username}): removes
     // the account's conversations, documents and notes, with no undo; disabling (in Edit) is the reversible way to
@@ -4106,6 +4112,7 @@ function renderChannelRow(channel) {
           ${managerCount} manager${managerCount === 1 ? "" : "s"}
         </span>
         <button type="button" class="edit-channel-btn rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800 transition-colors">Edit</button>
+        <button type="button" class="skills-channel-btn rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:bg-slate-800 transition-colors" title="This channel's skills (settings_channel_skills.js)">Skills</button>
         <button type="button" class="reset-channel-btn rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-400 hover:border-red-500 hover:text-red-400 transition-colors" title="Clear this channel's chat history (members and notes stay)">Reset</button>
         <button type="button" class="delete-channel-btn rounded-md border border-slate-700 px-2 py-1 text-xs text-slate-400 hover:border-red-500 hover:text-red-400 transition-colors">Delete</button>
       </span>
@@ -4124,6 +4131,10 @@ function renderChannelRow(channel) {
           renderView();
         },
       }));
+    });
+    wrap.querySelector(".skills-channel-btn").addEventListener("click", () => {
+      focusListRow(row.parentElement, row, addChannelBtn);
+      new ChannelSkillsPanel(row, channel, renderView).open();
     });
     wrap.querySelector(".reset-channel-btn").addEventListener("click", async () => {
       if (!confirm(`Reset "#${channel.name}"? This permanently deletes its whole chat history for every member. Members and notes are kept. This cannot be undone.`)) return;

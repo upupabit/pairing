@@ -145,6 +145,9 @@
         <!-- This chat's Reasoning setting (chat_thinking.js): hidden unless the model can reason. -->
         <button id="thinking-chip" type="button"
           class="hidden shrink-0 rounded-full bg-slate-800 px-2.5 py-1 hover:bg-slate-700 transition-colors disabled:opacity-60 disabled:cursor-default"></button>
+        <!-- Export this chat (chat_export.js): a Markdown file. -->
+        <button id="export-badge" type="button" title="Export this chat"
+          class="hidden shrink-0 rounded-full bg-slate-800 px-2.5 py-1 hover:bg-slate-700 transition-colors">Export</button>
         <span class="text-slate-500">{{ username }}</span>
         <form method="post" action="/logout" class="flex items-center">
           <button type="submit" class="text-slate-500 hover:text-slate-300 transition-colors">Log out</button>
@@ -155,6 +158,11 @@
           title="{{ username }}"></button>
       </div>
     </header>
+
+    <!-- Export menu (chat_export.js), placed like the other header popups. -->
+    <div id="export-menu" class="hidden absolute right-4 top-14 z-20 w-40 rounded-lg border border-slate-700 bg-slate-900 p-1 shadow-xl">
+      <button type="button" data-export="md" class="block w-full rounded-md px-3 py-1.5 text-left text-sm text-slate-200 hover:bg-slate-800">Markdown (.md)</button>
+    </div>
 
     <!-- Model picker, opened from the model badge above, to switch an existing conversation to another installed model mid-chat (chat.js openModelPicker/closeModelPicker/switchModel). Affects only this conversation going forward; past replies keep the model that generated them. -->
     <div id="model-picker" class="hidden absolute right-4 top-14 z-20 w-96 max-w-[calc(100%-2rem)]
@@ -206,10 +214,12 @@
     <div id="slot-editor" class="hidden absolute right-4 top-14 z-20 w-80 max-w-[calc(100%-2rem)] space-y-2
                                   rounded-lg border border-slate-700 bg-slate-900 p-3 shadow-lg">
       <p id="slot-editor-title" class="text-xs font-semibold text-slate-200"></p>
+      <!-- Shown when the note can't change now (chat.js openSlotEditor's `lockedReason`); the note is read-only. -->
+      <p id="slot-editor-locked" class="hidden rounded-md border border-red-500/40 bg-red-500/10 px-2 py-1.5 text-xs font-medium leading-snug text-red-400"></p>
       <textarea id="slot-editor-content" rows="6" dir="auto"
         class="w-full resize-y rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm
                focus:outline-none focus:border-brand-500"></textarea>
-      <label class="flex items-start gap-2 text-xs text-slate-400">
+      <label id="slot-editor-only-this-chat-row" class="flex items-start gap-2 text-xs text-slate-400">
         <input id="slot-editor-only-this-chat" type="checkbox"
           class="mt-0.5 rounded border-slate-600 bg-slate-950 text-brand-600 focus:ring-brand-500">
         <span>Only for this chat — leave unchecked to update this for all your chats</span>
@@ -334,6 +344,8 @@
 <script src="/static/js/chat_reasoning.js?v={{ static_version }}"></script>
 <script src="/static/js/chat_tables.js?v={{ static_version }}"></script>
 <script src="/static/js/chat_scroll.js?v={{ static_version }}"></script>
+<script src="/static/js/chat_reply_stats.js?v={{ static_version }}"></script>
 <script src="/static/js/chat.js?v={{ static_version }}"></script>
 <script src="/static/js/chat_skills.js?v={{ static_version }}"></script>
+<script src="/static/js/chat_export.js?v={{ static_version }}"></script>
 {% endblock %}

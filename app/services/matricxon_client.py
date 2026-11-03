@@ -26,6 +26,7 @@ from opentelemetry.trace import SpanKind, Status, StatusCode
 from app.config import EMBEDDING_NUM_CTX
 from app.services import matricxon_http, matricxon_pool, matricxon_telemetry
 from app.services.matricxon_errors import MatricxonError, MatricxonHostError, MatricxonReply
+from app.services.reply_stats import ReplyStats
 from app.services.sampling_extras import SamplingExtras
 from app.services.tool_call_sink import add_tools_to_payload, sink_from
 
@@ -198,6 +199,8 @@ async def chat_stream(model: str, messages: list[dict], params: dict) -> AsyncGe
                 _raw_content_chunks_from, prefer=holder, info=route, retry_on=(MatricxonHostError,)
             ):
                 yield chunk
+            if params.get("usage_events") and call_state.get("done_payload"):
+                yield {"usage": ReplyStats.from_matricxon(call_state["done_payload"])}  # reply_stats.py
         except (httpx.HTTPError, MatricxonError) as exc:
             matricxon_telemetry.record_chat_error(span, call_state.get("host", ""), call_state["attempts"], exc)
             # A MatricxonError here already has its real message (e.g. the memory-refusal detail) from

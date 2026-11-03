@@ -24,6 +24,7 @@ from app.routers import (
     channel_history_admin,
     channels,
     chat,
+    chat_export,
     cluster_admin,
     cluster_outside,
     connectors,
@@ -61,6 +62,7 @@ from app.routers import (
     telemetry,
     theme,
     update_admin,
+    usage_limits_admin,
     users,
     workflow_live,
     workflow_view_admin,
@@ -186,6 +188,8 @@ app.include_router(theme.router)
 app.include_router(update_admin.router)
 app.include_router(servers_admin.router)
 app.include_router(skills.router)
+app.include_router(chat_export.router)
+app.include_router(usage_limits_admin.router)
 app.include_router(skills_admin.router)
 app.include_router(matricxon_update_admin.router)
 

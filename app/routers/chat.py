@@ -19,6 +19,7 @@ from app.services import chat_attachment_service, conversation_service, reply_br
 from app.services.auth_service import get_current_user
 from app.services.chat_service import build_reply_stream
 from app.services.model_catalog_service import HiddenModelTags
+from app.services.usage_limits import UsageLimitService
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -35,6 +36,9 @@ async def stream_reply(
     conversation = await conversation_service.get_accessible_conversation_or_404(db, conversation_id, user)
     if ask_ai and await HiddenModelTags(db).blocks(user, conversation.model):
         raise HTTPException(status_code=409, detail="This model is disabled by an admin. Pick another model.")
+
+    if ask_ai:
+        await UsageLimitService(db).check(user)  # 429 over the daily limits
 
     # Raise before StreamingResponse is built: Starlette locks in 200 once it starts pulling the body, so a
     # 409 from inside build_reply_stream would be too late. Best-effort, not race-free

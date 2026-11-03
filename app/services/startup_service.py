@@ -34,6 +34,7 @@ from app.services.conversation_service import mark_interrupted_messages_as_error
 from app.services.document_sync import sync_all_on_startup
 from app.services.image_generation_service import mark_interrupted_jobs_as_errored
 from app.services.inference_client import InferenceError, list_models
+from app.services.knowledge_watcher import knowledge_watcher
 from app.services.leader_lease import leader_lease
 from app.services.matricxon_autostart import matricxon_autostart
 from app.services.note_service import seed_default_notes
@@ -114,6 +115,7 @@ async def run_startup_tasks() -> None:
             matricxon_ps_poller.start_matricxon_ps_poller()
             system_metrics_poller.start_system_metrics_poller()
             retention_poller.start_retention_poller()
+            knowledge_watcher.start()
             cluster_membership.start_membership_sync()
 
         # Every instance: replies and image jobs this server left unfinished can't resume (an asyncio.Task dies with
@@ -206,6 +208,7 @@ async def check_engine_and_sync() -> None:
         # sync_all_on_startup degrades gracefully (logged as an "error" in its stats, not raised) if no embedding model
         # is available yet.
         stats = await sync_all_on_startup(db)
+        knowledge_watcher.mark_synced()
         logger.info(
             "Knowledge base synced: %d added, %d updated, %d removed, %d unchanged.",
             stats["added"],

@@ -251,7 +251,7 @@ const WORKFLOW_NODES = [
       server: APP_NAME,
       title: "Finishing the reply",
       location: "app/services/reply_generation_service.py — _run_generation's success path",
-      body: "On the model's stream ending cleanly: message.content is set to the full accumulated reply, status becomes \"complete\", sources (if RAG contributed) are attached, and it's all committed — then publish_done fires the final {done: true, sources, title} event. This is the ONLY path to status=\"complete\" — every other exit (an InferenceError from either engine, a timeout, a cancellation, an unhandled exception) instead leaves status=\"error\", by design, so a reply never just silently vanishes.",
+      body: "On the model's stream ending cleanly: message.content is set to the full accumulated reply, status becomes \"complete\", sources (if RAG contributed) and the reply's speed (time to first token, tokens/sec: reply_stats.py) are attached, and it's all committed — then publish_done fires the final {done: true, sources, stats, title} event. This is the ONLY path to status=\"complete\" — every other exit (an InferenceError from either engine, a timeout, a cancellation, an unhandled exception) instead leaves status=\"error\", by design, so a reply never just silently vanishes.",
     },
   },
 

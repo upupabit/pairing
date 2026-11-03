@@ -56,6 +56,11 @@ def build_skills_prompt(skills: list[Skill]) -> str:
 def edit_block_reason(conversation: Conversation, user: User) -> str | None:
     """Why `user` can't change this chat's skills now, or None."""
     if conversation_service.visible_messages(conversation):
+        if conversation.channel_id is not None:
+            return (
+                "Skills can only change before the first message; "
+                "an admin can change them under Admin settings > Channels."
+            )
         return "Skills can only change before the first message."
     if conversation.channel_id is not None and not channel_service.can_manage_channel_conversation(conversation, user):
         return "Only admins and this channel's managers can change its skills."
@@ -75,6 +80,22 @@ async def choose(
     if reason := edit_block_reason(conversation, user):
         status = 409 if conversation_service.visible_messages(conversation) else 403
         raise HTTPException(status_code=status, detail=reason)
+    await _replace(db, conversation, user, skill_ids)
+    return await chosen(db, conversation, user)
+
+
+async def set_for_channel(
+    db: AsyncSession, conversation: Conversation, admin: User, skill_ids: list[str]
+) -> ConversationSkillsOut:
+    """A channel's skill set (Admin settings > Channels): library skills, changeable any time, from the next
+    message on. Kept by a channel reset."""
+    await _replace(db, conversation, admin, skill_ids)
+    await conversation_service._drop_engine_cache(conversation.id)  # its system prompt changed
+    return await chosen(db, conversation, admin)
+
+
+async def _replace(db: AsyncSession, conversation: Conversation, user: User, skill_ids: list[str]) -> None:
+    """404 for a skill this chat can't use."""
     wanted = list(dict.fromkeys(skill_ids))
     skills = (
         {s.id: s for s in (await db.execute(select(Skill).where(Skill.id.in_(wanted)))).scalars().all()}
@@ -92,4 +113,3 @@ async def choose(
         await db.flush()  # one created_at each, so the order holds
     await db.commit()
     await db.refresh(conversation, ["skill_choices"])
-    return await chosen(db, conversation, user)

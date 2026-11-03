@@ -2,6 +2,7 @@
 document_ingest.py per new/changed file. Used at startup (app/main.py) and after browser uploads (document_upload.py).
 """
 
+import asyncio
 from pathlib import Path
 
 from sqlalchemy import select
@@ -13,6 +14,7 @@ from app.services import model_catalog_service
 from app.services.document_extract import SUPPORTED_EXTENSIONS, extract_text, hash_bytes
 from app.services.document_ingest import GLOBAL_DIR, USERS_DIR, ingest_document_stream, user_folder
 from app.services.inference_client import InferenceError
+from app.services.pdf_ocr import PdfOcr
 
 
 async def sync_folder_stream(db: AsyncSession, folder: Path, owner_id: str | None, force: bool = False):
@@ -96,6 +98,9 @@ async def sync_folder_stream(db: AsyncSession, folder: Path, owner_id: str | Non
 
         try:
             text = extract_text(raw, path.suffix.lower())
+            if not text.strip() and path.suffix.lower() == ".pdf" and PdfOcr.available():
+                yield {"stage": "file_ocr", "filename": path.name, "index": index, "total": len(files)}
+                text = await asyncio.to_thread(PdfOcr().text, raw)  # a scanned PDF
         except Exception as exc:
             error = f"couldn't read this file ({exc})."
             stats["errors"].append(f"{path.name}: {error}")
@@ -110,7 +115,8 @@ async def sync_folder_stream(db: AsyncSession, folder: Path, owner_id: str | Non
             continue
 
         if not text.strip():
-            error = "no extractable text found (empty file, or a scanned/image-only PDF?)"
+            scanned = path.suffix.lower() == ".pdf" and not PdfOcr.available()
+            error = f"no extractable text found ({PdfOcr.MISSING if scanned else 'empty file?'})"
             stats["errors"].append(f"{path.name}: {error}")
             yield {
                 "stage": "file_done",

@@ -175,3 +175,34 @@ async def test_chats_that_still_list_the_retired_skill_slot_load(db, user):
     [chat] = [ConversationOut.model_validate(row) for row in rows]
 
     assert jsonable_encoder(chat)["params"]["disabled_default_notes"] == ["persona"]
+
+
+@pytest.mark.asyncio
+async def test_an_admin_sets_a_channel_skill_set_any_time(db, user, admin_user, channel_manager_user):
+    from app.routers import channels as channels_router
+    from app.schemas.channel import ChannelCreate
+    from app.schemas.skill import ConversationSkillsIn
+    from app.services import channel_service
+
+    shared = await SkillLibrary(db).create(_skill("Shared"))
+    private = await SkillLibrary(db, owner_id=admin_user.id).create(_skill("Admin's own"))
+    body = ChannelCreate(
+        name="ops", member_user_ids=[channel_manager_user.id], manager_user_ids=[channel_manager_user.id]
+    )
+    channel = await channel_service.create_channel(db, body, admin_user)
+    chat = channel.conversation
+    db.add(Message(conversation_id=chat.id, role="user", content="hi", sender_id=channel_manager_user.id))
+    await db.commit()
+    await db.refresh(chat, ["messages", "skill_choices"])
+
+    result = await channels_router.set_channel_skills(
+        channel.id, ConversationSkillsIn(skill_ids=[shared.id]), db, admin_user
+    )
+
+    assert [s.name for s in result.chosen] == ["Shared"]
+    assert [s.name for s in await conversation_skills.active_skills(db, chat)] == ["Shared"]
+    locked = await conversation_skills.chosen(db, chat, channel_manager_user)
+    assert not locked.editable and "Admin settings" in locked.reason  # members still see the lock
+    with pytest.raises(HTTPException) as hidden:
+        await conversation_skills.set_for_channel(db, chat, admin_user, [private.id])
+    assert hidden.value.status_code == 404  # library only

@@ -118,14 +118,14 @@ def publish_reasoning(conversation_id: str, stages: list[str]) -> None:
     _publish(conversation_id, {"reasoning": stages, "message_id": topic.state.message_id})
 
 
-def publish_done(conversation_id: str, sources: list[str] | None) -> None:
+def publish_done(conversation_id: str, sources: list[str] | None, stats: dict | None = None) -> None:
     topic = _topics.get(conversation_id)
     if topic is None or topic.state is None:
         return
     topic.state.status = "complete"
     topic.state.sources = sources
     live_workflow.pulse("stream_done")
-    _publish(conversation_id, {"done": True, "sources": sources, "message_id": topic.state.message_id})
+    _publish(conversation_id, {"done": True, "sources": sources, "stats": stats, "message_id": topic.state.message_id})
 
 
 def publish_error(conversation_id: str, error: str) -> None:

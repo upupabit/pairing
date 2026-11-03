@@ -16,15 +16,15 @@ class ThinkingChip {
     this.params = null;
     this.capabilities = [];
     this.confirmBox = this.buildConfirm();
-    button.parentElement.classList.add("relative");
-    button.parentElement.appendChild(this.confirmBox);
+    // Beside the other header popups (chat.html #model-picker), so it opens at the same height.
+    document.getElementById("model-picker").parentElement.appendChild(this.confirmBox);
     button.addEventListener("click", () => this.click());
   }
 
   buildConfirm() {
     const box = document.createElement("div");
     box.className =
-      "hidden absolute right-0 top-full mt-2 z-20 w-80 max-w-[calc(100vw-2rem)] space-y-2 rounded-lg border border-slate-700 bg-slate-900 p-3 text-xs shadow-lg";
+      "hidden absolute right-4 top-14 z-20 w-80 max-w-[calc(100%-2rem)] space-y-2 rounded-lg border border-slate-700 bg-slate-900 p-3 text-xs shadow-lg";
     box.innerHTML = `
       <p class="rounded-md border border-red-500/40 bg-red-500/10 px-2 py-1.5 font-medium leading-snug text-red-400">
         This chat already has messages. With this model, changing Reasoning makes it read the whole conversation again
@@ -44,10 +44,16 @@ class ThinkingChip {
 
   click() {
     if (this.capabilities.includes("thinking_rereads") && activeHasMessages) {
-      this.confirmBox.classList.toggle("hidden");
+      const opening = this.confirmBox.classList.contains("hidden");
+      if (opening) closeHeaderPopups("thinking");
+      this.confirmBox.classList.toggle("hidden", !opening);
       return;
     }
     this.next();
+  }
+
+  closeConfirm() {
+    this.confirmBox.classList.add("hidden");
   }
 
   /* Called when a chat opens or its model changes. */

@@ -15,6 +15,14 @@ class AttachmentOut(BaseModel):
     type: str
 
 
+class ReplyStatsOut(BaseModel):
+    first_token_ms: int
+    total_ms: int
+    output_tokens: int | None = None
+    prompt_tokens: int | None = None
+    tokens_per_second: float | None = None
+
+
 class MessageOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -50,6 +58,8 @@ class MessageOut(BaseModel):
     created_at: datetime
     # When a reply ended (Message.completed_at); chat.js shows it instead of created_at.
     completed_at: datetime | None = None
+    # A finished reply's speed (Message.stats); chat_reply_stats.js shows it beside the time.
+    stats: ReplyStatsOut | None = None
 
 
 class MessagesLatestResponse(BaseModel):

@@ -116,6 +116,9 @@ It is also important not to expose more models to users than the system RAM/VRAM
 - Per-conversation model switching and generation parameters
   (temperature, top-p/k, context window, repeat penalty, reply length).
 - Stop/cancel a reply mid-stream, smart or simple auto-titling.
+- Each reply shows its speed beside its time: tokens per second and time to first token
+  (token counts with llama.cpp and Matricxon).
+- Export a chat as Markdown from the chat header.
 
 **Real multi-user, with shared Channels**
 - Every user has private conversations no one else can see or list.
@@ -124,6 +127,8 @@ It is also important not to expose more models to users than the system RAM/VRAM
   push).
 - Per-channel managers — trusted members who can steer that channel's model/settings and pinned notes, without
   needing full admin rights over the whole system.
+- Daily limits per user (AI replies and generated tokens in 24 hours), with a default for everyone and
+  per-user overrides under Admin settings → Users. Admins have none.
 
 **Notes — persona / rules**
 - Reusable, pinnable notes that shape the system prompt per
@@ -137,6 +142,7 @@ It is also important not to expose more models to users than the system RAM/VRAM
   gallery of 239 ready-made skills from
   [Fabric](https://github.com/danielmiessler/fabric) (MIT License); users
   can also write private skills of their own.
+- Each channel can have its own skill set (Admin settings → Channels → Skills), changeable at any time.
 
 **Knowledge base (RAG)**
 - Drop in `.txt`/`.md`/`.pdf`/`.docx`/`.odt`/`.rtf`/`.html`/`.csv`/`.json`
@@ -144,6 +150,8 @@ It is also important not to expose more models to users than the system RAM/VRAM
   manual or a team's internal docs, same mechanism either way
 - Private-per-user and shared/global scopes, with per-user storage
   quotas; answers cite which document they drew on.
+- Files added, edited or removed in the knowledge folder on the server are picked up within a minute, no
+  restart (`KNOWLEDGE_WATCH_SECONDS`, default 30; 0 turns it off).
 - How it works: each document is split into short passages, and an
   embedding model turns every passage into a vector once, when it is
   added. For each question, pAIring finds the passages whose vectors are

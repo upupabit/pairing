@@ -11,7 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models import User
 from app.schemas import ChannelCreate, ChannelOut, ChannelSummary, ChannelUpdate, OkResponse
-from app.services import channel_service
+from app.schemas.skill import ConversationSkillsIn, ConversationSkillsOut
+from app.services import channel_service, conversation_skills
 from app.services.auth_service import get_current_user, require_admin
 from app.services.channel_reset_service import ChannelResetService
 
@@ -56,6 +57,28 @@ async def delete_channel(
     channel = await channel_service.get_channel_or_404(db, channel_id)
     await channel_service.delete_channel(db, channel)
     return OkResponse()
+
+
+@router.get("/{channel_id}/skills", response_model=ConversationSkillsOut)
+async def get_channel_skills(
+    channel_id: str,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    channel = await channel_service.get_channel_or_404(db, channel_id)
+    return await conversation_skills.chosen(db, channel.conversation, admin)
+
+
+@router.put("/{channel_id}/skills", response_model=ConversationSkillsOut)
+async def set_channel_skills(
+    channel_id: str,
+    body: ConversationSkillsIn,
+    db: AsyncSession = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """The channel's skill set; unlike the chat picker, changeable after the first message."""
+    channel = await channel_service.get_channel_or_404(db, channel_id)
+    return await conversation_skills.set_for_channel(db, channel.conversation, admin, body.skill_ids)
 
 
 @router.post("/{channel_id}/reset", response_model=OkResponse)

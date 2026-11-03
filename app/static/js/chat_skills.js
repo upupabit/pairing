@@ -56,15 +56,15 @@ class ChatSkills {
     const count = this.chosen.length;
     this.badge.classList.remove("hidden");
     this.badge.textContent = count ? `🛠️ ${count}` : "🛠️";
-    this.badge.className = `rounded-full px-1.5 py-0.5 transition-colors ${
-      this.editable ? "bg-slate-800 hover:bg-slate-700" : "bg-slate-800/60 opacity-60"
-    } ${count ? "" : "opacity-60"}`;
+    // Not faded, like the note badges (chat.js renderPinnedBadges); still opens when locked, to show why.
+    this.badge.className = "rounded-full bg-slate-800 px-1.5 py-0.5 transition-colors hover:bg-slate-700";
     const names = count ? this.chosen.map((s) => s.name).join(", ") : "none";
     const locked = activeHasMessages ? " — locked: can only change before the first message" : this.reason ? ` — ${this.reason}` : "";
     this.badge.title = `Skills: ${names}${this.editable ? "" : locked}`;
   }
 
   async open() {
+    closeHeaderPopups("skills");
     this.selected = new Set(this.chosen.map((s) => s.id));
     // Started chat: the red box (as the model picker's warning); otherwise the reason, e.g. a channel member.
     const started = activeHasMessages;

@@ -46,7 +46,7 @@ IS_PRIMARY = INSTANCE_INDEX == 0
 SERVER_ID = os.environ.get("PAIRING_SERVER_ID") or f"{socket.gethostname()}:{APP_PORT}"
 
 # This build's version (a constant); shown in Settings > System and near the logo.
-APP_VERSION = "2.1"  # the one place: login form, chat sidebar and Admin settings > System read it
+APP_VERSION = "2.1.1"  # the one place: login form, chat sidebar and Admin settings > System read it
 
 # The display name (a constant): single source for UI/API occurrences of "pAIring". Templates read it
 # via `templates.env.globals["app_name"]`, plain JS via base.html's `window.APP_NAME`.
@@ -101,6 +101,8 @@ MATRICXON_AUTOSTART = os.environ.get("MATRICXON_AUTOSTART", "true").strip().lowe
 # synced by app/rag.py on startup and on "Rescan". Top-level so it is easy to find.
 KNOWLEDGE_DIR = Path(os.environ.get("KNOWLEDGE_DIR", BASE_DIR / "knowledge"))
 KNOWLEDGE_DIR.mkdir(parents=True, exist_ok=True)
+# How often the leader checks knowledge/ for added, edited or removed files (knowledge_watcher.py); 0 turns it off.
+KNOWLEDGE_WATCH_SECONDS = float(os.environ.get("KNOWLEDGE_WATCH_SECONDS", "30"))
 
 # Per-message attachments (images for vision models; text/PDF/docx folded into the prompt, see
 # app/services/chat_attachment_service.py). Separate from KNOWLEDGE_DIR (RAG).

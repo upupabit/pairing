@@ -1,6 +1,4 @@
-"""Assistant reply generation, detached from the initiating request by a background asyncio.Task, for every
-conversation (personal or channel). Split from chat_service.build_reply_stream (conversation-specific setup)
-for the file-size rule and because it must run independently of its triggering request.
+"""Assistant reply generation in a background asyncio.Task, detached from the request.
 
 Mechanism: stream_reply creates the placeholder assistant Message, hands the engine call to a detached task
 (_run_generation), then only relays reply_broadcast_service's hub. It never awaits the engine, so a
@@ -181,7 +179,7 @@ async def _run_generation(
             try:
                 async with asyncio.timeout(effective_timeout):
                     gen_params = {**(params or {}), "request_id": message_id, "conversation_id": conversation_id}
-                    gen_params["reasoning_ticks"] = True
+                    gen_params["reasoning_ticks"] = gen_params["usage_events"] = True
                     if has_image:  # the default vision model: Matricxon keeps it out of its loaded-model limit
                         gen_params["model_role"] = "vision"
                     tools = await tool_loop_service.tool_stream_or_none(db, model, chat_messages, gen_params)
@@ -192,6 +190,7 @@ async def _run_generation(
                                 await stop_model(model, request_id=message_id)
                                 return
                             continue
+                        side_events.stats.text()
                         full_reply += chunk
                         unflushed += chunk
                         reply_broadcast_service.publish_chunk(conversation_id, chunk)
@@ -240,8 +239,9 @@ async def _run_generation(
             message.status = "complete"
             message.completed_at = utcnow()
             message.sources = source_filenames or None
+            message.stats = side_events.stats.result()
             await db.commit()
-            reply_broadcast_service.publish_done(conversation_id, source_filenames)
+            reply_broadcast_service.publish_done(conversation_id, source_filenames, message.stats)
     except Exception:
         # Broad on purpose, like title_service._generate_title_in_background: a detached task with no caller to
         # propagate to; otherwise the failure would vanish without context.

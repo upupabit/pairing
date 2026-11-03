@@ -289,11 +289,11 @@ Setup, limits and privacy notes for each: [pAIring connectors](https://bytepenny
   </tr>
   <tr>
     <th width="50%">Workflow analysis</th>
-    <th width="50%">Live workflow on a 50-node cluster</th>
+    <th width="50%">Admin skills</th>
   </tr>
   <tr>
     <td><img src="docs/screenshots/stats-workflow-analysis.png" alt="Workflow analysis" width="100%"></td>
-    <td><img src="docs/screenshots/stats-workflow-cluster-50-nodes.gif" alt="Live workflow on a 50-node cluster" width="100%"></td>
+    <td><img src="docs/screenshots/settings-skills.png" alt="Admin skills" width="100%"></td>
   </tr>
   <tr>
     <th width="50%">Settings-&gt;models</th>

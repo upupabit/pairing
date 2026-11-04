@@ -168,7 +168,7 @@
     <div id="model-picker" class="hidden absolute right-4 top-14 z-20 w-96 max-w-[calc(100%-2rem)]
                                   rounded-lg border border-slate-700 bg-slate-900 p-2 shadow-lg space-y-1">
       <!-- Shown when the chat already has messages (chat.js openModelPicker): a new model re-reads the whole chat. -->
-      <p id="model-picker-warning" class="hidden rounded-md border border-red-500/40 bg-red-500/10 px-2 py-1.5 text-xs font-medium leading-snug text-red-400">
+      <p id="model-picker-warning" class="hidden rounded-lg border border-warning-500/50 bg-slate-900 px-3 py-2 text-xs leading-snug text-warning-400">
         This chat already has messages. A different model has to read the whole conversation again before its first
         reply, since saved progress belongs to the model that made it. On a long chat this can take minutes, depending
         on your system.
@@ -195,7 +195,7 @@
         <a href="/settings#my-skills" class="text-[11px] text-slate-500 underline underline-offset-2 hover:text-slate-300">My skills</a>
       </div>
       <!-- Like #model-picker-warning: shown once the chat has messages (chat_skills.js). -->
-      <p data-field="locked" class="hidden rounded-md border border-red-500/40 bg-red-500/10 px-2 py-1.5 text-xs font-medium leading-snug text-red-400">
+      <p data-field="locked" class="hidden rounded-lg border border-warning-500/50 bg-slate-900 px-3 py-2 text-xs leading-snug text-warning-400">
         This chat already has messages, so its skills can't change any more. Skills open the conversation, so changing
         them would mean reading the whole chat again. Start a new chat to use other skills.
       </p>
@@ -215,7 +215,7 @@
                                   rounded-lg border border-slate-700 bg-slate-900 p-3 shadow-lg">
       <p id="slot-editor-title" class="text-xs font-semibold text-slate-200"></p>
       <!-- Shown when the note can't change now (chat.js openSlotEditor's `lockedReason`); the note is read-only. -->
-      <p id="slot-editor-locked" class="hidden rounded-md border border-red-500/40 bg-red-500/10 px-2 py-1.5 text-xs font-medium leading-snug text-red-400"></p>
+      <p id="slot-editor-locked" class="hidden rounded-lg border border-warning-500/50 bg-slate-900 px-3 py-2 text-xs leading-snug text-warning-400"></p>
       <textarea id="slot-editor-content" rows="6" dir="auto"
         class="w-full resize-y rounded-md border border-slate-700 bg-slate-950 px-2.5 py-1.5 text-sm
                focus:outline-none focus:border-brand-500"></textarea>
@@ -348,4 +348,5 @@
 <script src="/static/js/chat.js?v={{ static_version }}"></script>
 <script src="/static/js/chat_skills.js?v={{ static_version }}"></script>
 <script src="/static/js/chat_export.js?v={{ static_version }}"></script>
+<script src="/static/js/chat_popup_dismiss.js?v={{ static_version }}"></script>
 {% endblock %}

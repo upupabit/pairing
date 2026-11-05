@@ -240,7 +240,7 @@ async def test_add_rejects_a_duplicate_tag(db, monkeypatch):
     catalog = ExtendedModelCatalog(db)
     await catalog.add(_REPO["repo_id"], _REPO["files"][0]["filename"], proxy_url=None)
 
-    with pytest.raises(ValueError, match="already in the catalog"):
+    with pytest.raises(svc.AlreadyInCatalogError, match="already in the catalog"):
         await catalog.add(_REPO["repo_id"], _REPO["files"][0]["filename"], proxy_url=None)
 
 

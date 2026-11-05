@@ -39,6 +39,10 @@ class ExtendedModelCatalogResponse(BaseModel):
     # (ExtendedModelCatalog.build excludes installed tags). Lets the frontend avoid a misleading "Added"
     # (an admin re-adding an installed tag found nothing to pull). False on GET/DELETE.
     already_installed: bool = False
+    # POST only: true when the tag was already listed (not installed); nothing was added.
+    already_listed: bool = False
+    # POST only: the added diffusion model can't start without parts pAIring can't fetch (image_model_parts).
+    warning: str | None = None
 
 
 class AddExtendedModelRequest(BaseModel):

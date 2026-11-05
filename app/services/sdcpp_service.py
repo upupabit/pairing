@@ -33,11 +33,13 @@ async def get_status(db: AsyncSession) -> SdCppStatus:
     missing = sdcpp_source_build.missing_tools()
     if tracked is None or not config.binary_path or not sdcpp_process.is_alive(tracked["pid"], config.binary_path):
         return SdCppStatus(running=False, installed=installed, source_build_missing=missing)
+    healthy = await _ping_health()
     return SdCppStatus(
         running=True,
         installed=installed,
         pid=tracked["pid"],
-        healthy=await _ping_health(),
+        healthy=healthy,
+        loading=not healthy and sdcpp_process.is_loading(),
         source_build_missing=missing,
     )
 
@@ -74,12 +76,14 @@ async def _launch(config: SdCppConfig) -> None:
         tracked = sdcpp_process.read_tracking()
         if tracked and sdcpp_process.is_alive(tracked["pid"], config.binary_path):
             return
-        try:  # blocks until sd-server listens: keep it off the event loop
+        offset = sdcpp_process.log_offset()
+        try:  # blocks until sd-server listens (or a while): keep it off the event loop
             pid = await asyncio.to_thread(sdcpp_process.spawn, config.binary_path, config.model_path, config.extra_args)
         except sdcpp_process.StartupError:
             sdcpp_process.write_tracking(None)
             raise
-        sdcpp_process.write_tracking({"pid": pid} if pid is not None else None)
+        tracking = {"pid": pid, "log_offset": offset, "binary_path": config.binary_path}
+        sdcpp_process.write_tracking(tracking if pid is not None else None)
 
 
 async def stop(db: AsyncSession) -> SdCppStatus:

@@ -96,7 +96,9 @@ async def test_start_spawns_and_writes_tracking(db, monkeypatch):
 
     assert status.running is True and status.pid == 4242 and status.healthy is True
     assert spawned == {"binary": "/opt/sd/sd-server", "model": "/opt/sd/models/m.gguf", "extra": "--threads 2"}
-    assert sdcpp_process.read_tracking() == {"pid": 4242}
+    tracking = sdcpp_process.read_tracking()
+    assert tracking["pid"] == 4242 and tracking["binary_path"] == "/opt/sd/sd-server"
+    assert isinstance(tracking["log_offset"], int)
 
 
 @pytest.mark.asyncio
@@ -250,7 +252,7 @@ async def test_apply_switches_model_when_it_loads(db, monkeypatch):
     monkeypatch.setattr(sdcpp_process, "spawn", lambda *_a: state.update(alive=True) or 9)
     sdcpp_process.write_tracking({"pid": 7})
     status = await sdcpp_service.apply(db, SdCppConfig(binary_path="/opt/sd/sd-server", model_path="/ok.gguf"))
-    assert status.running and sdcpp_process.read_tracking() == {"pid": 9}
+    assert status.running and sdcpp_process.read_tracking()["pid"] == 9
 
 
 @pytest.mark.asyncio

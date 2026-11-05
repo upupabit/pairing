@@ -22,6 +22,8 @@ class ImageModelList(BaseModel):
     local: bool = True
     # Model storage (image_model_service.resolve_models_dir); the form's placeholder.
     folder: str = ""
+    # The saved engine model, when its file no longer exists (deleted or moved by hand).
+    engine_model_missing: str | None = None
 
 
 class DiffusionModelCatalogResponse(BaseModel):

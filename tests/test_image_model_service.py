@@ -37,6 +37,10 @@ def models_root(tmp_path, monkeypatch):
     return root
 
 
+async def _async(value):
+    return value
+
+
 async def _register(db, tag=_TAG):
     catalog = ExtendedModelCatalog(db)
     await catalog._save([{"tag": tag, "kind": "image", "family": "SD-Turbo", "download_gb": 2.0}])
@@ -227,10 +231,12 @@ async def test_adding_an_image_repo_file_stores_an_image_entry_without_probing_i
     from app.services import extended_model_catalog_service as svc
 
     monkeypatch.setattr(svc, "list_models", fake_list_models)
+    monkeypatch.setattr(svc.ImageModelParts, "from_hub", classmethod(lambda cls, *_a: _async([])))
 
     entry = await ExtendedModelCatalog(db).add(_REPO, _FILE, None)
 
     assert entry["kind"] == "image" and entry["tag"] == _TAG and entry["family"] == "SD-Turbo"
+    assert entry["missing_parts"] == []
 
 
 @pytest.mark.asyncio

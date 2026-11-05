@@ -69,6 +69,12 @@ class DiffusionModelsSection {
       row.appendChild(box);
     }
     top.append(label, action);
+    if (entry.warning) {
+      const warning = document.createElement("p");
+      warning.className = "rounded-lg border border-warning-500/50 bg-slate-900 px-3 py-2 text-xs leading-snug text-warning-400";
+      warning.textContent = entry.warning;
+      top.append(warning);
+    }
     row.prepend(top);
     row.append(progress);
     return row;

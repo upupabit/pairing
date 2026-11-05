@@ -51,6 +51,8 @@ class SdCppStatus(BaseModel):
     installed: bool = False
     pid: int | None = None
     healthy: bool | None = None
+    # Started but still reading its model (not "not responding").
+    loading: bool = False
     # Build tools missing for "Build from source" (empty = usable).
     source_build_missing: list[str] = Field(default_factory=list)
 

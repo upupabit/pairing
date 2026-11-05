@@ -116,7 +116,8 @@ function buildRemoveButton(job) {
   button.title = job.status === "complete" ? "Delete this image" : "Remove";
   button.setAttribute("aria-label", button.title);
   button.className =
-    "absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-black/60 text-slate-200 hover:bg-red-600 hover:text-white transition-colors flex items-center justify-center " +
+    // Red as soon as the pointer is over the tile (not only over the ×), so it is easy to spot.
+    "absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-black/70 text-white group-hover:bg-red-600 focus:bg-red-600 shadow transition-colors flex items-center justify-center " +
     (job.status === "complete" ? "opacity-0 group-hover:opacity-100 focus:opacity-100" : "");
   button.innerHTML =
     '<svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>';

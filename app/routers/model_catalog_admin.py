@@ -19,8 +19,9 @@ from app.schemas import (
 )
 from app.services import http_proxy_service
 from app.services.auth_service import get_current_user, require_admin
-from app.services.extended_model_catalog_service import ExtendedModelCatalog
+from app.services.extended_model_catalog_service import AlreadyInCatalogError, ExtendedModelCatalog
 from app.services.huggingface_client import HuggingFaceCatalogSearch, HuggingFaceLookupError
+from app.services.image_model_parts import ImageModelParts
 
 router = APIRouter(prefix="/api/settings/model-catalog/extended", tags=["settings"])
 
@@ -78,6 +79,9 @@ async def add_extended_model(
     catalog = ExtendedModelCatalog(db)
     try:
         added = await catalog.add(body.repo_id, body.filename, proxy_url=proxy_config.proxy_url())
+    except AlreadyInCatalogError:
+        # Listed earlier, not downloaded yet: point at its row instead of failing.
+        return ExtendedModelCatalogResponse(entries=await catalog.build(admin), already_listed=True)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except HuggingFaceLookupError as exc:
@@ -85,7 +89,8 @@ async def add_extended_model(
     entries = await catalog.build(admin)
     # added["note"] is ALREADY_INSTALLED_NOTE only on that branch (see ExtendedModelCatalogResponse.already_installed).
     already_installed = added["note"] == ExtendedModelCatalog.ALREADY_INSTALLED_NOTE
-    return ExtendedModelCatalogResponse(entries=entries, already_installed=already_installed)
+    warning = ImageModelParts.warning(body.filename, added.get("missing_parts"))
+    return ExtendedModelCatalogResponse(entries=entries, already_installed=already_installed, warning=warning)
 
 
 @router.delete("", response_model=ExtendedModelCatalogResponse)

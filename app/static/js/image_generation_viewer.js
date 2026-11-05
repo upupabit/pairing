@@ -15,9 +15,10 @@
   function buildViewer() {
     const el = document.createElement("div");
     el.className = "hidden fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/80 p-4";
-    el.innerHTML = `<p data-viewer-caption dir="auto" class="max-h-[12vh] max-w-3xl overflow-y-auto text-center text-sm text-slate-200"></p>
+    // White, not slate: light themes remap slate to dark shades, unreadable on the black overlay.
+    el.innerHTML = `<p data-viewer-caption dir="auto" class="max-h-[12vh] max-w-3xl overflow-y-auto text-center text-sm text-white"></p>
       <img data-viewer-img alt="" class="max-h-[70vh] max-w-full rounded-md object-contain">
-      <button type="button" data-viewer-close class="text-sm text-slate-300 hover:text-white">Close</button>`;
+      <button type="button" data-viewer-close class="rounded-md border border-white/50 bg-white/10 px-4 py-1.5 text-sm font-medium text-white hover:bg-white/25">Close</button>`;
     el.addEventListener("click", (event) => {
       if (event.target === el || event.target.closest("[data-viewer-close]")) closeViewer();
     });

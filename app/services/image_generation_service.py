@@ -20,7 +20,7 @@ from app.config import IMAGES_DIR, SERVER_ID
 from app.database import AsyncSessionLocal
 from app.models import ImageGenerationJob
 from app.schemas import ImageGenerationRequest
-from app.services import image_engine_service, image_init, sdcpp_client, sdcpp_progress
+from app.services import image_engine_service, image_init, sdcpp_client, sdcpp_process, sdcpp_progress
 from app.services.sdcpp_client import SdCppError
 
 logger = logging.getLogger("llama_chat")
@@ -153,10 +153,17 @@ async def _sdcpp_image_bytes(db: AsyncSession, job: ImageGenerationJob, params: 
     _GenerationFailed/_JobCancelled. A cancel stops a still-queued engine job; one already generating finishes
     on builds without cancel_generating (the engine is shared, never restarted for this) and its result is discarded.
     """
+    deadline = time.monotonic() + (await image_engine_service.get_sdcpp_config(db)).timeout_minutes * 60
+    # A just-started sd-server is still reading its model: wait instead of failing to connect.
+    while sdcpp_process.is_loading():
+        if await _is_cancelled(db, job):
+            raise _JobCancelled
+        if time.monotonic() > deadline:
+            raise _GenerationFailed("The image model is still loading. Try again in a few minutes.")
+        await asyncio.sleep(_POLL_INTERVAL_SECONDS)
     host, engine_job_id = await sdcpp_client.submit_job(params)
     job.engine_job_id = engine_job_id
     await db.commit()
-    deadline = time.monotonic() + (await image_engine_service.get_sdcpp_config(db)).timeout_minutes * 60
     while time.monotonic() < deadline:
         if await _is_cancelled(db, job):
             await sdcpp_client.cancel_job(host, engine_job_id)

@@ -14,11 +14,21 @@ from app.config import DATA_DIR, SDCPP_HOST
 from app.services.image_companions import ImageCompanions
 from app.services.tracked_process import is_alive, terminate
 
-__all__ = ["is_alive", "terminate", "read_tracking", "write_tracking", "spawn", "StartupError"]
+__all__ = [
+    "is_alive",
+    "terminate",
+    "read_tracking",
+    "write_tracking",
+    "spawn",
+    "StartupError",
+    "log_offset",
+    "is_loading",
+]
 
 logger = logging.getLogger("llama_chat")
 
 _TRACKING_FILE = DATA_DIR / "sdcpp.json"
+_LOG_PATH = DATA_DIR / "logs" / "sdcpp.log"
 _STARTUP_WAIT_S = 30.0
 _POLL_S = 0.25
 _READY_MARKER = "listening on"
@@ -46,6 +56,20 @@ def _log_since(log_path: Path, offset: int) -> str:
             return handle.read().decode(errors="replace")
     except OSError:
         return ""
+
+
+def log_offset() -> int:
+    """The log's size now: where a launch's own lines start."""
+    return _LOG_PATH.stat().st_size if _LOG_PATH.exists() else 0
+
+
+def is_loading() -> bool:
+    """True while the tracked sd-server runs but hasn't logged "listening on" since its launch (still reading
+    the model; slow disks take minutes, longer than spawn waits)."""
+    tracked = read_tracking()
+    if not tracked or "log_offset" not in tracked or not is_alive(tracked["pid"], tracked.get("binary_path", "")):
+        return False
+    return _READY_MARKER not in _log_since(_LOG_PATH, tracked["log_offset"])
 
 
 def read_tracking() -> dict | None:
@@ -95,10 +119,9 @@ def spawn(binary_path: str, model_path: str, extra_args: str | None) -> int | No
     listens. None if it can't launch; StartupError if it exits while starting (bad/unsupported model, port in use),
     with details in data/logs/sdcpp.log.
     """
-    log_dir = DATA_DIR / "logs"
-    log_dir.mkdir(parents=True, exist_ok=True)
-    log_path = log_dir / "sdcpp.log"
-    offset = log_path.stat().st_size if log_path.exists() else 0
+    _LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    log_path = _LOG_PATH
+    offset = log_offset()
     with open(log_path, "ab") as log_file:
         try:
             proc = subprocess.Popen(

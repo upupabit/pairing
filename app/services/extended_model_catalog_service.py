@@ -20,8 +20,13 @@ from app.services.engine_support_checker import GGUF_RAM_ESTIMATE_MULTIPLIER, En
 from app.services.engines.registry import registry
 from app.services.extended_model_catalog_enrichment import HuggingFaceModelProbe
 from app.services.huggingface_client import HuggingFaceCatalogSearch, HuggingFaceLookupError
+from app.services.image_model_parts import ImageModelParts
 from app.services.inference_client import list_models
 from app.services.model_catalog_service import HiddenModelTags
+
+
+class AlreadyInCatalogError(ValueError):
+    """The tag is already listed (not installed yet); nothing new to add."""
 
 
 class ExtendedModelCatalog:
@@ -99,7 +104,7 @@ class ExtendedModelCatalog:
             await ImageModelStore.open(self._db)
         ).is_installed(tag)
         if not already_installed and any(e["tag"] == tag for e in entries):
-            raise ValueError(f'"{tag}" is already in the catalog.')
+            raise AlreadyInCatalogError(f'"{tag}" is already in the catalog.')
 
         try:
             entry = await self._probe_entry(repo_id, filename, proxy_url)
@@ -139,6 +144,7 @@ class ExtendedModelCatalog:
                 "parameter_size": None,
                 "download_gb": matched["download_gb"],
                 "note": None,
+                "missing_parts": await ImageModelParts.from_hub(repo_id, filename, proxy_url),
             }
         probed = await HuggingFaceModelProbe.probe(repo_id, filename, proxy_url)
         architecture = probed["architecture"]

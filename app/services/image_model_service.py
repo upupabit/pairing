@@ -24,6 +24,7 @@ from app.services import image_engine_service, sdcpp_installer, settings_service
 from app.services.extended_model_catalog_service import ExtendedModelCatalog
 from app.services.hf_download import stream_file
 from app.services.image_companions import FOLDER as COMPANIONS_DIR, ImageCompanions
+from app.services.image_model_parts import ImageModelParts
 
 logger = logging.getLogger("llama_chat")
 
@@ -113,6 +114,11 @@ class ImageModelStore:
         except ValueError:
             return False
 
+    async def missing_engine_model(self) -> str | None:
+        """The saved engine model's path if that file is gone; None otherwise."""
+        path = (await image_engine_service.get_sdcpp_config(self._db)).model_path
+        return path if path and not Path(path).is_file() else None
+
     async def is_local(self) -> bool:
         return (await image_engine_service.get_sdcpp_config(self._db)).mode == "local"
 
@@ -134,6 +140,10 @@ class ImageModelStore:
             repo_id = self.parse_tag(tag)[0]
             known, extra = curated.get(tag), added.get(tag, {})
             size_gb = file.size_gb if file else (known.download_gb if known else extra.get("download_gb"))
+            # Curated ones are known to work; others are checked from the file on disk, else from Add's probe.
+            missing = None
+            if not known:
+                missing = await ImageModelParts.from_file_async(Path(file.path)) if file else extra.get("missing_parts")
             entries.append(
                 CatalogEntry(
                     family=(known.family if known else extra.get("family")) or repo_id.rsplit("/", 1)[-1],
@@ -150,6 +160,7 @@ class ImageModelStore:
                     is_image=True,
                     companions=self.companions_for(tag),
                     in_use_as=["Image engine model"] if file and file.path == engine_model else [],
+                    warning=ImageModelParts.warning(self.parse_tag(tag)[1], missing),
                 )
             )
         return entries

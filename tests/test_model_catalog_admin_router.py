@@ -167,15 +167,18 @@ async def test_add_extended_model_flags_already_installed_and_omits_it_from_entr
 
 
 @pytest.mark.asyncio
-async def test_add_extended_model_returns_400_for_a_duplicate(db, admin_user, monkeypatch):
+async def test_add_extended_model_flags_an_already_listed_duplicate(db, admin_user, monkeypatch):
+    """Re-adding a listed, not-installed model points at its row instead of failing."""
     monkeypatch.setattr(extended_model_catalog_service, "list_models", lambda: _async_return([]))
     _stub_repo_files(monkeypatch)
     body = AddExtendedModelRequest(repo_id=_REPO["repo_id"], filename=_REPO["files"][0]["filename"])
     await model_catalog_admin.add_extended_model(body, db=db, admin=admin_user)
 
-    with pytest.raises(HTTPException) as exc_info:
-        await model_catalog_admin.add_extended_model(body, db=db, admin=admin_user)
-    assert exc_info.value.status_code == 400
+    result = await model_catalog_admin.add_extended_model(body, db=db, admin=admin_user)
+
+    assert result.already_listed is True
+    assert result.already_installed is False
+    assert [e.tag for e in result.entries] == [ExtendedModelCatalog.build_tag(body.repo_id, body.filename)]
 
 
 @pytest.mark.asyncio

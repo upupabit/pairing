@@ -38,9 +38,24 @@ async def set_active_image_engine(db: AsyncSession, engine: ImageEngineName) -> 
     await _put(db, ACTIVE_IMAGE_ENGINE_KEY, {"engine": engine})
 
 
+def _relocated_model(model_path: str | None, models_path: str | None) -> str | None:
+    """A saved model outside the models folder (set before the folder moved) points at the same
+    <org>/<repo>/<file> inside it, when that copy exists; otherwise unchanged.
+    """
+    if not model_path or not models_path:
+        return model_path
+    saved, root = Path(model_path), Path(models_path)
+    if saved.is_relative_to(root) or len(saved.parts) < 4:
+        return model_path
+    moved = root.joinpath(*saved.parts[-3:])
+    return str(moved) if moved.is_file() else model_path
+
+
 async def get_sdcpp_config(db: AsyncSession) -> SdCppConfig:
     row = await db.get(AppSetting, (SYSTEM_OWNER_ID, SDCPP_CONFIG_KEY))
-    return SdCppConfig(**row.value) if row else SdCppConfig()
+    config = SdCppConfig(**row.value) if row else SdCppConfig()
+    config.model_path = _relocated_model(config.model_path, config.models_path)
+    return config
 
 
 async def set_sdcpp_config(db: AsyncSession, config: SdCppConfig) -> None:

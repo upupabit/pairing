@@ -3,6 +3,7 @@
 // The expanded connector's form, re-applied across a loadConnectors re-render (after a save/toggle) so the row being
 // edited doesn't collapse.
 let openConnectorId = null;
+let testedConnectorId = null; // saved or tested on this page: its result shows even with fields missing
 
 // Two independent columns from md up (alternating, so reading order stays left, right, left...): opening a card then
 // only moves the cards below it in its own column, never its neighbour, as a shared-row grid did. One column below md.
@@ -185,6 +186,7 @@ function renderConnectorCard(connector) {
         body: JSON.stringify({ values }),
       });
       if (result.saved) {
+        testedConnectorId = connector.id;
         await loadConnectors();
         return;
       }
@@ -214,7 +216,13 @@ function renderConnectorCard(connector) {
     }
   });
 
-  if (connector.last_test_message) showResult(connector.last_test_passed, connector.last_test_message);
+  // The saved test result once every required field is filled, or right after a Save/Test here: an old "key
+  // required" failure on a connector nobody set up yet looks like a new error on a fresh page.
+  const configured = connector.config_fields.every(
+    (f) => !f.required || (f.secret ? connector.values[`has_${f.name}`] : connector.values[f.name]),
+  );
+  const shown = configured || connector.id === testedConnectorId;
+  if (connector.last_test_message && shown) showResult(connector.last_test_passed, connector.last_test_message);
 
   return card;
 }

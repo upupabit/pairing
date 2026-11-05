@@ -39,7 +39,12 @@ async def get_diffusion_model_catalog(db: AsyncSession = Depends(get_db), user: 
 @router.get("", response_model=ImageModelList)
 async def list_image_models(db: AsyncSession = Depends(get_db), _admin: User = Depends(require_admin)):
     store = await ImageModelStore.open(db)
-    return ImageModelList(models=store.list_files(), local=await store.is_local(), folder=str(store.root))
+    return ImageModelList(
+        models=store.list_files(),
+        local=await store.is_local(),
+        folder=str(store.root),
+        engine_model_missing=await store.missing_engine_model(),
+    )
 
 
 @router.post("/pull")

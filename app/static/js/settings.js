@@ -92,6 +92,7 @@ const hfSearchStatusEl = document.getElementById("hf-search-status");
 const hfSearchResultsEl = document.getElementById("hf-search-results");
 const hfRepoFilesEl = document.getElementById("hf-repo-files");
 const hfRepoFilesStatusEl = document.getElementById("hf-repo-files-status");
+const hfAddWarningEl = document.getElementById("hf-add-warning");
 const paramSlidersEl = document.getElementById("param-sliders");
 const paramsSectionHintEl = document.getElementById("params-section-hint");
 const ragUnavailableEl = document.getElementById("rag-unavailable");
@@ -879,6 +880,11 @@ function renderHfRepoFiles(repo) {
       '<path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>' +
       "</svg>";
 
+    const rowWarning = document.createElement("p");
+    rowWarning.className =
+      "hidden mt-1 rounded-lg border border-warning-500/50 bg-slate-900 px-3 py-2 text-xs leading-snug text-warning-400";
+    rowWarning.setAttribute("role", "alert");
+
     const addBtn = document.createElement("button");
     addBtn.type = "button";
     addBtn.className =
@@ -891,21 +897,27 @@ function renderHfRepoFiles(repo) {
       // (the GGUF-header probe can take seconds, see app.services.gguf_probe) left "Adding…" where an admin who had
       // scrolled down couldn't see it. The spinner beside the button (addSpinner) serves whoever is still looking at
       // it.
+      hfAddWarningEl.classList.add("hidden");
       hfRepoFilesStatusEl.textContent = "Adding…";
       hfRepoFilesStatusEl.classList.remove("text-red-400");
+      rowWarning.classList.add("hidden");
       try {
         // already_installed (ExtendedModelCatalogResponse): an already-installed tag never shows in "browse more
         // models" to pull, so a flat "Added" read as "go find it in the list", which no longer had it.
-        const { already_installed } = await api("/api/settings/model-catalog/extended", {
+        const { already_installed, already_listed, warning } = await api("/api/settings/model-catalog/extended", {
           method: "POST",
           body: JSON.stringify({ repo_id: repo.repo_id, filename: file.filename }),
         });
         const message = already_installed
           ? `"${file.filename}" is already installed — nothing to pull.`
-          : `Added "${file.filename}".`;
+          : already_listed
+            ? `"${file.filename}" is already in the list, not downloaded yet — use Download on its row.`
+            : `Added "${file.filename}".`;
         hideHfRepoFiles();
         hfSearchResultsEl.classList.add("hidden");
         hfSearchStatusEl.textContent = message;
+        hfAddWarningEl.textContent = warning || "";
+        hfAddWarningEl.classList.toggle("hidden", !warning);
         // refreshCatalogs (not just loadExtendedCatalog/renderExtendedModelCatalog): a bug. When
         // already_installed is true, the tag can now show in the main catalog too (ChatModelCatalogBuilder.build's
         // is_auto_discovered handling), but only the extended one was refreshed, so it vanished from "Browse more
@@ -920,8 +932,10 @@ function renderHfRepoFiles(repo) {
           block: "center",
         });
       } catch (err) {
-        hfRepoFilesStatusEl.textContent = err.message;
-        hfRepoFilesStatusEl.classList.add("text-red-400");
+        // Under the clicked file, in the standard warning box: the status line below a long list was out of view.
+        hfRepoFilesStatusEl.textContent = "";
+        rowWarning.textContent = err.message;
+        rowWarning.classList.remove("hidden");
         addBtn.disabled = false;
         addSpinner.classList.add("hidden");
       }
@@ -929,7 +943,9 @@ function renderHfRepoFiles(repo) {
     addBtnGroup.appendChild(addSpinner);
     addBtnGroup.appendChild(addBtn);
     fileRow.appendChild(addBtnGroup);
-    return fileRow;
+    const wrapper = document.createElement("div");
+    wrapper.append(fileRow, rowWarning);
+    return wrapper;
   }
 
   for (const file of modelFiles) {
@@ -979,6 +995,7 @@ async function runHfSearch() {
 
   hideHfRepoFiles();
   hfSearchBtn.disabled = true;
+  hfAddWarningEl.classList.add("hidden");
   hfSearchStatusEl.textContent = "Searching…";
   hfSearchStatusEl.classList.remove("text-red-400");
   try {
@@ -2147,11 +2164,22 @@ function renderServerStatus(section, status) {
   if (!status.running) {
     line.textContent = status.installed ? "Not running." : "Not installed.";
   } else {
-    const health = status.healthy === null ? "checking…" : status.healthy ? "healthy" : "not responding";
+    const health = status.loading ? "loading the model…" : status.healthy === null ? "checking…" : status.healthy ? "healthy" : "not responding";
     const version = status.version ? ` · v${status.version}` : "";
     line.textContent = (status.pid ? `Running (pid ${status.pid}) — ${health}` : `Running — ${health}`) + version;
   }
   applyServerVisibility(server, section);
+  // Re-check until the model has loaded (minutes on a slow disk), so the line turns "healthy" without a reload.
+  clearTimeout(section._loadingPoll);
+  if (status.loading) {
+    section._loadingPoll = setTimeout(async () => {
+      try {
+        renderServerStatus(section, await api(`/api/settings/${server}/status`));
+      } catch (_) {
+        /* the next action re-renders it */
+      }
+    }, 3000);
+  }
 }
 
 /* Styles a server section's status text as a persistent error (wrapping, red) or back to plain. */
@@ -2265,14 +2293,19 @@ function installQuery(server, section, buildOverride = null) {
 async function populateSdcppModels(section, savedPath) {
   const select = section.querySelector('[data-field="model_path"]');
   const hint = section.querySelector('[data-field="model-hint"]');
-  const { models, folder } = await api("/api/settings/image-models");
+  const { models, folder, engine_model_missing } = await api("/api/settings/image-models");
   section.querySelector('[data-field="models_path"]').placeholder = folder;
   const options = models.map((m) => ({ value: m.path, label: `${m.name} (${m.size_gb} GB)` }));
-  if (savedPath && !options.some((o) => o.value === savedPath)) options.push({ value: savedPath, label: savedPath });
+  // A saved file that was deleted isn't offered; the admin is told to pick another.
+  const gone = !!savedPath && savedPath === engine_model_missing;
+  if (savedPath && !gone && !options.some((o) => o.value === savedPath)) options.push({ value: savedPath, label: savedPath });
   select.innerHTML = `<option value="">— choose a model —</option>` +
     options.map((o) => `<option value="${escapeHtml(o.value)}">${escapeHtml(o.label)}</option>`).join("");
-  select.value = savedPath ?? "";
-  hint.classList.toggle("hidden", models.length > 0 || !!savedPath);
+  select.value = gone ? "" : savedPath ?? "";
+  const missingEl = section.querySelector('[data-field="model-missing"]');
+  missingEl.textContent = gone ? `The chosen model file no longer exists (${savedPath}). Choose another and Save.` : "";
+  missingEl.classList.toggle("hidden", !gone);
+  hint.classList.toggle("hidden", models.length > 0 || (!!savedPath && !gone));
 }
 
 // The repo field's value, or null for the default (shown in the field for Matricxon, see renderInstallSource).

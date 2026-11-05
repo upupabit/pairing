@@ -6,5 +6,5 @@
 -r requirements.txt
 
 pytest>=8.0.0
-pytest-asyncio>=0.24.0
+pytest-asyncio>=1.4.1.post1
 ruff>=0.16.0
